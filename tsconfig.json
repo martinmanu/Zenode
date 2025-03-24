@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "module": "ES6",
+    "target": "ES6",
+    "declaration": true,
+    "moduleResolution": "node", // or "nodenext" for newer versions
+    "sourceMap": true,
+    "strict": true,
+    "baseUrl": "./src",
+    "paths": {
+      "@components/*": ["components/*"],
+      "@shapes/*": ["components/shapeTypes/*"],
+      "@utils/*": ["utils/*"],
+      "@interface/*": ["model/*"]
+    }
+  },
+  "include": ["src"]
+}
