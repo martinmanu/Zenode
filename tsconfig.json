@@ -5,6 +5,7 @@
     "target": "ES6",
     "declaration": true,
     "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "moduleResolution": "node", // or "nodenext" for newer versions
     "sourceMap": true,
@@ -37,6 +38,7 @@
   },
   "include": [
     "src",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "src/typings"
   ]
 }

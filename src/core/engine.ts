@@ -1,18 +1,31 @@
+// src/core/engine.ts
+import { drawCanvas } from "../components/canvas/canvas.js";
+import { drawGrid } from "../components/canvas/grid.js";
+
 export class ZenodeEngine {
     public container!: HTMLElement | null;
     private config: any;
+    public svg: any; // a D3 Selection
     private shapes: Map<string, any> = new Map(); // Using Map for efficient lookups
     private connections: any[] = [];
   
-    constructor(container: HTMLElement | null, config: any) {
-      this.container = container ? container : null;
-      this.config = config;
-      this.initializeCanvas();
-    }
+   constructor(container: HTMLElement|null, config: any) {
+    this.container = container;
+    this.config = config;
+    this.initializeCanvas();
+  }
   
     initializeCanvas() {
       console.log("Canvas initialized in:", this.container);
       // Setup canvas, grid, etc.
+      console.log("Initializing SVG canvas using D3...");
+      // Create the canvas using D3
+      this.svg = drawCanvas(this.container? `#${this.container.id}` : "body", this.config.canvas);
+  
+      // Draw the grid on the canvas
+      drawGrid(this.svg, this.config.canvas.gridSize);
+  
+      console.log("SVG canvas and grid created.");
     }
   
     createShape(type: string, x: number, y: number, name = "") {
@@ -40,15 +53,14 @@ export class ZenodeEngine {
   
 
   export function initializeCanvas() {
-    let x = new ZenodeEngine(null, {});
-
-    if(x.container == null){
+    let engineInstance = new ZenodeEngine(null, {});
+    if(engineInstance.container == null){
       console.log("Canvas not initialized");
     }else{
     console.log("Canvas initialized");
     return { canvas: "Initialized" };
   }
-  x.initializeCanvas()
+  engineInstance.initializeCanvas()
 }
 
 export function createShape(type: string, x: number, y: number, name?: string) {

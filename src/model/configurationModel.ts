@@ -43,6 +43,8 @@ export interface Canvas {
   innerPointColor: string;
   backgroundColor: string;
   gridSize: number;
+  height: number;
+  width: number;
   locked: boolean;
 }
 

@@ -4,8 +4,10 @@ export const defaultConfig: Config = {
   canvas: {
     type: "dotted",
     innerPointColor: "#000000",
-    backgroundColor: "#ffffff",
+    backgroundColor: "red",
     gridSize: 20,
+    width: 800,
+    height: 500,
     locked: false
   },
   canvasProperties: {

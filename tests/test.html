@@ -29,9 +29,12 @@
   <button onclick="initCanvas()">Initialize Canvas</button>
   <button onclick="addRectangle()">Add Rectangle</button>
   <button onclick="addCircle()">Add Circle</button>
-
+  <script type="module">
+    import * as d3 from "../node_modules/d3"
+  </script>
   <script type="module">
     import { initializeCanvas, createShape } from "../dist/index.js";
+    console.log("Module loaded:", { initializeCanvas, createShape });
 
     function initCanvas() {
       console.log("Canvas initialized.");

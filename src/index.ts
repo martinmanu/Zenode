@@ -17,7 +17,6 @@ export function initializeCanvas(containerSelector: string, userConfig = {}) {
     if (!container) {
       throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
-
     engineInstance = new ZenodeEngine(container, config);
   } else {
     console.warn("ZenodeEngine is already initialized!");

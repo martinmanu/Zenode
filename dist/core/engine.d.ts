@@ -1,6 +1,7 @@
 export declare class ZenodeEngine {
     container: HTMLElement | null;
     private config;
+    svg: any;
     private shapes;
     private connections;
     constructor(container: HTMLElement | null, config: any);
