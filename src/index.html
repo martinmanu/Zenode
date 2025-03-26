@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenode Engine</title>
+    <style>
+        #canvasContainer {
+            width: 800px;
+            height: 500px;
+            border: 1px solid #000;
+            position: relative;
+            margin: 20px auto;
+        }
+        button {
+            margin: 5px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Zenode Engine Demo</h1>
+    
+    <div id="canvasContainer"></div>
+    
+    <button onclick="addRectangle()">Add Rectangle</button>
+    <button onclick="addCircle()">Add Circle</button>
+    <button onclick="connectShapes()">Connect Shapes</button>
+
+    <script type="module">
+        import { initialize, createShape, createConnection } from "../dist/index.js";  // Adjust path if needed
+
+        document.addEventListener("DOMContentLoaded", () => {
+            initialize("#canvasContainer", { gridSize: 20 });
+        });
+
+        window.addRectangle = () => {
+            createShape("rectangle", Math.random() * 700, Math.random() * 400, "Rect-" + Date.now());
+        };
+
+        window.addCircle = () => {
+            createShape("circle", Math.random() * 700, Math.random() * 400, "Circle-" + Date.now());
+        };
+
+        window.connectShapes = () => {
+            createConnection("Rect-1", "Circle-1"); // Modify dynamically as needed
+        };
+    </script>
+</body>
+</html>

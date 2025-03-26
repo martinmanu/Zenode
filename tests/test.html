@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zenode Library Test</title>
+  <style>
+    #canvasContainer {
+      width: 800px;
+      height: 500px;
+      border: 1px solid #000;
+      margin: 20px auto;
+    }
+    button {
+      margin: 10px;
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Zenode Library Test</h1>
+  
+  <div id="canvasContainer"></div>
+  
+  <button id="initBtn">Initialize Canvas</button>
+  <button id="addRectBtn">Add Rectangle</button>
+  <button id="addCircleBtn">Add Circle</button>
+  <button id="connectBtn">Connect Shapes</button>
+
+  <script type="module">
+import { initialize, createShape} from "../dist/core/engine.js";
+
+    let rectName = "";
+    let circleName = "";
+
+    document.getElementById("initBtn").addEventListener("click", () => {
+        console.log("Canvas initialized.");
+      initialize("#canvasContainer");
+      console.log("Canvas initialized.");
+    });
+
+    document.getElementById("addRectBtn").addEventListener("click", () => {
+      rectName = "Rect-" + Date.now();
+      createShape("rectangle", 100, 100, rectName);
+      console.log("Rectangle added:", rectName);
+    });
+
+    document.getElementById("addCircleBtn").addEventListener("click", () => {
+      circleName = "Circle-" + Date.now();
+      createShape("circle", 300, 150, circleName);
+      console.log("Circle added:", circleName);
+    });
+
+    // document.getElementById("connectBtn").addEventListener("click", () => {
+    //   if (rectName && circleName) {
+    //     createConnection(rectName, circleName);
+    //     console.log(`Connection created between ${rectName} and ${circleName}`);
+    //   } else {
+    //     console.error("Please add both a rectangle and a circle before connecting.");
+    //   }
+    // });
+  </script>
+</body>
+</html>
