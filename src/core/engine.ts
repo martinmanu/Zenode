@@ -7,10 +7,10 @@ export class ZenodeEngine {
     constructor(container: HTMLElement | null, config: any) {
       this.container = container ? container : null;
       this.config = config;
-      this.initialize();
+      this.initializeCanvas();
     }
   
-    initialize() {
+    initializeCanvas() {
       console.log("Canvas initialized in:", this.container);
       // Setup canvas, grid, etc.
     }
@@ -48,7 +48,7 @@ export class ZenodeEngine {
     console.log("Canvas initialized");
     return { canvas: "Initialized" };
   }
-  x.initialize()
+  x.initializeCanvas()
 }
 
 export function createShape(type: string, x: number, y: number, name?: string) {

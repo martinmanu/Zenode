@@ -5,9 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zenode Library Test</title>
   <style>
+    body{
+        background-color: black;
+    }
     #canvasContainer {
       width: 800px;
       height: 500px;
+      background: #7f7f7f;
       border: 1px solid #000;
       margin: 20px auto;
     }
@@ -22,43 +26,34 @@
   
   <div id="canvasContainer"></div>
   
-  <button id="initBtn">Initialize Canvas</button>
-  <button id="addRectBtn">Add Rectangle</button>
-  <button id="addCircleBtn">Add Circle</button>
-  <button id="connectBtn">Connect Shapes</button>
+  <button onclick="initCanvas()">Initialize Canvas</button>
+  <button onclick="addRectangle()">Add Rectangle</button>
+  <button onclick="addCircle()">Add Circle</button>
 
   <script type="module">
-import { initialize, createShape} from "../dist/core/engine.js";
+    import { initializeCanvas, createShape } from "../dist/index.js";
 
-    let rectName = "";
-    let circleName = "";
-
-    document.getElementById("initBtn").addEventListener("click", () => {
-        console.log("Canvas initialized.");
-      initialize("#canvasContainer");
+    function initCanvas() {
       console.log("Canvas initialized.");
-    });
+      initializeCanvas("#canvasContainer");
+    }
 
-    document.getElementById("addRectBtn").addEventListener("click", () => {
-      rectName = "Rect-" + Date.now();
+    function addRectangle() {
+      let rectName = "Rect-" + Date.now();
       createShape("rectangle", 100, 100, rectName);
       console.log("Rectangle added:", rectName);
-    });
+    }
 
-    document.getElementById("addCircleBtn").addEventListener("click", () => {
-      circleName = "Circle-" + Date.now();
+    function addCircle() {
+      let circleName = "Circle-" + Date.now();
       createShape("circle", 300, 150, circleName);
       console.log("Circle added:", circleName);
-    });
+    }
 
-    // document.getElementById("connectBtn").addEventListener("click", () => {
-    //   if (rectName && circleName) {
-    //     createConnection(rectName, circleName);
-    //     console.log(`Connection created between ${rectName} and ${circleName}`);
-    //   } else {
-    //     console.error("Please add both a rectangle and a circle before connecting.");
-    //   }
-    // });
+    // Expose functions globally so inline onclick works
+    window.initCanvas = initCanvas;
+    window.addRectangle = addRectangle;
+    window.addCircle = addCircle;
   </script>
 </body>
 </html>

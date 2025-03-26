@@ -4,9 +4,9 @@ export class ZenodeEngine {
         this.connections = [];
         this.container = container ? container : null;
         this.config = config;
-        this.initialize();
+        this.initializeCanvas();
     }
-    initialize() {
+    initializeCanvas() {
         console.log("Canvas initialized in:", this.container);
         // Setup canvas, grid, etc.
     }
@@ -38,7 +38,7 @@ export function initializeCanvas() {
         console.log("Canvas initialized");
         return { canvas: "Initialized" };
     }
-    x.initialize();
+    x.initializeCanvas();
 }
 export function createShape(type, x, y, name) {
     return new ZenodeEngine(null, {}).createShape(type, x, y, name);

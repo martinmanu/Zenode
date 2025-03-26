@@ -1,5 +1,5 @@
-import { ZenodeEngine } from "./core/engine";
-import defaultConfig from "./config/defaultConfig.json";
+import { ZenodeEngine } from "./core/engine.js";
+import { defaultConfig } from "./config/defaultConfig.js";
 let engineInstance = null;
 /**
  * Initializes the Zenode engine.
@@ -7,7 +7,7 @@ let engineInstance = null;
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export function initialize(containerSelector, userConfig = {}) {
+export function initializeCanvas(containerSelector, userConfig = {}) {
     if (!engineInstance) {
         const config = Object.assign(Object.assign({}, defaultConfig), userConfig);
         const container = document.querySelector(containerSelector);

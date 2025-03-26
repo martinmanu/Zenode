@@ -28,10 +28,10 @@
     <button onclick="connectShapes()">Connect Shapes</button>
 
     <script type="module">
-        import { initialize, createShape, createConnection } from "../dist/index.js";  // Adjust path if needed
+        import { initializeCanvas, createShape, createConnection } from "../dist/index.js";  // Adjust path if needed
 
         document.addEventListener("DOMContentLoaded", () => {
-            initialize("#canvasContainer", { gridSize: 20 });
+            initializeCanvas("#canvasContainer", { gridSize: 20 });
         });
 
         window.addRectangle = () => {

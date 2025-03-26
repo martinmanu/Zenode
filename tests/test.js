@@ -1,5 +1,5 @@
-import { initializeCanvas, createShape} from "../dist/core/engine.js";
-import defaultConfig from "../dist/config/defaultConfig.json" assert { type: "json" };
+import { initializeCanvas, createShape} from "../dist/index.js";
+import {defaultConfig } from "../dist/config/defaultConfig.js"
 
 console.log("Running test...");
 

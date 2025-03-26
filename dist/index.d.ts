@@ -4,7 +4,7 @@
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export declare function initialize(containerSelector: string, userConfig?: {}): void;
+export declare function initializeCanvas(containerSelector: string, userConfig?: {}): void;
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").

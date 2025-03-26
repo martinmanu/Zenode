@@ -4,7 +4,7 @@ export declare class ZenodeEngine {
     private shapes;
     private connections;
     constructor(container: HTMLElement | null, config: any);
-    initialize(): void;
+    initializeCanvas(): void;
     createShape(type: string, x: number, y: number, name?: string): void;
     createConnection(from: string, to: string): void;
 }
