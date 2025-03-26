@@ -1,19 +1,44 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "module": "ES6",
+    "module": "ESNext",
     "target": "ES6",
     "declaration": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
     "moduleResolution": "node", // or "nodenext" for newer versions
     "sourceMap": true,
     "strict": true,
+    "lib": [
+      "dom",
+      "es2016"
+    ],
     "baseUrl": "./src",
     "paths": {
-      "@components/*": ["components/*"],
-      "@shapes/*": ["components/shapeTypes/*"],
-      "@utils/*": ["utils/*"],
-      "@interface/*": ["model/*"]
+      "@components/*": [
+        "components/*"
+      ],
+      "@shapes/*": [
+        "components/shapeTypes/*"
+      ],
+      "@utils/*": [
+        "utils/*"
+      ],
+      "@interface/*": [
+        "model/*"
+      ],
+      "@config/*": [
+        "config/*"
+      ],
+      "@core/*": [
+        "core/*"
+      ],
     }
   },
-  "include": ["src"]
+  "include": [
+    "src",
+    "tests/**/*.ts",
+    "src/typings"
+  ]
 }

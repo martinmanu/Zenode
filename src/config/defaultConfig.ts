@@ -1,15 +1,21 @@
-export const config = {
+import { Config } from "../model/configurationModel"
+
+export const defaultConfig: Config = {
   canvas: {
-    type: "dotted", // "plain", "lined", "dotted"
+    type: "dotted",
     innerPointColor: "#000000",
-    backgroundColor: "#ffffff",
-    gridSize: 20, // Should align with globalProperties
+    backgroundColor: "red",
+    gridSize: 20,
+    width: 800,
+    height: 500,
+    locked: false
   },
   canvasProperties: {
     zoomEnabled: true,
     panEnabled: true,
     snapToGrid: true,
     defaultNodeSpacing: 50,
+    dragType: "smooth"
   },
   shapes: {
     default: {
@@ -18,30 +24,19 @@ export const config = {
         color: "#008000",
         stroke: { width: 2, color: "#000000" },
         textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
+        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
       },
       rectangle: {
         width: 120,
         height: 60,
         color: "#0000ff",
+        borderRadius: { leftTop: 3, leftBottom: 3, rightTop: 3, rightBottom: 3 },
         stroke: { width: 2, color: "#000000" },
         textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)",
-      },
+        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
+      }
     },
-    extraShapes: [
-      {
-        name: "hexagon",
-        d3Function: (svg: any) => {
-          return svg
-            .append("polygon")
-            .attr("points", "30,0 60,15 60,45 30,60 0,45 0,15")
-            .attr("fill", "#ff6600")
-            .attr("stroke", "#333333")
-            .attr("stroke-width", 2)
-        },
-      },
-    ],
+    extraShapes: []
   },
   connections: {
     default: {
@@ -50,29 +45,69 @@ export const config = {
         style: "solid",
         color: "#000000",
         width: 2,
+        lineStyle: {
+          dashArray: [],
+          innerTextEnabled: false,
+          innerText: "",
+          innerTextColor: "#000000",
+          icon: null,
+          clickFunction: null
+        }
       },
       curved: {
         type: "bezier",
         style: "smooth",
         color: "#666666",
         width: 2,
+        lineStyle: {
+          dashArray: [],
+          innerTextEnabled: false,
+          innerText: "",
+          innerTextColor: "#000000",
+          icon: null,
+          clickFunction: null
+        }
       },
-    },
-    custom: {
-      dotted: {
-        type: "line",
-        style: "dashed",
-        color: "#ff0000",
+      sShaped: {
+        type: "s-shaped",
+        style: "smooth",
+        color: "#333333",
         width: 2,
+        lineStyle: {
+          dashArray: [],
+          innerTextEnabled: false,
+          innerText: "",
+          innerTextColor: "#000000",
+          icon: null,
+          clickFunction: null
+        }
       },
+      lBent: {
+        type: "l-bent",
+        style: "cornered",
+        color: "#444444",
+        width: 2,
+        lineStyle: {
+          dashArray: [],
+          innerTextEnabled: false,
+          innerText: "",
+          innerTextColor: "#000000",
+          icon: null,
+          clickFunction: null
+        }
+      }
     },
+    custom: []
   },
   globalProperties: {
     nodeSpacing: 80,
     connectionGap: 10,
     animationEnabled: true,
-    validateGridSize: (gridSize: number, shapeWidth: number) => {
-      return gridSize >= shapeWidth / 2; // Ensures grid size and shapes align visually
-    },
+    validateGridSize: null
   },
+  dragOptions: {
+    enableDrag: true,
+    dragMode: "smooth",
+    connectionDraw: "onDragEnd"
+  }
 };
