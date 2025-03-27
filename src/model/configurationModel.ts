@@ -39,13 +39,23 @@ export interface Connection {
 }
 
 export interface Canvas {
-  type: string;
-  innerPointColor: string;
   backgroundColor: string;
-  gridSize: number;
+  grid: Grid
   height: number;
   width: number;
   locked: boolean;
+}
+
+export interface Grid {
+  gridType: string; // dotted , sheet , line , cross
+  gridSize: number;
+  gridEnabled: boolean;
+  gridTransparency: number
+  gridColor: string;
+  gridShape: string //circle ,square , works only for dotted
+  gridDimension: number //radi for circle or width/height for square
+  sheetDimension?: number // 3x3 or 4x4 for gridtype as sheet
+  crossLength?: number // applicable only for type cross  , higher the number larger the cross and viseversa
 }
 
 export interface CanvasProperties {

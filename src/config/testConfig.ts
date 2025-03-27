@@ -1,47 +1,47 @@
 import { Config } from "../model/configurationModel"
 
-export const defaultConfig: Config = {
+export const testConfig: Config = {
   canvas: {
     grid:{
       gridEnabled: true,
-      gridType: "dotted", // dotted, line , cross , sheet
-      gridColor: "#000000",
-      gridTransparency: 1,
-      gridSize: 20,
-      gridShape: 'circle',
+      gridType: "cross",
+      gridColor: "#0000FF",
+      gridTransparency: 0.4,
+      gridSize: 40,
+      gridShape: 'square',
       gridDimension: 1,
-      sheetDimension: 3,
-      crossLength: 2
+      sheetDimension: 4,
+      crossLength: 10
     },
-    backgroundColor: "#ffffff",
-    width: 800,
-    height: 500,
+    backgroundColor: "#FFFFFF",
+    width: 1000,
+    height: 600,
     locked: false
   },
   canvasProperties: {
     zoomEnabled: true,
     panEnabled: true,
     snapToGrid: true,
-    defaultNodeSpacing: 50,
+    defaultNodeSpacing: 60,
     dragType: "smooth"
   },
   shapes: {
     default: {
       circle: {
-        radius: 30,
-        color: "#008000",
-        stroke: { width: 2, color: "#000000" },
-        textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
+        radius: 50,
+        color: "#FF6347",
+        stroke: { width: 3, color: "#000000" },
+        textColor: "#FFFFFF",
+        boxShadow: "0px 6px 8px rgba(0, 0, 0, 0.2)"
       },
       rectangle: {
-        width: 120,
-        height: 60,
-        color: "#0000ff",
-        borderRadius: { leftTop: 3, leftBottom: 3, rightTop: 3, rightBottom: 3 },
-        stroke: { width: 2, color: "#000000" },
-        textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
+        width: 140,
+        height: 70,
+        color: "#32CD32",
+        borderRadius: { leftTop: 5, leftBottom: 5, rightTop: 5, rightBottom: 5 },
+        stroke: { width: 3, color: "#000000" },
+        textColor: "#FFFFFF",
+        boxShadow: "0px 6px 8px rgba(0, 0, 0, 0.2)"
       }
     },
     extraShapes: []

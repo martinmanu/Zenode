@@ -1,5 +1,5 @@
 import { ZenodeEngine } from "./core/engine.js";
-import {defaultConfig} from "./config/defaultConfig.js";
+import { Config } from "./model/configurationModel.js";
 
 let engineInstance: ZenodeEngine | null = null;
 
@@ -9,15 +9,16 @@ let engineInstance: ZenodeEngine | null = null;
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export function initializeCanvas(containerSelector: string, userConfig = {}) {
+export function initializeCanvas(containerSelector: string, userConfig: Config) {
   if (!engineInstance) {
-    const config = { ...defaultConfig, ...userConfig };
+    const inputConfig : Config = { ...userConfig };
+    console.log(inputConfig)
     const container = document.querySelector(containerSelector) as HTMLElement;
 
     if (!container) {
       throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
-    engineInstance = new ZenodeEngine(container, config);
+    engineInstance = new ZenodeEngine(container, inputConfig);
   } else {
     console.warn("ZenodeEngine is already initialized!");
   }

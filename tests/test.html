@@ -34,11 +34,12 @@
   </script>
   <script type="module">
     import { initializeCanvas, createShape } from "../dist/index.js";
+    import { testConfig } from "../dist/config/testConfig.js"
     console.log("Module loaded:", { initializeCanvas, createShape });
 
     function initCanvas() {
       console.log("Canvas initialized.");
-      initializeCanvas("#canvasContainer");
+      initializeCanvas("#canvasContainer",testConfig);
     }
 
     function addRectangle() {

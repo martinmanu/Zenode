@@ -1,10 +1,11 @@
+import { Config } from "./model/configurationModel.js";
 /**
  * Initializes the Zenode engine.
  * @param containerSelector The selector for the container element.
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export declare function initializeCanvas(containerSelector: string, userConfig?: {}): void;
+export declare function initializeCanvas(containerSelector: string, userConfig: Config): void;
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").

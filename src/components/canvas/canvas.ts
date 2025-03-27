@@ -3,7 +3,11 @@ import { Canvas } from "../../model/configurationModel.js"
 import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
 
-export function drawCanvas(containerSelector: string, canvasConfig: Canvas) {
+export function drawCanvas(containerSelector: string, canvasConfig: Canvas): {
+  svg: any;
+  grid: any;
+  elements: any;
+} {
   // Select the container using d3
   const container = d3.select(containerSelector);
   if (container.empty()) {
@@ -16,7 +20,18 @@ console.log(canvasConfig)
     .append("svg")
     .attr("width", canvasConfig.width || 800)
     .attr("height", canvasConfig.height || 500)
-    .style("background-color", canvasConfig.backgroundColor || "red");
+    .style("background-color", canvasConfig.backgroundColor || "#ffffff")
+    .attr('viewBox', `0 0 ${canvasConfig.width} ${canvasConfig.height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('display', 'block')
+    .style('margin', 'auto');
+    
+  const gridLayout = svg.append('g').attr('class', 'grid')
+  const elementsGroup = svg.append('g').attr('class', 'elements-group')
 
-  return svg;
+  return {
+    grid: gridLayout,
+    elements: elementsGroup,
+    svg: svg
+  };
 }

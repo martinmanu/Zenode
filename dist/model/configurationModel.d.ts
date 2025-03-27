@@ -34,13 +34,22 @@ export interface Connection {
     lineStyle: LineStyle;
 }
 export interface Canvas {
-    type: string;
-    innerPointColor: string;
     backgroundColor: string;
-    gridSize: number;
+    grid: Grid;
     height: number;
     width: number;
     locked: boolean;
+}
+export interface Grid {
+    gridType: string;
+    gridSize: number;
+    gridEnabled: boolean;
+    gridTransparency: number;
+    gridColor: string;
+    gridShape: string;
+    gridDimension: number;
+    sheetDimension?: number;
+    crossLength?: number;
 }
 export interface CanvasProperties {
     zoomEnabled: boolean;
