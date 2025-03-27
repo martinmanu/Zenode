@@ -49,6 +49,7 @@ export interface Grid {
     gridShape: string;
     gridDimension: number;
     sheetDimension?: number;
+    crossLength?: number;
 }
 export interface CanvasProperties {
     zoomEnabled: boolean;

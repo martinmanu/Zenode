@@ -4,13 +4,14 @@ export const testConfig: Config = {
   canvas: {
     grid:{
       gridEnabled: true,
-      gridType: "sheet",
+      gridType: "cross",
       gridColor: "#0000FF",
-      gridTransparency: 0.8,
-      gridSize: 25,
-      gridShape: 'circle',
-      gridDimension: 0.5,
-      sheetDimension: 4
+      gridTransparency: 0.4,
+      gridSize: 40,
+      gridShape: 'square',
+      gridDimension: 1,
+      sheetDimension: 4,
+      crossLength: 10
     },
     backgroundColor: "#FFFFFF",
     width: 1000,

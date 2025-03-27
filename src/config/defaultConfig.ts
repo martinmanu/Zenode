@@ -10,7 +10,8 @@ export const defaultConfig: Config = {
       gridSize: 20,
       gridShape: 'circle',
       gridDimension: 1,
-      sheetDimension: 3
+      sheetDimension: 3,
+      crossLength: 2
     },
     backgroundColor: "#ffffff",
     width: 800,

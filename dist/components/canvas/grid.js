@@ -58,6 +58,7 @@ function createDottedGrid(canvasConfig, grid) {
         .attr("y", -(canvasConfig.height * 1000))
         .attr("width", canvasConfig.width * 2000)
         .attr("height", canvasConfig.height * 2000)
+        .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
         .attr("fill", "url(#dotPattern)");
     console.log(grid);
     return grid;
@@ -94,62 +95,66 @@ function createLineGrid(canvasConfig, grid) {
         .attr("y", -(canvasConfig.height || defaultConfig.canvas.height * 1000))
         .attr("width", canvasConfig.width || defaultConfig.canvas.width * 2000)
         .attr("height", canvasConfig.height || defaultConfig.canvas.height * 2000)
+        .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
         .attr("fill", "url(#linePattern)");
     console.log(grid);
     return grid;
 }
 function createCrossGrid(canvasConfig, grid) {
-    const pattern = grid
-        .append("defs")
+    const gridSize = canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize;
+    const crossArmLength = canvasConfig.grid.crossLength || (gridSize / 2);
+    const strokeWidth = (canvasConfig.grid.gridDimension && canvasConfig.grid.gridDimension > 0)
+        ? canvasConfig.grid.gridDimension
+        : 1;
+    const gridColor = canvasConfig.grid.gridColor || defaultConfig.canvas.grid.gridColor;
+    const patternSize = gridSize;
+    const pattern = grid.append("defs")
         .append("pattern")
-        .attr("id", "dotPattern gridPattern")
+        .attr("id", "crossGridPattern")
         .attr("patternUnits", "userSpaceOnUse")
-        .attr("width", canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize)
-        .attr("height", canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize);
-    if (canvasConfig.grid.gridShape == "square") {
-        pattern
-            .append("rect")
-            .attr("width", canvasConfig.grid.gridDimension ||
-            defaultConfig.canvas.grid.gridDimension)
-            .attr("height", canvasConfig.grid.gridDimension ||
-            defaultConfig.canvas.grid.gridDimension)
-            .attr("fill", canvasConfig.grid.gridColor || defaultConfig.canvas.grid.gridColor);
-    }
-    else {
-        pattern
-            .append("circle")
-            .attr("cx", canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize / 4)
-            .attr("cy", canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize / 4)
-            .attr("r", canvasConfig.grid.gridDimension ||
-            defaultConfig.canvas.grid.gridDimension)
-            .attr("fill", canvasConfig.grid.gridColor || defaultConfig.canvas.grid.gridColor);
-    }
-    console.log(grid);
+        .attr("width", patternSize)
+        .attr("height", patternSize);
+    const cx = patternSize / 2;
+    const cy = patternSize / 2;
+    pattern.append("line")
+        .attr("x1", cx - crossArmLength / 2)
+        .attr("y1", cy)
+        .attr("x2", cx + crossArmLength / 2)
+        .attr("y2", cy)
+        .attr("stroke", gridColor)
+        .attr("stroke-width", strokeWidth);
+    pattern.append("line")
+        .attr("x1", cx)
+        .attr("y1", cy - crossArmLength / 2)
+        .attr("x2", cx)
+        .attr("y2", cy + crossArmLength / 2)
+        .attr("stroke", gridColor)
+        .attr("stroke-width", strokeWidth);
+    grid.append("rect")
+        .attr("x", -(canvasConfig.width * 1000))
+        .attr("y", -(canvasConfig.height * 1000))
+        .attr("width", canvasConfig.width * 2000)
+        .attr("height", canvasConfig.height * 2000)
+        .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
+        .attr("fill", "url(#crossGridPattern)");
+    console.log("Cross Grid created:", grid);
     return grid;
 }
-export function createSquareGrid(canvasConfig, // Replace 'any' with your actual Canvas type if available
+function createSquareGrid(canvasConfig, // Replace 'any' with your actual Canvas type if available
 grid) {
-    // Use gridSize from configuration; fallback to default if needed.
     const gridSize = canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize;
-    // Inner grid line thickness.
     const thinStroke = (canvasConfig.grid.gridDimension && canvasConfig.grid.gridDimension > 0)
         ? canvasConfig.grid.gridDimension
         : 1;
-    // Number of cells per block (sheet dimension)
     const cellsPerBlock = canvasConfig.grid.sheetDimension || defaultConfig.canvas.grid.sheetDimension;
-    // Outer border thickness: set to thinStroke multiplied by the number of cells per block.
     const thickStroke = thinStroke * cellsPerBlock;
-    // Block size (in pixels) equals gridSize multiplied by number of cells per block.
     const blockSize = gridSize * cellsPerBlock;
-    // Create a pattern for the repeating block.
     const pattern = grid.append("defs")
         .append("pattern")
         .attr("id", "sheetPattern")
         .attr("patternUnits", "userSpaceOnUse")
         .attr("width", blockSize)
         .attr("height", blockSize);
-    // Draw inner vertical grid lines at each internal cell boundary.
-    // With cellsPerBlock cells, there are (cellsPerBlock - 1) inner vertical boundaries.
     for (let i = 1; i < cellsPerBlock; i++) {
         pattern.append("line")
             .attr("x1", i * gridSize)
@@ -159,7 +164,6 @@ grid) {
             .attr("stroke", canvasConfig.grid.gridColor || "#ccc")
             .attr("stroke-width", thinStroke);
     }
-    // Draw inner horizontal grid lines at each internal cell boundary.
     for (let j = 1; j < cellsPerBlock; j++) {
         pattern.append("line")
             .attr("x1", 0)
@@ -169,7 +173,6 @@ grid) {
             .attr("stroke", canvasConfig.grid.gridColor || "#ccc")
             .attr("stroke-width", thinStroke);
     }
-    // Draw the outer border around the block with a thicker stroke.
     pattern.append("rect")
         .attr("x", 0)
         .attr("y", 0)
@@ -178,12 +181,12 @@ grid) {
         .attr("fill", "none")
         .attr("stroke", canvasConfig.grid.gridColor || "#ccc")
         .attr("stroke-width", thickStroke);
-    // Fill a large rectangle (covering the entire canvas) with the repeating pattern.
     grid.append("rect")
         .attr("x", -(canvasConfig.width * 1000))
         .attr("y", -(canvasConfig.height * 1000))
         .attr("width", canvasConfig.width * 2000)
         .attr("height", canvasConfig.height * 2000)
+        .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
         .attr("fill", "url(#sheetPattern)");
     console.log("Grid created:", grid);
     return grid;
