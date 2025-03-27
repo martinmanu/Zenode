@@ -5,6 +5,7 @@ export class ZenodeEngine {
     constructor(container, config) {
         this.shapes = new Map(); // Using Map for efficient lookups
         this.connections = [];
+        this.canvasObject = { svg: null, grid: null, elements: null };
         this.container = container;
         this.config = config;
         this.initializeCanvas();
@@ -14,9 +15,12 @@ export class ZenodeEngine {
         // Setup canvas, grid, etc.
         console.log("Initializing SVG canvas using D3...");
         // Create the canvas using D3
-        this.svg = drawCanvas(this.container ? `#${this.container.id}` : "body", this.config.canvas);
+        this.canvasObject = drawCanvas(this.container ? `#${this.container.id}` : "body", this.config.canvas);
+        this.svg = this.canvasObject.svg;
+        this.grid = this.canvasObject.grid;
+        this.elements = this.canvasObject.elements;
         // Draw the grid on the canvas
-        drawGrid(this.svg, this.config.canvas.gridSize);
+        drawGrid(this.svg, this.config.canvas, this.grid);
         console.log("SVG canvas and grid created.");
     }
     createShape(type, x, y, name = "") {
