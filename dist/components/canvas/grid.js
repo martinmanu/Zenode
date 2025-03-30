@@ -1,3 +1,5 @@
+// src/components/canvas/drawGrid.ts
+import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 import { defaultConfig } from "../../config/defaultConfig.js";
 export function drawGrid(svg, canvasConfig, grid) {
     //Check if the grid is enabled
@@ -24,6 +26,9 @@ export function drawGrid(svg, canvasConfig, grid) {
     else {
         return grid;
     }
+}
+export function toggleGrid(enable) {
+    d3.select(".grid-group").style("display", enable ? "block" : "none");
 }
 function createDottedGrid(canvasConfig, grid) {
     const pattern = grid
@@ -91,10 +96,10 @@ function createLineGrid(canvasConfig, grid) {
     // Set the Grid
     grid
         .append("rect")
-        .attr("x", -(canvasConfig.width || defaultConfig.canvas.width * 1000))
-        .attr("y", -(canvasConfig.height || defaultConfig.canvas.height * 1000))
-        .attr("width", canvasConfig.width || defaultConfig.canvas.width * 2000)
-        .attr("height", canvasConfig.height || defaultConfig.canvas.height * 2000)
+        .attr("x", -((canvasConfig.width || defaultConfig.canvas.width) * 1000))
+        .attr("y", -((canvasConfig.height || defaultConfig.canvas.height) * 1000))
+        .attr("width", (canvasConfig.width || defaultConfig.canvas.width) * 2000)
+        .attr("height", (canvasConfig.height || defaultConfig.canvas.height) * 2000)
         .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
         .attr("fill", "url(#linePattern)");
     console.log(grid);

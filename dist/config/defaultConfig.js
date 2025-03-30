@@ -13,15 +13,28 @@ export const defaultConfig = {
         },
         backgroundColor: "#ffffff",
         width: 800,
+        canvasClasses: ["zenode-canvas"],
         height: 500,
         locked: false
     },
     canvasProperties: {
         zoomEnabled: true,
+        zoomExtent: [0.1, 10],
+        zoomOnDoubleClick: true,
+        zoomOnScroll: true,
+        zoomScale: 1,
+        zoomDuration: 200,
         panEnabled: true,
         snapToGrid: true,
-        defaultNodeSpacing: 50,
-        dragType: "smooth"
+        alignmentLines: {
+            enabled: true,
+            color: '#000000',
+            width: 2,
+            dashed: true,
+            dashArray: [2, 3]
+        }
+        // defaultNodeSpacing: 50,
+        // dragType: "smooth"
     },
     shapes: {
         default: {

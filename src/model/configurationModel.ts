@@ -10,16 +10,6 @@ export interface BorderRadius {
   rightBottom: number;
 }
 
-export interface Shape {
-  radius?: number;
-  width?: number;
-  height?: number;
-  color: string;
-  stroke: Stroke;
-  textColor: string;
-  boxShadow: string;
-  borderRadius?: BorderRadius;
-}
 
 export interface LineStyle {
   dashArray: number[];
@@ -44,6 +34,7 @@ export interface Canvas {
   height: number;
   width: number;
   locked: boolean;
+  canvasClasses: string[]
 }
 
 export interface Grid {
@@ -60,18 +51,55 @@ export interface Grid {
 
 export interface CanvasProperties {
   zoomEnabled: boolean;
+  zoomExtent: number[];
+  zoomOnDoubleClick: boolean;
+  zoomScale: number,
+  zoomOnScroll: boolean;
+  zoomDuration: number; // in ms
   panEnabled: boolean;
   snapToGrid: boolean;
-  defaultNodeSpacing: number;
-  dragType: string;
+  alignmentLines: AlignmentLines
+  // defaultNodeSpacing: number;
+  // dragType: string;
+}
+
+export interface AlignmentLines {
+  enabled: boolean;
+  color: string;
+  width: number;
+  dashed: boolean;
+  dashArray: number[];
+}
+
+export interface Shape {
+  id: string; // Unique identifier
+  radius?: number;
+  width?: number;
+  height?: number;
+  color: string;
+  stroke: {
+    width: number;
+    color: string;
+    strokeType: string;
+    strokeDasharray: number[];
+  };
+  transparency: number,
+  textColor: string;
+  boxShadow: string;
+  borderRadius?: BorderRadius
 }
 
 export interface Shapes {
   default: {
-    circle: Shape;
-    rectangle: Shape;
+    circle?: Shape[];    // Allow multiple circle definitions
+    rectangle?: Shape[]; // Allow multiple rectangle definitions
+    rhombus?: Shape[];   // Allow multiple rhombus definitions
+    hexagon?: Shape[];   // Allow multiple hexagon definitions
+    triangle?: Shape[];  // Allow multiple triangle definitions
+    pentagon?: Shape[];  // Allow multiple pentagon definitions
+    parallelogram?: Shape[]; // Allow multiple parallelogram definitions
   };
-  extraShapes: any[];
+  extraShapes: Shape[]; // For additional, custom shapes
 }
 
 export interface Connections {

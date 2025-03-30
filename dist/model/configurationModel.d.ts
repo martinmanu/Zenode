@@ -39,6 +39,7 @@ export interface Canvas {
     height: number;
     width: number;
     locked: boolean;
+    canvasClasses: string[];
 }
 export interface Grid {
     gridType: string;
@@ -53,10 +54,21 @@ export interface Grid {
 }
 export interface CanvasProperties {
     zoomEnabled: boolean;
+    zoomExtent: number[];
+    zoomOnDoubleClick: boolean;
+    zoomScale: number;
+    zoomOnScroll: boolean;
+    zoomDuration: number;
     panEnabled: boolean;
     snapToGrid: boolean;
-    defaultNodeSpacing: number;
-    dragType: string;
+    alignmentLines: AlignmentLines;
+}
+export interface AlignmentLines {
+    enabled: boolean;
+    color: string;
+    width: number;
+    dashed: boolean;
+    dashArray: number[];
 }
 export interface Shapes {
     default: {

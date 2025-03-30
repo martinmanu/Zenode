@@ -15,34 +15,78 @@ export const defaultConfig: Config = {
     },
     backgroundColor: "#ffffff",
     width: 800,
+    canvasClasses: ["zenode-canvas"],
     height: 500,
     locked: false
   },
   canvasProperties: {
     zoomEnabled: true,
+    zoomExtent: [0.1, 10],
+    zoomOnDoubleClick: true,
+    zoomOnScroll: true,
+    zoomScale: 1,
+    zoomDuration: 200,
     panEnabled: true,
     snapToGrid: true,
-    defaultNodeSpacing: 50,
-    dragType: "smooth"
+    alignmentLines: {
+      enabled: true,
+      color: '#000000',
+      width: 2,
+      dashed: true,
+      dashArray: [2,3]
+    }
+    // defaultNodeSpacing: 50,
+    // dragType: "smooth"
   },
   shapes: {
     default: {
-      circle: {
-        radius: 30,
-        color: "#008000",
-        stroke: { width: 2, color: "#000000" },
-        textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
-      },
-      rectangle: {
-        width: 120,
-        height: 60,
-        color: "#0000ff",
-        borderRadius: { leftTop: 3, leftBottom: 3, rightTop: 3, rightBottom: 3 },
-        stroke: { width: 2, color: "#000000" },
-        textColor: "#ffffff",
-        boxShadow: "0px 4px 6px rgba(0, 0, 0, 0.1)"
-      }
+      "circle": [
+        {
+          "id": "circle1",
+          "radius": 30,
+          "color": "#008000",
+          "stroke": { "width": 2, "color": "#000000", "strokeType": 'straight', "strokeDasharray": []},
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          "transparency" : 1
+        },
+      ],
+      "rectangle": [
+        {
+          "id": "task0",
+          "width": 120,
+          "height": 60,
+          "color": "#0000ff",
+          "borderRadius": { "leftTop": 3, "leftBottom": 3, "rightTop": 3, "rightBottom": 3 },
+          "stroke": { "width": 2, "color": "#000000", "strokeType": 'straight', "strokeDasharray": []},
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          "transparency" : 1
+        },
+        {
+          "id": "task1",
+          "width": 100,
+          "height": 50,
+          "color": "#00FFFF",
+          "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
+          "stroke": { "width": 2, "color": "#000000", "strokeType": 'straight', "strokeDasharray": []},
+          "textColor": "#000000",
+          "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
+          "transparency" : 1
+        }
+      ],
+      "rhombus": [
+        {
+          "id": "rhombus1",
+          "width": 80,
+          "height": 80,
+          "color": "#FF00FF",
+          "stroke": { "width": 2, "color": "#000000", "strokeType": 'straight', "strokeDasharray": []},
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+          "transparency" : 1
+        }
+      ]
     },
     extraShapes: []
   },

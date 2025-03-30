@@ -12,16 +12,29 @@ export const testConfig = {
             crossLength: 10
         },
         backgroundColor: "#FFFFFF",
-        width: 1000,
+        width: 800,
         height: 600,
+        canvasClasses: ["test-canvas"],
         locked: false
     },
     canvasProperties: {
         zoomEnabled: true,
+        zoomExtent: [0.1, 4],
+        zoomOnDoubleClick: true,
+        zoomOnScroll: true,
+        zoomScale: 0.55,
+        zoomDuration: 600,
         panEnabled: true,
         snapToGrid: true,
-        defaultNodeSpacing: 60,
-        dragType: "smooth"
+        alignmentLines: {
+            enabled: true,
+            color: '#000000',
+            width: 2,
+            dashed: true,
+            dashArray: [2, 3]
+        }
+        // defaultNodeSpacing: 60,
+        // dragType: "smooth"
     },
     shapes: {
         default: {

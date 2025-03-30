@@ -3,4 +3,6 @@ export declare function drawCanvas(containerSelector: string, canvasConfig: Canv
     svg: any;
     grid: any;
     elements: any;
+    canvasContainer: any;
 };
+export declare function lockedCanvas(locked: boolean, svg: any, zoomBehaviour: any): void;
