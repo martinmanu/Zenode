@@ -23,29 +23,35 @@
     
     <div id="canvasContainer"></div>
     
-    <button onclick="addRectangle()">Add Rectangle</button>
-    <button onclick="addCircle()">Add Circle</button>
-    <button onclick="connectShapes()">Connect Shapes</button>
-    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm"
+      }
+    }
+    </script>
 
     <script type="module">
-        import { initializeCanvas, createShape, createConnection } from "../dist/index.js";  // Adjust path if needed
+        import { initializeCanvas, createShape, connectFirstTwoNodes } from "../dist/zenode.esm.js";
 
         document.addEventListener("DOMContentLoaded", () => {
             initializeCanvas("#canvasContainer", { gridSize: 20 });
         });
 
         window.addRectangle = () => {
-            createShape("rectangle", Math.random() * 700, Math.random() * 400, "Rect-" + Date.now());
+            createShape("rectangle", "task0");
         };
 
         window.addCircle = () => {
-            createShape("circle", Math.random() * 700, Math.random() * 400, "Circle-" + Date.now());
+            createShape("circle", "circle1");
         };
 
         window.connectShapes = () => {
-            createConnection("Rect-1", "Circle-1"); // Modify dynamically as needed
+            connectFirstTwoNodes();
         };
     </script>
+     <button onclick="addRectangle()">Add Rectangle</button>
+    <button onclick="addCircle()">Add Circle</button>
+    <button onclick="connectShapes()">Connect Shapes</button>
 </body>
 </html>

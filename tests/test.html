@@ -43,15 +43,11 @@
     }
 
     function addRectangle() {
-      let rectName = "Rect-" + Date.now();
-      createShape("rectangle", 100, 100, rectName);
-      console.log("Rectangle added:", rectName);
+      createShape("rectangle", "task0");
     }
 
     function addCircle() {
-      let circleName = "Circle-" + Date.now();
-      createShape("circle", 300, 150, circleName);
-      console.log("Circle added:", circleName);
+        createShape("circle", "circle1");
     }
 
     // Expose functions globally so inline onclick works

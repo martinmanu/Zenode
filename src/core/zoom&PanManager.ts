@@ -1,6 +1,6 @@
 import { Config } from "../model/configurationModel.js";
 import { defaultConfig } from "../config/defaultConfig.js";
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "d3";
 
 export class ZoomManager {
   private zoomBehaviour: any;

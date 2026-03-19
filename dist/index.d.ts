@@ -5,16 +5,14 @@ import { Config } from "./model/configurationModel.js";
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export declare function initializeCanvas(containerSelector: string, userConfig: Config): void;
+export declare function initializeCanvas(containerSelector: string, userConfig: Partial<Config>): void;
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").
- * @param x X-coordinate.
- * @param y Y-coordinate.
  * @param name Optional shape name.
  * @throws Error if engine is not initialized or parameters are invalid.
  */
-export declare function createShape(type: string, x: number, y: number, name?: string): void;
+export declare function createShape(type: string, id: string): void;
 /**
  * Creates a connection between two shapes.
  * @param from The ID or name of the first shape.
@@ -22,3 +20,12 @@ export declare function createShape(type: string, x: number, y: number, name?: s
  * @throws Error if engine is not initialized or shapes are missing.
  */
 export declare function createConnection(from: string, to: string): void;
+/**
+ * Returns the list of placed nodes (for use with createConnection node ids).
+ */
+export declare function getPlacedNodes(): import("./model/interface.js").PlacedNode[];
+/**
+ * Connects the first two placed nodes. Convenience for demos.
+ * @returns true if a connection was created, false otherwise
+ */
+export declare function connectFirstTwoNodes(): boolean;

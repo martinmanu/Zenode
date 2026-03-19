@@ -1,7 +1,7 @@
 // src/components/canvas/drawCanvas.ts
 import { defaultConfig } from "../../config/defaultConfig.js";
 import { Canvas } from "../../model/configurationModel.js";
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "d3";
 
 export function drawCanvas(
   containerSelector: string,
@@ -11,24 +11,25 @@ export function drawCanvas(
   grid: any;
   elements: any;
   canvasContainer: any;
+  connections: any;
+  placedNodes: any;
+  guides: any;
 } {
   const container = d3.select(containerSelector);
   if (container.empty()) {
     throw new Error(`Container '${containerSelector}' not found in DOM.`);
   }
-  let canvasClasses = canvasConfig.canvasClasses
-    ? defaultConfig.canvas.canvasClasses
-    : canvasConfig.canvasClasses;
+  let canvasClasses = canvasConfig?.canvasClasses || defaultConfig.canvas.canvasClasses;
+  const width = canvasConfig?.width || defaultConfig.canvas.width;
+  const height = canvasConfig?.height || defaultConfig.canvas.height;
+  const backgroundColor = canvasConfig?.backgroundColor || defaultConfig.canvas.backgroundColor;
   const svg = container
     .append("svg")
-    .attr("width", canvasConfig.width || defaultConfig.canvas.width)
-    .attr("height", canvasConfig.height || defaultConfig.canvas.height)
+    .attr("width", width)
+    .attr("height", height)
     .attr("class", canvasClasses.join(" "))
-    .style(
-      "background-color",
-      canvasConfig.backgroundColor || defaultConfig.canvas.backgroundColor
-    )
-    .attr("viewBox", `0 0 ${canvasConfig.width} ${canvasConfig.height}`)
+    .style("background-color", backgroundColor)
+    .attr("viewBox", `0 0 ${width} ${height}`)
     .attr("preserveAspectRatio", "xMidYMid meet")
     .style("display", "block")
     .style("margin", "auto");
@@ -39,12 +40,25 @@ export function drawCanvas(
   const elementsGroup = canvasContainerGroup
     .append("g")
     .attr("class", "elements-group");
+  // Insert below preview so layer order: grid, connections, placed-nodes, preview
+  const connectionsGroup = canvasContainerGroup
+    .insert("g", ".elements-group")
+    .attr("class", "connections");
+  const placedNodesGroup = canvasContainerGroup
+    .insert("g", ".elements-group")
+    .attr("class", "placed-nodes");
+  const guidesGroup = canvasContainerGroup
+    .append("g")
+    .attr("class", "guides");
 
   return {
     grid: gridLayout,
     elements: elementsGroup,
     svg: svg,
     canvasContainer: canvasContainerGroup,
+    connections: connectionsGroup,
+    placedNodes: placedNodesGroup,
+    guides: guidesGroup,
   };
 }
 

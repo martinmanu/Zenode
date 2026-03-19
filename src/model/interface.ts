@@ -19,6 +19,21 @@ export interface Node {
   data?: any;
 }
 
+/** A node that has been placed on the canvas. Stored in engine state. */
+export interface PlacedNode {
+  id: string;
+  type: string;
+  /** Config variant id (e.g. "task0") for style lookup */
+  shapeVariantId: string;
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  /** User-defined data attached to the node */
+  meta: Record<string, unknown>;
+}
+
 export interface ShapeConfig {
     type: string;
     width?: number;
@@ -29,4 +44,24 @@ export interface ShapeConfig {
     strokeColor?: string;
     textColor?: string;
     boxShadow?: string;
+  }
+
+  export interface ShapePreviewData {
+    type: 'text' | 'svg' | 'image';
+    position: { x: number; y: number };
+    size: number;
+    color?: string;
+  }
+
+  export interface CanvasElements {
+      svg: any;
+      grid: any;
+      elements: any;
+      canvasContainer: any;
+      /** Layer for connection lines (below placed nodes) */
+      connections: any;
+      /** Layer for placed nodes (above grid/connections, below preview) */
+      placedNodes: any;
+      /** Layer for alignment guides (highest layer) */
+      guides: any;
   }

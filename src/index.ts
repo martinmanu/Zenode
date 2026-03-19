@@ -1,5 +1,6 @@
 import { ZenodeEngine } from "./core/engine.js";
 import { Config } from "./model/configurationModel.js";
+import * as d3 from "d3";
 
 let engineInstance: ZenodeEngine | null = null;
 
@@ -9,9 +10,9 @@ let engineInstance: ZenodeEngine | null = null;
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export function initializeCanvas(containerSelector: string, userConfig: Config) {
+export function initializeCanvas(containerSelector: string, userConfig: Partial<Config>) {
   if (!engineInstance) {
-    const inputConfig : Config = { ...userConfig };
+    const inputConfig : Partial<Config> = { ...userConfig };
     console.log(inputConfig)
     const container = document.querySelector(containerSelector) as HTMLElement;
 
@@ -27,25 +28,19 @@ export function initializeCanvas(containerSelector: string, userConfig: Config) 
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").
- * @param x X-coordinate.
- * @param y Y-coordinate.
  * @param name Optional shape name.
  * @throws Error if engine is not initialized or parameters are invalid.
  */
-export function createShape(type: string, x: number, y: number, name = "") {
+export function createShape(type: string, id: string) {
   if (!engineInstance) {
     throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
   }
   
-  if (typeof type !== "string" || !["rectangle", "circle"].includes(type)) {
-    throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle.`);
+  if (typeof type !== "string" || !["rectangle", "circle", "rhombus"].includes(type)) {
+    throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle, rhombus.`);
   }
-
-  if (typeof x !== "number" || typeof y !== "number") {
-    throw new Error("X and Y coordinates must be numbers.");
-  }
-
-  engineInstance.createShape(type, x, y, name);
+  engineInstance.createShape(type, id)
+  // engineInstance.createShape(type, x, y, name);
 }
 
 /**
@@ -64,4 +59,31 @@ export function createConnection(from: string, to: string) {
   }
 
   engineInstance.createConnection(from, to);
+}
+
+/**
+ * Returns the list of placed nodes (for use with createConnection node ids).
+ */
+export function getPlacedNodes() {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  return engineInstance.getPlacedNodes();
+}
+
+/**
+ * Connects the first two placed nodes. Convenience for demos.
+ * @returns true if a connection was created, false otherwise
+ */
+export function connectFirstTwoNodes(): boolean {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  const nodes = engineInstance.getPlacedNodes();
+  if (nodes.length < 2) {
+    console.warn("Place at least 2 shapes on the canvas, then click Connect.");
+    return false;
+  }
+  engineInstance.createConnection(nodes[0].id, nodes[1].id);
+  return true;
 }

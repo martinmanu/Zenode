@@ -4,5 +4,8 @@ export declare function drawCanvas(containerSelector: string, canvasConfig: Canv
     grid: any;
     elements: any;
     canvasContainer: any;
+    connections: any;
+    placedNodes: any;
+    guides: any;
 };
 export declare function lockedCanvas(locked: boolean, svg: any, zoomBehaviour: any): void;

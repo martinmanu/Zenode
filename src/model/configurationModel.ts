@@ -73,20 +73,30 @@ export interface AlignmentLines {
 
 export interface Shape {
   id: string; // Unique identifier
-  radius?: number;
-  width?: number;
-  height?: number;
-  color: string;
+  radius?: number,
+  width?: number,
+  height?: number,
+  color: string,
   stroke: {
-    width: number;
-    color: string;
-    strokeType: string;
-    strokeDasharray: number[];
-  };
+    width: number,
+    color: string,
+    strokeDasharray: number[],
+  },
+  overlay: Overlay,
+  previewEnabled: boolean,
+  previewTransparency: number,
   transparency: number,
-  textColor: string;
-  boxShadow: string;
+  textColor: string,
+  boxShadow: string,
   borderRadius?: BorderRadius
+}
+
+export interface Overlay {
+  enabled: boolean,
+  color: string,
+  opacity: number,
+  strokeWidth: number,
+  type: 'line' | 'dash'
 }
 
 export interface Shapes {

@@ -23,22 +23,18 @@ export function initializeCanvas(containerSelector, userConfig) {
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").
- * @param x X-coordinate.
- * @param y Y-coordinate.
  * @param name Optional shape name.
  * @throws Error if engine is not initialized or parameters are invalid.
  */
-export function createShape(type, x, y, name = "") {
+export function createShape(type, id) {
     if (!engineInstance) {
         throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
     }
     if (typeof type !== "string" || !["rectangle", "circle"].includes(type)) {
         throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle.`);
     }
-    if (typeof x !== "number" || typeof y !== "number") {
-        throw new Error("X and Y coordinates must be numbers.");
-    }
-    engineInstance.createShape(type, x, y, name);
+    engineInstance.createShape(type, id);
+    // engineInstance.createShape(type, x, y, name);
 }
 /**
  * Creates a connection between two shapes.

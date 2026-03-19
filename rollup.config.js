@@ -19,6 +19,9 @@ export default {
       file: 'dist/zenode.umd.js',
       format: 'umd', // UMD format (for browsers)
       name: 'Zenode', // Global variable for browsers
+      globals: {
+        d3: 'd3',
+      },
       sourcemap: true,
     },
   ],

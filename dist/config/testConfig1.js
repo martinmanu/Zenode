@@ -6,7 +6,7 @@ export const testConfig = {
             gridColor: "#FF6347", // Tomato red for grid color
             gridTransparency: 0.5, // 50% transparency for grid
             gridSize: 30, // Slightly larger grid size
-            gridShape: "square",
+            gridShape: "square", // square or circle
             gridDimension: 1.5,
         },
         backgroundColor: "#F0F8FF", // Alice blue background
@@ -36,38 +36,91 @@ export const testConfig = {
     },
     shapes: {
         default: {
-            circle: {
-                radius: 40, // Bigger circle
-                color: "#FFD700", // Golden color for circle
-                stroke: { width: 3, color: "#8B0000" }, // Dark red border
-                textColor: "#00008B", // Dark blue text
-                boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.3)", // More pronounced shadow
-            },
-            rectangle: {
-                width: 150, // Wider rectangle
-                height: 80, // Taller rectangle
-                color: "#32CD32", // Lime green rectangle
-                borderRadius: {
-                    leftTop: 10,
-                    leftBottom: 10,
-                    rightTop: 10,
-                    rightBottom: 10,
+            "circle": [
+                {
+                    "id": "circle1",
+                    "radius": 30,
+                    "color": "#008000",
+                    "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+                    "textColor": "#ffffff",
+                    "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                    "transparency": 1,
+                    "overlay": {
+                        "enabled": true, // Enable selection overlay
+                        "color": "blue", // Example color
+                        "strokeWidth": 2, // Example stroke width
+                        "opacity": 1,
+                        "type": "line"
+                    },
+                    'previewEnabled': true,
+                    'previewTransparency': 0.4
                 },
-                stroke: { width: 3, color: "#8B0000" }, // Dark red border
-                textColor: "#00008B", // Dark blue text
-                boxShadow: "0px 8px 15px rgba(0, 0, 0, 0.3)", // More pronounced shadow
-            },
+            ],
+            "rectangle": [
+                {
+                    "id": "task0",
+                    "width": 120,
+                    "height": 60,
+                    "color": "#0000ff",
+                    "borderRadius": { "leftTop": 3, "leftBottom": 3, "rightTop": 3, "rightBottom": 3 },
+                    "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+                    "textColor": "#ffffff",
+                    "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                    "transparency": 1,
+                    "overlay": {
+                        "enabled": true, // Enable selection overlay
+                        "color": "blue", // Example color
+                        "strokeWidth": 2, // Example stroke width
+                        "opacity": 1,
+                        "type": "line"
+                    },
+                    'previewEnabled': true,
+                    'previewTransparency': 0.4
+                },
+                {
+                    "id": "task1",
+                    "width": 100,
+                    "height": 50,
+                    "color": "#00FFFF",
+                    "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
+                    "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+                    "textColor": "#000000",
+                    "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
+                    "transparency": 1,
+                    "overlay": {
+                        "enabled": true, // Enable selection overlay
+                        "color": "blue", // Example color
+                        "strokeWidth": 2, // Example stroke width
+                        "opacity": 1,
+                        "type": "line"
+                    },
+                    'previewEnabled': true,
+                    'previewTransparency': 0.4
+                }
+            ],
+            "rhombus": [
+                {
+                    "id": "rhombus1",
+                    "width": 80,
+                    "height": 80,
+                    "color": "#FF00FF",
+                    "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+                    "textColor": "#ffffff",
+                    "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
+                    "transparency": 1,
+                    "overlay": {
+                        "enabled": true, // Enable selection overlay
+                        "color": "blue", // Example color
+                        "strokeWidth": 2, // Example stroke width
+                        "opacity": 1,
+                        "type": "line"
+                    },
+                    'previewEnabled': true,
+                    'previewTransparency': 0.4
+                }
+            ]
         },
-        extraShapes: [
-            {
-                type: "triangle",
-                size: 100,
-                color: "#FF4500", // Orange red triangle
-                stroke: { width: 2, color: "#000000" }, // Black border
-                textColor: "#FFFFFF", // White text
-                boxShadow: "0px 4px 8px rgba(0, 0, 0, 0.2)",
-            },
-        ],
+        extraShapes: [],
     },
     connections: {
         default: {

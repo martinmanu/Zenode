@@ -3,14 +3,17 @@ import { drawCanvas, lockedCanvas } from "../components/canvas/canvas.js";
 import { drawGrid, toggleGrid } from "../components/canvas/grid.js";
 import { EventManager } from "./eventManager.js";
 import { ZoomManager } from "./zoom&PanManager.js";
+import { svgMouseMove } from "../events/mouseMove.js";
+import { svgMouseClick } from "../events/mouseClick.js";
 export class ZenodeEngine {
     constructor(container, config) {
+        this.shapeMap = new Map();
         this.shapes = new Map();
         this.connections = [];
         this.canvasObject = { svg: null, grid: null, elements: null, canvasContainer: null };
         this.container = container;
         this.config = config;
-        this.eventManager = new EventManager(); // New event system
+        this.eventManager = new EventManager();
         this.initializeCanvas();
     }
     initializeCanvas() {
@@ -19,31 +22,35 @@ export class ZenodeEngine {
         this.grid = drawGrid(this.svg, this.config.canvas, this.canvasObject.grid);
         this.alignmentLine = this.svg.append("g").attr("class", "alignment-line");
         this.canvasContainerGroup = this.canvasObject.canvasContainer;
-        // Initialize zoom manager
         this.zoomManager = new ZoomManager(this.canvasContainerGroup, this.svg, this.config, (eventType, event) => {
             this.eventManager.trigger(eventType, event);
         });
         console.log("SVG canvas and grid created.");
     }
-    // Custom event system
     on(eventType, callback) {
         this.eventManager.on(eventType, callback);
     }
     /**
      * Creates a shape on the canvas.
      * @param type The type of shape ('rectangle' or 'circle').
-     * @param x The x-coordinate.
-     * @param y The y-coordinate.
-     * @param name Optional name (used as an identifier).
+     * @param data Optional inner content
      */
-    createShape(type, x, y, name = "") {
-        if (this.shapes.has(name)) {
-            throw new Error(`A shape with the name '${name}' already exists.`);
+    createShape(shapeType, id, data) {
+        var _a;
+        // const shapeId = generateShapeId(id, this.shapeMap);
+        const shapeList = ((_a = this.config.shapes.default) === null || _a === void 0 ? void 0 : _a[shapeType]) || [];
+        if (!shapeList) {
+            console.error(`No shapes found for type "${shapeType}".`);
+            return;
         }
-        const shape = { type, x, y, name };
-        this.shapes.set(name, shape);
-        console.log(`Shape created:`, shape);
-        // Actual shape creation logic here
+        const shapeToFind = shapeList.find(shape => shape.id === id);
+        if (!shapeToFind) {
+            console.error(`Shape ID "${id}" not found in type "${shapeType}".`);
+            return;
+        }
+        this.svg.on("mousemove", (event) => svgMouseMove(event, shapeType, shapeToFind, this.grid, this.config, this.canvasObject, data));
+        this.svg.on('click', (event) => svgMouseClick(event));
+        // this.eventManager.trigger("shapePlaced", shape);
     }
     // Not done yet
     /**
@@ -77,11 +84,11 @@ export function initializeCanvas(container, config) {
     }
     return engineInstance;
 }
-export function createShape(type, x, y, name) {
+export function createShape(type, id, event, data) {
     if (!engineInstance) {
         throw new Error("Engine is not initialized. Call initializeCanvas first.");
     }
-    return engineInstance.createShape(type, x, y, name);
+    return engineInstance.createShape(type, id, data);
 }
 export function gridToggle(toggle) {
     if (!engineInstance) {
@@ -95,7 +102,9 @@ export function lockCanvas(isLocked) {
     }
     engineInstance.lockedTheCanvas(isLocked);
 }
-// export function createConnection(from: string, to: string) {
-//     return new ZenodeEngine(null, {}).createConnection(from, to);
-// }
+export function alignmentLineToggle(toggle) { }
+export function deleteShape(toggle, shapeid) { }
+export function resetCanvas(config) { }
+export function activateLassoTool(activate) { }
+export function createConnection(from, to) { }
 //# sourceMappingURL=engine.js.map

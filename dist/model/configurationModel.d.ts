@@ -8,16 +8,6 @@ export interface BorderRadius {
     rightTop: number;
     rightBottom: number;
 }
-export interface Shape {
-    radius?: number;
-    width?: number;
-    height?: number;
-    color: string;
-    stroke: Stroke;
-    textColor: string;
-    boxShadow: string;
-    borderRadius?: BorderRadius;
-}
 export interface LineStyle {
     dashArray: number[];
     innerTextEnabled: boolean;
@@ -70,12 +60,43 @@ export interface AlignmentLines {
     dashed: boolean;
     dashArray: number[];
 }
+export interface Shape {
+    id: string;
+    radius?: number;
+    width?: number;
+    height?: number;
+    color: string;
+    stroke: {
+        width: number;
+        color: string;
+        strokeDasharray: number[];
+    };
+    overlay: Overlay;
+    previewEnabled: boolean;
+    previewTransparency: number;
+    transparency: number;
+    textColor: string;
+    boxShadow: string;
+    borderRadius?: BorderRadius;
+}
+export interface Overlay {
+    enabled: boolean;
+    color: string;
+    opacity: number;
+    strokeWidth: number;
+    type: 'line' | 'dash';
+}
 export interface Shapes {
     default: {
-        circle: Shape;
-        rectangle: Shape;
+        circle?: Shape[];
+        rectangle?: Shape[];
+        rhombus?: Shape[];
+        hexagon?: Shape[];
+        triangle?: Shape[];
+        pentagon?: Shape[];
+        parallelogram?: Shape[];
     };
-    extraShapes: any[];
+    extraShapes: Shape[];
 }
 export interface Connections {
     default: {
