@@ -14,6 +14,7 @@ export function drawCanvas(
   connections: any;
   placedNodes: any;
   guides: any;
+  lasso: any;
 } {
   const container = d3.select(containerSelector);
   if (container.empty()) {
@@ -49,7 +50,15 @@ export function drawCanvas(
     .attr("class", "placed-nodes");
   const guidesGroup = canvasContainerGroup
     .append("g")
-    .attr("class", "guides");
+    .attr("class", "guides")
+    .style("pointer-events", "none");
+
+  const lassoGroup = canvasContainerGroup
+    .append("g")
+    .attr("class", "lasso")
+    .style("pointer-events", "none");
+
+  elementsGroup.style("pointer-events", "none");
 
   return {
     grid: gridLayout,
@@ -59,6 +68,7 @@ export function drawCanvas(
     connections: connectionsGroup,
     placedNodes: placedNodesGroup,
     guides: guidesGroup,
+    lasso: lassoGroup,
   };
 }
 

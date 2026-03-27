@@ -1,9 +1,12 @@
 import { Config, Shape } from "../model/configurationModel.js";
 import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
+import { ShapeRegistry } from "../nodes/registry.js";
+import { ShapeRenderer } from "../types/index.js";
 export declare class ZenodeEngine {
     container: HTMLElement | null;
     private config;
+    shapeRegistry: ShapeRegistry;
     svg: any;
     private grid;
     private alignmentLine;
@@ -14,6 +17,12 @@ export declare class ZenodeEngine {
     private connections;
     /** Placed nodes on the canvas. Source of truth for g.placed-nodes layer. */
     private placedNodes;
+    /** Selected node ids (single or multi-select). */
+    private selectedNodeIds;
+    /** Controls whether lasso interaction is active on canvas background drag. */
+    private lassoEnabled;
+    /** Prevents background click handler from clearing selection right after lasso mouseup. */
+    private suppressNextCanvasClick;
     /** When set, next click will place a node of this type/config (preview → placed). */
     private placementContext;
     private eventManager;
@@ -21,8 +30,13 @@ export declare class ZenodeEngine {
     canvasObject: CanvasElements;
     private canvasContainerGroup;
     constructor(container: HTMLElement | null, config: Partial<Config>);
+    private registerBuiltInShapes;
+    /** Public API for custom shape extension. */
+    registerShape(name: string, renderer: ShapeRenderer): void;
     initializeCanvas(): void;
     on(eventType: string, callback: (event: unknown) => void): void;
+    /** SVG root DOM node — passed to DragApi for correct pointer coordinate transform */
+    get svgNode(): SVGSVGElement;
     /** Returns current placement context (shape type + config for next click). */
     getPlacementContext(): {
         shapeType: string;
@@ -34,6 +48,15 @@ export declare class ZenodeEngine {
     clearPlacementContext(): void;
     /** Removes mousemove and click handlers used for placement; stops preview. */
     removePlacementListeners(): void;
+    /** Returns selected node ids. */
+    getSelectedNodeIds(): string[];
+    /** Sets selected node ids and re-renders selection rings. */
+    setSelectedNodeIds(ids: string[]): void;
+    /** Clears all node selections. */
+    clearSelection(): void;
+    /** Enable/disable lasso selection interaction. */
+    setLassoEnabled(enabled: boolean): void;
+    isLassoEnabled(): boolean;
     /**
      * Places a node on the canvas: appends to state and re-renders g.placed-nodes.
      * @param node - Node to place (id must be unique; use generatePlacedNodeId() if creating new).
@@ -45,6 +68,8 @@ export declare class ZenodeEngine {
      * Updates a placed node's position and triggers sub-renders.
      */
     updateNodePosition(id: string, x: number, y: number): void;
+    /** Deletes all currently selected nodes. */
+    deleteSelectedNodes(): void;
     private reRenderConnections;
     /**
      * Converts a mouse event to canvas coordinates (with optional grid snap).
@@ -70,6 +95,13 @@ export declare class ZenodeEngine {
     createConnection(sourceNodeId: string, targetNodeId: string): void;
     lockedTheCanvas(locked: boolean): void;
     gridToggles(toggle: boolean): void;
+    private bindSelectionInteractions;
+    private getCanvasPointRaw;
+    private intersectsLasso;
+    private toCanvasBounds;
+    private getShapeStyle;
+    private matchesShortcut;
+    private isTypingTarget;
 }
 export declare function initializeCanvas(container: HTMLElement | null, config: Partial<Config>): ZenodeEngine;
 export declare function createShape(type: string, id: string, event: MouseEvent, data?: ShapePreviewData): void;
@@ -79,4 +111,5 @@ export declare function alignmentLineToggle(toggle: boolean): void;
 export declare function deleteShape(toggle: boolean, shapeid: number): void;
 export declare function resetCanvas(config: Config): void;
 export declare function activateLassoTool(activate: boolean): void;
+export declare function setLassoEnabled(enabled: boolean): void;
 export declare function createConnection(from: string, to: string): void;

@@ -7,5 +7,6 @@ export declare function drawCanvas(containerSelector: string, canvasConfig: Canv
     connections: any;
     placedNodes: any;
     guides: any;
+    lasso: any;
 };
 export declare function lockedCanvas(locked: boolean, svg: any, zoomBehaviour: any): void;

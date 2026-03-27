@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zenode Engine</title>
+    <link rel="stylesheet" href="./zenode.css">
     <style>
         #canvasContainer {
             width: 800px;
@@ -32,10 +33,14 @@
     </script>
 
     <script type="module">
-        import { initializeCanvas, createShape, connectFirstTwoNodes } from "../dist/zenode.esm.js";
+        import { initializeCanvas, createShape, connectFirstTwoNodes, setLassoEnabled } from "../dist/index.js";
+        import { testConfig } from "../dist/config/testConfig.js";
+
+        let lassoEnabled = false;
 
         document.addEventListener("DOMContentLoaded", () => {
-            initializeCanvas("#canvasContainer", { gridSize: 20 });
+            initializeCanvas("#canvasContainer", testConfig);
+            setLassoEnabled(lassoEnabled);
         });
 
         window.addRectangle = () => {
@@ -46,12 +51,27 @@
             createShape("circle", "circle1");
         };
 
+        window.addRhombus = () => {
+            createShape("rhombus", "rhombus1");
+        };
+
+        window.toggleLasso = () => {
+            lassoEnabled = !lassoEnabled;
+            setLassoEnabled(lassoEnabled);
+            const btn = document.getElementById("lassoToggleBtn");
+            if (btn) {
+                btn.textContent = lassoEnabled ? "Disable Lasso" : "Enable Lasso";
+            }
+        };
+
         window.connectShapes = () => {
             connectFirstTwoNodes();
         };
     </script>
      <button onclick="addRectangle()">Add Rectangle</button>
     <button onclick="addCircle()">Add Circle</button>
+    <button onclick="addRhombus()">Add Rhombus</button>
+    <button id="lassoToggleBtn" onclick="toggleLasso()">Enable Lasso</button>
     <button onclick="connectShapes()">Connect Shapes</button>
 </body>
 </html>

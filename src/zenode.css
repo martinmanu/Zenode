@@ -1,0 +1,22 @@
+:root {
+  --zenode-selection-color: #4A90E2;
+  --zenode-guide-color: #ffaa00;
+  --zenode-port-color: #4A90E2;
+}
+
+g.guides, g.elements-group {
+  pointer-events: none;
+}
+
+g.placed-node {
+  cursor: grab;
+}
+
+g.placed-node.dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+g.placed-node.selected .selection-ring {
+  pointer-events: none;
+}

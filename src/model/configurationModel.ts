@@ -58,9 +58,51 @@ export interface CanvasProperties {
   zoomDuration: number; // in ms
   panEnabled: boolean;
   snapToGrid: boolean;
-  alignmentLines: AlignmentLines
+  alignmentLines: AlignmentLines;
+  lassoStyle: LassoStyle;
+  keyboardShortcuts: KeyboardShortcuts;
   // defaultNodeSpacing: number;
   // dragType: string;
+}
+
+export interface LassoStyle {
+  enabled: boolean;
+  strokeColor: string;
+  strokeWidth: number;
+  dashed: boolean;
+  dashArray: number[];
+  fillColor: string;
+  fillOpacity: number;
+  cursor: string;
+  activeCursor: string;
+}
+
+export interface KeyboardShortcutContext {
+  event: KeyboardEvent;
+  action: string;
+  selectedNodeIds: string[];
+  engine: unknown;
+}
+
+export type KeyboardShortcutHandler = (ctx: KeyboardShortcutContext) => boolean | void;
+
+export interface KeyboardShortcutCallbacks {
+  onDeleteSelection?: KeyboardShortcutHandler;
+  onClearSelection?: KeyboardShortcutHandler;
+  onKeyDown?: KeyboardShortcutHandler;
+  /**
+   * Additional action handlers matched against keyboardShortcuts.customBindings.
+   * Return false to prevent default handling.
+   */
+  custom?: Record<string, KeyboardShortcutHandler>;
+}
+
+export interface KeyboardShortcuts {
+  enabled: boolean;
+  deleteSelection: string[];
+  clearSelection: string[];
+  customBindings?: Record<string, string[]>;
+  callbacks?: KeyboardShortcutCallbacks;
 }
 
 export interface AlignmentLines {
@@ -69,6 +111,8 @@ export interface AlignmentLines {
   width: number;
   dashed: boolean;
   dashArray: number[];
+  /** 'full' = infinite lines across entire canvas, 'partial' = short segment between nodes */
+  guideLineMode: 'full' | 'partial';
 }
 
 export interface Shape {

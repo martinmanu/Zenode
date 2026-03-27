@@ -6,6 +6,8 @@ export interface DragApi {
     getPlacedNodes(): PlacedNode[];
     config: Config;
     canvasObject: CanvasElements;
+    /** SVG root node — needed for correct pointer coordinate transform */
+    svgNode: SVGSVGElement;
 }
 /**
  * Creates and returns a D3 drag behavior for placed nodes.

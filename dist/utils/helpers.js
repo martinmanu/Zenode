@@ -1,16 +1,18 @@
-export function snapToGrid(x, y, grid) {
+function snapToGrid(x, y, grid) {
     const snappedX = Math.round(x / grid) * grid;
     const snappedY = Math.round(y / grid) * grid;
     return { x: snappedX, y: snappedY };
 }
 /**
- * Generates a unique shape ID based on type and existing shapes.
+ * Generates a unique id for a placed node (nanoid-style short id).
+ * Uses crypto.randomUUID when available, otherwise a time-based fallback.
  */
-export function generateShapeId(baseId, shapeMap) {
-    let count = 1;
-    while (shapeMap.has(`${baseId}-${count}`)) {
-        count++;
+function generatePlacedNodeId() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+        return crypto.randomUUID();
     }
-    return `${baseId}-${count}`;
+    return `node_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 }
+
+export { generatePlacedNodeId, snapToGrid };
 //# sourceMappingURL=helpers.js.map

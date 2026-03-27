@@ -1,4 +1,4 @@
-export class EventManager {
+class EventManager {
     constructor() {
         this.listeners = {};
     }
@@ -16,4 +16,6 @@ export class EventManager {
         }
     }
 }
+
+export { EventManager };
 //# sourceMappingURL=eventManager.js.map

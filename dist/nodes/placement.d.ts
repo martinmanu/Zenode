@@ -4,8 +4,12 @@
 import * as d3 from "d3";
 import { PlacedNode } from "../model/interface.js";
 import { DragApi } from "../events/drag.js";
+import { ShapeRegistry } from "./registry.js";
 /** Minimal API for rendering and interaction */
 export interface RenderApi extends DragApi {
+    shapeRegistry: ShapeRegistry;
+    getSelectedNodeIds(): string[];
+    setSelectedNodeIds(ids: string[]): void;
 }
 /**
  * Renders the placed nodes layer using a D3 data join. Call after state changes.

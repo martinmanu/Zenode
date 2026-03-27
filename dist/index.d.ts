@@ -29,3 +29,5 @@ export declare function getPlacedNodes(): import("./model/interface.js").PlacedN
  * @returns true if a connection was created, false otherwise
  */
 export declare function connectFirstTwoNodes(): boolean;
+/** Enable or disable lasso selection tool interaction. */
+export declare function setLassoEnabled(enabled: boolean): void;

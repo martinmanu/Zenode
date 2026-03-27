@@ -1,13 +1,12 @@
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { defaultConfig } from "../config/defaultConfig.js";
-import { snapToGrid } from "../utils/helpers.js";
-import { roundedRectPath } from "../components/shapeTypes/rectangle.js";
-export function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data) {
-    //removeAllPreview();
-    console.log('mouse moved');
+import * as d3 from 'd3';
+import { defaultConfig } from '../config/defaultConfig.js';
+import { snapToGrid } from '../utils/helpers.js';
+import { roundedRectPath } from '../nodes/geometry/rectanglePath.js';
+
+function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data) {
     const gridSize = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
-    const zoomTransform = d3.zoomTransform(grid.node());
-    const [cursorX, cursorY] = d3.pointer(event);
+    const zoomTransform = d3.zoomTransform(canvasObject.svg.node());
+    const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
     const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
     const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
     let exactPosition;
@@ -18,10 +17,7 @@ export function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvas
         exactPosition = { x: adjustedX, y: adjustedY };
     }
     if (shapeToFind.previewEnabled) {
-        let shapePreview = createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind);
-    }
-    else {
-        // draw the shape directly without preview
+        createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind);
     }
 }
 function createShapePreview(shapeType, x, y, canvasObject, shapeToFind) {
@@ -74,7 +70,9 @@ function createShapePreview(shapeType, x, y, canvasObject, shapeToFind) {
     }
     return shape;
 }
-export function removeAllPreview(canvasObject) {
+function removeAllPreview(canvasObject) {
     canvasObject.elements.selectAll("path[id^='preview_'], polygon[id^='preview_'], circle[id^='preview_']").remove();
 }
+
+export { removeAllPreview, svgMouseMove };
 //# sourceMappingURL=mouseMove.js.map

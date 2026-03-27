@@ -17,8 +17,10 @@ export class ZoomManager {
         [-10000, -10000], [10000, 10000]
       ])
       .filter((event: any) => {
+        // When lasso tool is enabled, block drag-pan so background drag draws lasso instead.
+        if (event.type === "mousedown" && svg.attr("data-lasso-enabled") === "true") return false;
+        if (event.type === "dblclick") return false;
         if (!this.config.canvasProperties.zoomOnScroll && event.type === "wheel") return false;
-        if (!this.config.canvasProperties.zoomOnDoubleClick && event.type === "dblclick") return false;
         if (!this.config.canvasProperties.panEnabled && event.type === "mousedown") return false;
         if (event.type === "wheel") return event.ctrlKey || event.metaKey || event.button === 1;
         return true;

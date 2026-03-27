@@ -56,7 +56,8 @@
                 color: '#000000',
                 width: 2,
                 dashed: true,
-                dashArray: [2, 3]
+                dashArray: [2, 3],
+                guideLineMode: 'partial'
             }
             // defaultNodeSpacing: 50,
             // dragType: "smooth"
@@ -259,7 +260,9 @@
             .attr("class", "placed-nodes");
         const guidesGroup = canvasContainerGroup
             .append("g")
-            .attr("class", "guides");
+            .attr("class", "guides")
+            .style("pointer-events", "none");
+        elementsGroup.style("pointer-events", "none");
         return {
             grid: gridLayout,
             elements: elementsGroup,
@@ -512,9 +515,9 @@
                 [-1e4, -1e4], [10000, 10000]
             ])
                 .filter((event) => {
-                if (!this.config.canvasProperties.zoomOnScroll && event.type === "wheel")
+                if (event.type === "dblclick")
                     return false;
-                if (!this.config.canvasProperties.zoomOnDoubleClick && event.type === "dblclick")
+                if (!this.config.canvasProperties.zoomOnScroll && event.type === "wheel")
                     return false;
                 if (!this.config.canvasProperties.panEnabled && event.type === "mousedown")
                     return false;
@@ -575,8 +578,8 @@
 
     function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data) {
         const gridSize = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
-        const zoomTransform = d3__namespace.zoomTransform(grid.node());
-        const [cursorX, cursorY] = d3__namespace.pointer(event);
+        const zoomTransform = d3__namespace.zoomTransform(canvasObject.svg.node());
+        const [cursorX, cursorY] = d3__namespace.pointer(event, canvasObject.svg.node());
         const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
         const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
         let exactPosition;
@@ -649,6 +652,8 @@
      * at the snapped position and clears the preview.
      */
     function svgMouseClick(event, api) {
+        if (event.defaultPrevented)
+            return; // drag fired — ignore
         const ctx = api.getPlacementContext();
         if (!ctx)
             return;
@@ -677,81 +682,87 @@
     function createDragBehavior(api) {
         return d3__namespace.drag()
             .on("start", function (event, d) {
+            event.sourceEvent.stopPropagation();
             d3__namespace.select(this).raise().classed("dragging", true);
-            d.x;
-            d.y;
         })
             .on("drag", function (event, d) {
             var _a, _b;
             const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-            // Calculate new position
-            let newX = event.x;
-            let newY = event.y;
-            // Snap to grid
+            const zoomTransform = d3__namespace.zoomTransform(api.svgNode);
+            const [px, py] = d3__namespace.pointer(event.sourceEvent, api.svgNode);
+            let newX = (px - zoomTransform.x) / zoomTransform.k;
+            let newY = (py - zoomTransform.y) / zoomTransform.k;
             if (api.config.canvasProperties.snapToGrid) {
                 const snapped = snapToGrid(newX, newY, gridSize);
                 newX = snapped.x;
                 newY = snapped.y;
             }
-            // Update node in DOM immediately for smoothness
             d3__namespace.select(this).attr("transform", `translate(${newX},${newY})`);
-            // Show alignment hints
             renderAlignmentGuides(newX, newY, d.id, api);
-            // We don't update state yet to avoid expensive full re-renders during drag
-            // (Unless we want connections to follow in real-time. If so, call updateNodePosition here)
-            // For Phase 1.2, the requirement is "On drag end, update node position in engine state."
-            // However, for connections to follow, we might need it during drag.
-            // Let's stick to update on end for now as per 1.2 requirement.
         })
             .on("end", function (event, d) {
             var _a, _b;
             d3__namespace.select(this).classed("dragging", false);
             const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-            let finalX = event.x;
-            let finalY = event.y;
+            const zoomTransform = d3__namespace.zoomTransform(api.svgNode);
+            const [px, py] = d3__namespace.pointer(event.sourceEvent, api.svgNode);
+            let finalX = (px - zoomTransform.x) / zoomTransform.k;
+            let finalY = (py - zoomTransform.y) / zoomTransform.k;
             if (api.config.canvasProperties.snapToGrid) {
                 const snapped = snapToGrid(finalX, finalY, gridSize);
                 finalX = snapped.x;
                 finalY = snapped.y;
             }
-            // Persist to state
             api.updateNodePosition(d.id, finalX, finalY);
-            // Clear guides
             if (api.canvasObject.guides) {
                 api.canvasObject.guides.selectAll("*").remove();
             }
         });
     }
     function renderAlignmentGuides(x, y, nodeId, api) {
+        var _a, _b, _c, _d;
         if (!api.canvasObject.guides)
+            return;
+        const alignCfg = api.config.canvasProperties.alignmentLines;
+        if (!(alignCfg === null || alignCfg === void 0 ? void 0 : alignCfg.enabled))
             return;
         const nodes = api.getPlacedNodes().filter(n => n.id !== nodeId);
         const guidesLayer = api.canvasObject.guides;
         guidesLayer.selectAll("*").remove();
-        const threshold = 5; // Pixels to trigger guide
-        const guideColor = "var(--zenode-guide-color, #ffaa00)";
+        const threshold = 5;
+        const guideColor = (_a = alignCfg.color) !== null && _a !== void 0 ? _a : "var(--zenode-guide-color, #ffaa00)";
+        const strokeWidth = (_b = alignCfg.width) !== null && _b !== void 0 ? _b : 1;
+        const dashArray = alignCfg.dashed ? ((_d = (_c = alignCfg.dashArray) === null || _c === void 0 ? void 0 : _c.join(" ")) !== null && _d !== void 0 ? _d : "4 4") : null;
+        const isFull = alignCfg.guideLineMode === 'full';
+        console.log('Guide mode:', alignCfg.guideLineMode, 'isFull:', isFull);
+        // For full mode: use a very large value in canvas-space (before zoom transform)
+        // The guides layer is inside the zoom group so coordinates are in canvas-space already
+        const FULL_EXTENT = 1e6;
         nodes.forEach(other => {
-            // Horizontal alignment
-            if (Math.abs(other.y - y) < threshold) {
+            // Normalize other node center (rectangles store top-left, circles store center)
+            const otherCX = other.x;
+            const otherCY = other.y;
+            // Horizontal alignment (same Y center)
+            if (Math.abs(otherCY - y) < threshold) {
+                const x1 = isFull ? -1e6 : Math.min(x, otherCX) - 100;
+                const x2 = isFull ? FULL_EXTENT : Math.max(x, otherCX) + 100;
                 guidesLayer.append("line")
-                    .attr("x1", Math.min(x, other.x) - 100)
-                    .attr("x2", Math.max(x, other.x) + 100)
-                    .attr("y1", other.y)
-                    .attr("y2", other.y)
+                    .attr("x1", x1).attr("x2", x2)
+                    .attr("y1", otherCY).attr("y2", otherCY)
                     .attr("stroke", guideColor)
-                    .attr("stroke-width", 1)
-                    .attr("stroke-dasharray", "4 4");
+                    .attr("stroke-width", strokeWidth)
+                    .attr("stroke-dasharray", dashArray);
             }
-            // Vertical alignment
-            if (Math.abs(other.x - x) < threshold) {
+            // Vertical alignment (same X center)
+            if (Math.abs(otherCX - x) < threshold) {
+                const y1 = isFull ? -1e6 : Math.min(y, otherCY) - 100;
+                const y2 = isFull ? FULL_EXTENT : Math.max(y, otherCY) + 100;
                 guidesLayer.append("line")
-                    .attr("x1", other.x)
-                    .attr("x2", other.x)
-                    .attr("y1", Math.min(y, other.y) - 100)
-                    .attr("y2", Math.max(y, other.y) + 100)
+                    .attr("x1", otherCX).attr("x2", otherCX)
+                    .attr("y1", y1).attr("y2", y2)
                     .attr("stroke", guideColor)
-                    .attr("stroke-width", 1)
-                    .attr("stroke-dasharray", "4 4");
+                    .attr("stroke-width", strokeWidth)
+                    .attr("stroke-dasharray", dashArray);
             }
         });
     }
@@ -825,7 +836,56 @@
                 .attr("class", "node placed-node")
                 .attr("data-id", (d) => d.id)
                 .attr("transform", (d) => `translate(${d.x},${d.y})`)
-                .call(dragBehavior);
+                .call(dragBehavior)
+                .on("click", function (event) {
+                var _a, _b, _c, _d;
+                event.stopPropagation();
+                const isSelected = d3__namespace.select(this).classed("selected");
+                d3__namespace.selectAll("g.placed-node").classed("selected", false).select(".selection-ring").remove();
+                if (!isSelected) {
+                    const sel = d3__namespace.select(this);
+                    sel.classed("selected", true);
+                    const d = sel.datum();
+                    const selectionStroke = "var(--zenode-selection-color, #4A90E2)";
+                    const pad = 4;
+                    if (d.type === "circle") {
+                        const r = ((_a = d.radius) !== null && _a !== void 0 ? _a : 30) + pad;
+                        sel.append("circle")
+                            .attr("class", "selection-ring")
+                            .attr("cx", 0).attr("cy", 0).attr("r", r)
+                            .attr("fill", "none")
+                            .attr("stroke", selectionStroke)
+                            .attr("stroke-width", 2)
+                            .attr("stroke-dasharray", "4 2")
+                            .style("pointer-events", "none");
+                    }
+                    else if (d.type === "rhombus") {
+                        const size = ((_b = d.width) !== null && _b !== void 0 ? _b : 60) / 2 + pad;
+                        sel.append("polygon")
+                            .attr("class", "selection-ring")
+                            .attr("points", `0,${-size} ${size},0 0,${size} ${-size},0`)
+                            .attr("fill", "none")
+                            .attr("stroke", selectionStroke)
+                            .attr("stroke-width", 2)
+                            .attr("stroke-dasharray", "4 2")
+                            .style("pointer-events", "none");
+                    }
+                    else {
+                        const w = (_c = d.width) !== null && _c !== void 0 ? _c : 120;
+                        const h = (_d = d.height) !== null && _d !== void 0 ? _d : 60;
+                        sel.append("rect")
+                            .attr("class", "selection-ring")
+                            .attr("x", -w / 2 - pad).attr("y", -h / 2 - pad)
+                            .attr("width", w + pad * 2).attr("height", h + pad * 2)
+                            .attr("rx", 3)
+                            .attr("fill", "none")
+                            .attr("stroke", selectionStroke)
+                            .attr("stroke-width", 2)
+                            .attr("stroke-dasharray", "4 2")
+                            .style("pointer-events", "none");
+                    }
+                }
+            });
             g.each(function (d) {
                 const style = getShapeStyle(d, api.config);
                 if (!style)
@@ -876,7 +936,7 @@
     }
 
     function mergeConfig(userConfig) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18, _19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36, _37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50;
         return {
             canvas: {
                 width: (_b = (_a = userConfig.canvas) === null || _a === void 0 ? void 0 : _a.width) !== null && _b !== void 0 ? _b : defaultConfig.canvas.width,
@@ -896,11 +956,28 @@
                     sheetDimension: (_12 = (_11 = (_10 = userConfig.canvas) === null || _10 === void 0 ? void 0 : _10.grid) === null || _11 === void 0 ? void 0 : _11.sheetDimension) !== null && _12 !== void 0 ? _12 : defaultConfig.canvas.grid.sheetDimension
                 }
             },
-            canvasProperties: (_13 = userConfig.canvasProperties) !== null && _13 !== void 0 ? _13 : defaultConfig.canvasProperties,
-            shapes: (_14 = userConfig.shapes) !== null && _14 !== void 0 ? _14 : defaultConfig.shapes,
-            connections: (_15 = userConfig.connections) !== null && _15 !== void 0 ? _15 : defaultConfig.connections,
-            globalProperties: (_16 = userConfig.globalProperties) !== null && _16 !== void 0 ? _16 : defaultConfig.globalProperties,
-            dragOptions: (_17 = userConfig.dragOptions) !== null && _17 !== void 0 ? _17 : defaultConfig.dragOptions
+            canvasProperties: {
+                zoomEnabled: (_14 = (_13 = userConfig.canvasProperties) === null || _13 === void 0 ? void 0 : _13.zoomEnabled) !== null && _14 !== void 0 ? _14 : defaultConfig.canvasProperties.zoomEnabled,
+                zoomExtent: (_16 = (_15 = userConfig.canvasProperties) === null || _15 === void 0 ? void 0 : _15.zoomExtent) !== null && _16 !== void 0 ? _16 : defaultConfig.canvasProperties.zoomExtent,
+                zoomOnDoubleClick: (_18 = (_17 = userConfig.canvasProperties) === null || _17 === void 0 ? void 0 : _17.zoomOnDoubleClick) !== null && _18 !== void 0 ? _18 : defaultConfig.canvasProperties.zoomOnDoubleClick,
+                zoomScale: (_20 = (_19 = userConfig.canvasProperties) === null || _19 === void 0 ? void 0 : _19.zoomScale) !== null && _20 !== void 0 ? _20 : defaultConfig.canvasProperties.zoomScale,
+                zoomOnScroll: (_22 = (_21 = userConfig.canvasProperties) === null || _21 === void 0 ? void 0 : _21.zoomOnScroll) !== null && _22 !== void 0 ? _22 : defaultConfig.canvasProperties.zoomOnScroll,
+                zoomDuration: (_24 = (_23 = userConfig.canvasProperties) === null || _23 === void 0 ? void 0 : _23.zoomDuration) !== null && _24 !== void 0 ? _24 : defaultConfig.canvasProperties.zoomDuration,
+                panEnabled: (_26 = (_25 = userConfig.canvasProperties) === null || _25 === void 0 ? void 0 : _25.panEnabled) !== null && _26 !== void 0 ? _26 : defaultConfig.canvasProperties.panEnabled,
+                snapToGrid: (_28 = (_27 = userConfig.canvasProperties) === null || _27 === void 0 ? void 0 : _27.snapToGrid) !== null && _28 !== void 0 ? _28 : defaultConfig.canvasProperties.snapToGrid,
+                alignmentLines: {
+                    enabled: (_31 = (_30 = (_29 = userConfig.canvasProperties) === null || _29 === void 0 ? void 0 : _29.alignmentLines) === null || _30 === void 0 ? void 0 : _30.enabled) !== null && _31 !== void 0 ? _31 : defaultConfig.canvasProperties.alignmentLines.enabled,
+                    color: (_34 = (_33 = (_32 = userConfig.canvasProperties) === null || _32 === void 0 ? void 0 : _32.alignmentLines) === null || _33 === void 0 ? void 0 : _33.color) !== null && _34 !== void 0 ? _34 : defaultConfig.canvasProperties.alignmentLines.color,
+                    width: (_37 = (_36 = (_35 = userConfig.canvasProperties) === null || _35 === void 0 ? void 0 : _35.alignmentLines) === null || _36 === void 0 ? void 0 : _36.width) !== null && _37 !== void 0 ? _37 : defaultConfig.canvasProperties.alignmentLines.width,
+                    dashed: (_40 = (_39 = (_38 = userConfig.canvasProperties) === null || _38 === void 0 ? void 0 : _38.alignmentLines) === null || _39 === void 0 ? void 0 : _39.dashed) !== null && _40 !== void 0 ? _40 : defaultConfig.canvasProperties.alignmentLines.dashed,
+                    dashArray: (_43 = (_42 = (_41 = userConfig.canvasProperties) === null || _41 === void 0 ? void 0 : _41.alignmentLines) === null || _42 === void 0 ? void 0 : _42.dashArray) !== null && _43 !== void 0 ? _43 : defaultConfig.canvasProperties.alignmentLines.dashArray,
+                    guideLineMode: (_46 = (_45 = (_44 = userConfig.canvasProperties) === null || _44 === void 0 ? void 0 : _44.alignmentLines) === null || _45 === void 0 ? void 0 : _45.guideLineMode) !== null && _46 !== void 0 ? _46 : defaultConfig.canvasProperties.alignmentLines.guideLineMode
+                }
+            },
+            shapes: (_47 = userConfig.shapes) !== null && _47 !== void 0 ? _47 : defaultConfig.shapes,
+            connections: (_48 = userConfig.connections) !== null && _48 !== void 0 ? _48 : defaultConfig.connections,
+            globalProperties: (_49 = userConfig.globalProperties) !== null && _49 !== void 0 ? _49 : defaultConfig.globalProperties,
+            dragOptions: (_50 = userConfig.dragOptions) !== null && _50 !== void 0 ? _50 : defaultConfig.dragOptions
         };
     }
 
@@ -941,6 +1018,10 @@
         }
         on(eventType, callback) {
             this.eventManager.on(eventType, callback);
+        }
+        /** SVG root DOM node — passed to DragApi for correct pointer coordinate transform */
+        get svgNode() {
+            return this.svg.node();
         }
         /** Returns current placement context (shape type + config for next click). */
         getPlacementContext() {

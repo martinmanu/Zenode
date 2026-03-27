@@ -1,4 +1,6 @@
 import { Config } from "../model/configurationModel"
+// See reusable keyboard shortcut sample:
+// src/examples/keyboard-shortcuts.ts
 
 export const testConfig: Config = {
   canvas: {
@@ -14,8 +16,8 @@ export const testConfig: Config = {
       crossLength: 10
     },
     backgroundColor: "#FFFFFF",
-    width: 1000,
-    height: 600,
+    width: 800,
+    height: 500,
     canvasClasses: ["test-canvas"],
     locked: false
   },
@@ -30,12 +32,53 @@ export const testConfig: Config = {
     snapToGrid: true,
     alignmentLines: {
       enabled: true,
-      color: '#000000',
+      color: '#ad1111',
       width: 2,
       dashed: true,
-      dashArray: [2,3]
+      dashArray: [2,3],
+      guideLineMode: 'full'
+    },
+    lassoStyle: {
+      enabled: true,
+      strokeColor: '#4A90E2',
+      strokeWidth: 1,
+      dashed: true,
+      dashArray: [4, 2],
+      fillColor: '#4A90E2',
+      fillOpacity: 0.12,
+      cursor: 'crosshair',
+      activeCursor: 'crosshair'
+    },
+    keyboardShortcuts: {
+      enabled: true,
+      deleteSelection: ["Delete", "Backspace"],
+      clearSelection: ["Escape"],
+      customBindings: {
+        "selection:clear": ["Ctrl+D"],
+        "canvas:log-state": ["Ctrl+Shift+L"]
+      },
+      callbacks: {
+        onDeleteSelection: ({ selectedNodeIds }) => {
+          console.log("[keys] delete selection", selectedNodeIds);
+          // return false here if you want to fully override default delete behavior.
+        },
+        onClearSelection: ({ engine }) => {
+          console.log("[keys] clear selection");
+          // Example plugin-style hook usage:
+          // (engine as any).emit?.("plugin:selection:cleared");
+        },
+        custom: {
+          "selection:clear": ({ engine }) => {
+            // Ctrl+D -> clear selection using engine API.
+            (engine as { clearSelection?: () => void }).clearSelection?.();
+          },
+          "canvas:log-state": ({ engine }) => {
+            const nodes = (engine as { getPlacedNodes?: () => unknown[] }).getPlacedNodes?.() ?? [];
+            console.log("[keys] nodes on canvas:", nodes.length);
+          }
+        }
+      }
     }
-    // defaultNodeSpacing: 60,
     // dragType: "smooth"
   },
   shapes: {

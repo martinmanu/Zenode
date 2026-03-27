@@ -1,4 +1,6 @@
-export const testConfig = {
+// See reusable keyboard shortcut sample:
+// src/examples/keyboard-shortcuts.ts
+const testConfig = {
     canvas: {
         grid: {
             gridEnabled: true,
@@ -12,8 +14,8 @@ export const testConfig = {
             crossLength: 10
         },
         backgroundColor: "#FFFFFF",
-        width: 1000,
-        height: 600,
+        width: 800,
+        height: 500,
         canvasClasses: ["test-canvas"],
         locked: false
     },
@@ -28,12 +30,55 @@ export const testConfig = {
         snapToGrid: true,
         alignmentLines: {
             enabled: true,
-            color: '#000000',
+            color: '#ad1111',
             width: 2,
             dashed: true,
-            dashArray: [2, 3]
+            dashArray: [2, 3],
+            guideLineMode: 'full'
+        },
+        lassoStyle: {
+            enabled: true,
+            strokeColor: '#4A90E2',
+            strokeWidth: 1,
+            dashed: true,
+            dashArray: [4, 2],
+            fillColor: '#4A90E2',
+            fillOpacity: 0.12,
+            cursor: 'crosshair',
+            activeCursor: 'crosshair'
+        },
+        keyboardShortcuts: {
+            enabled: true,
+            deleteSelection: ["Delete", "Backspace"],
+            clearSelection: ["Escape"],
+            customBindings: {
+                "selection:clear": ["Ctrl+D"],
+                "canvas:log-state": ["Ctrl+Shift+L"]
+            },
+            callbacks: {
+                onDeleteSelection: ({ selectedNodeIds }) => {
+                    console.log("[keys] delete selection", selectedNodeIds);
+                    // return false here if you want to fully override default delete behavior.
+                },
+                onClearSelection: ({ engine }) => {
+                    console.log("[keys] clear selection");
+                    // Example plugin-style hook usage:
+                    // (engine as any).emit?.("plugin:selection:cleared");
+                },
+                custom: {
+                    "selection:clear": ({ engine }) => {
+                        var _a, _b;
+                        // Ctrl+D -> clear selection using engine API.
+                        (_b = (_a = engine).clearSelection) === null || _b === void 0 ? void 0 : _b.call(_a);
+                    },
+                    "canvas:log-state": ({ engine }) => {
+                        var _a, _b, _c;
+                        const nodes = (_c = (_b = (_a = engine).getPlacedNodes) === null || _b === void 0 ? void 0 : _b.call(_a)) !== null && _c !== void 0 ? _c : [];
+                        console.log("[keys] nodes on canvas:", nodes.length);
+                    }
+                }
+            }
         }
-        // defaultNodeSpacing: 60,
         // dragType: "smooth"
     },
     shapes: {
@@ -197,4 +242,6 @@ export const testConfig = {
         connectionDraw: "onDragEnd"
     }
 };
+
+export { testConfig };
 //# sourceMappingURL=testConfig.js.map

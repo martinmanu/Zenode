@@ -3,7 +3,7 @@ import { CanvasElements, ShapePreviewData } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { defaultConfig } from "../config/defaultConfig.js";
 import { snapToGrid } from "../utils/helpers.js";
-import { roundedRectPath } from "../components/shapeTypes/rectangle.js";
+import { roundedRectPath } from "../nodes/geometry/rectanglePath.js";
 
 export function svgMouseMove(
   event: MouseEvent,
@@ -15,8 +15,8 @@ export function svgMouseMove(
   data?: ShapePreviewData,
 ) {
   const gridSize: number = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
-  const zoomTransform = d3.zoomTransform(grid.node() as Element);
-  const [cursorX, cursorY] = d3.pointer(event);
+  const zoomTransform = d3.zoomTransform(canvasObject.svg.node() as Element);
+  const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
   const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
   const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
   let exactPosition: { x: number; y: number };

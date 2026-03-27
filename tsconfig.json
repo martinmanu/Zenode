@@ -1,13 +1,14 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "module": "ESNext",
     "target": "ES6",
     "declaration": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "moduleResolution": "node", // or "nodenext" for newer versions
+    "moduleResolution": "bundler",
     "sourceMap": true,
     "strict": true,
     "lib": [
@@ -15,6 +16,7 @@
       "es2016"
     ],
     "baseUrl": "./src",
+    "ignoreDeprecations": "6.0",
     "paths": {
       "@components/*": [
         "components/*"

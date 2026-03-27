@@ -64,4 +64,6 @@ export interface ShapeConfig {
       placedNodes: any;
       /** Layer for alignment guides (highest layer) */
       guides: any;
+      /** Layer for lasso selection rectangle */
+      lasso: any;
   }

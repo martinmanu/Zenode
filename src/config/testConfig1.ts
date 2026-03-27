@@ -31,9 +31,29 @@ export const testConfig: Config = {
       color: '#000000',
       width: 2,
       dashed: true,
-      dashArray: [2,3]
+      dashArray: [2,3],
+      guideLineMode: 'full'
+    },
+    lassoStyle: {
+      enabled: true,
+      strokeColor: '#4A90E2',
+      strokeWidth: 1,
+      dashed: true,
+      dashArray: [4, 2],
+      fillColor: '#4A90E2',
+      fillOpacity: 0.12,
+      cursor: 'crosshair',
+      activeCursor: 'crosshair'
+    },
+    keyboardShortcuts: {
+      enabled: true,
+      deleteSelection: ["Delete", "Backspace"],
+      clearSelection: ["Escape"],
+      customBindings: {
+        "selection:clear": ["Ctrl+D"]
+      },
+      callbacks: {}
     }
-    // defaultNodeSpacing: 70, // Slightly bigger node spacing
     // dragType: "smooth", // Keep drag smooth
   },
   shapes: {

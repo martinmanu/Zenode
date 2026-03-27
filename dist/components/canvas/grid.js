@@ -1,25 +1,27 @@
+import * as d3 from 'd3';
+import { defaultConfig } from '../../config/defaultConfig.js';
+
 // src/components/canvas/drawGrid.ts
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { defaultConfig } from "../../config/defaultConfig.js";
-export function drawGrid(svg, canvasConfig, grid) {
+function drawGrid(svg, canvasConfig, grid) {
+    var _a, _b, _c, _d, _e;
     //Check if the grid is enabled
-    if (!canvasConfig.grid.gridEnabled) {
+    if (!((_a = canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.grid) === null || _a === void 0 ? void 0 : _a.gridEnabled)) {
         return grid;
     }
     // Check Grid Type
-    if (canvasConfig.grid.gridType === "dotted") {
+    if (((_b = canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.grid) === null || _b === void 0 ? void 0 : _b.gridType) === "dotted") {
         let gridPattern = createDottedGrid(canvasConfig, grid);
         return gridPattern;
     }
-    else if (canvasConfig.grid.gridType === "line") {
+    else if (((_c = canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.grid) === null || _c === void 0 ? void 0 : _c.gridType) === "line") {
         let gridPattern = createLineGrid(canvasConfig, grid);
         return gridPattern;
     }
-    else if (canvasConfig.grid.gridType === "cross") {
+    else if (((_d = canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.grid) === null || _d === void 0 ? void 0 : _d.gridType) === "cross") {
         let gridPattern = createCrossGrid(canvasConfig, grid);
         return gridPattern;
     }
-    else if (canvasConfig.grid.gridType === "sheet") {
+    else if (((_e = canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.grid) === null || _e === void 0 ? void 0 : _e.gridType) === "sheet") {
         let gridPattern = createSquareGrid(canvasConfig, grid);
         return gridPattern;
     }
@@ -27,7 +29,7 @@ export function drawGrid(svg, canvasConfig, grid) {
         return grid;
     }
 }
-export function toggleGrid(enable) {
+function toggleGrid(enable) {
     d3.select(".grid-group").style("display", enable ? "block" : "none");
 }
 function createDottedGrid(canvasConfig, grid) {
@@ -197,4 +199,6 @@ grid) {
     console.log("Grid created:", grid);
     return grid;
 }
+
+export { drawGrid, toggleGrid };
 //# sourceMappingURL=grid.js.map

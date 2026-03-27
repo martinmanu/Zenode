@@ -19,6 +19,7 @@ export interface PlacementClickApi {
  * at the snapped position and clears the preview.
  */
 export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
+  if (event.defaultPrevented) return; // drag fired — ignore
   const ctx = api.getPlacementContext();
   if (!ctx) return;
 

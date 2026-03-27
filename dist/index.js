@@ -1,4 +1,5 @@
-import { ZenodeEngine } from "./core/engine.js";
+import { ZenodeEngine } from './core/engine.js';
+
 let engineInstance = null;
 /**
  * Initializes the Zenode engine.
@@ -6,7 +7,7 @@ let engineInstance = null;
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export function initializeCanvas(containerSelector, userConfig) {
+function initializeCanvas(containerSelector, userConfig) {
     if (!engineInstance) {
         const inputConfig = Object.assign({}, userConfig);
         console.log(inputConfig);
@@ -26,12 +27,12 @@ export function initializeCanvas(containerSelector, userConfig) {
  * @param name Optional shape name.
  * @throws Error if engine is not initialized or parameters are invalid.
  */
-export function createShape(type, id) {
+function createShape(type, id) {
     if (!engineInstance) {
         throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
     }
-    if (typeof type !== "string" || !["rectangle", "circle"].includes(type)) {
-        throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle.`);
+    if (typeof type !== "string" || !["rectangle", "circle", "rhombus"].includes(type)) {
+        throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle, rhombus.`);
     }
     engineInstance.createShape(type, id);
     // engineInstance.createShape(type, x, y, name);
@@ -42,7 +43,7 @@ export function createShape(type, id) {
  * @param to The ID or name of the second shape.
  * @throws Error if engine is not initialized or shapes are missing.
  */
-export function createConnection(from, to) {
+function createConnection(from, to) {
     if (!engineInstance) {
         throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
     }
@@ -51,4 +52,38 @@ export function createConnection(from, to) {
     }
     engineInstance.createConnection(from, to);
 }
+/**
+ * Returns the list of placed nodes (for use with createConnection node ids).
+ */
+function getPlacedNodes() {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    return engineInstance.getPlacedNodes();
+}
+/**
+ * Connects the first two placed nodes. Convenience for demos.
+ * @returns true if a connection was created, false otherwise
+ */
+function connectFirstTwoNodes() {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    const nodes = engineInstance.getPlacedNodes();
+    if (nodes.length < 2) {
+        console.warn("Place at least 2 shapes on the canvas, then click Connect.");
+        return false;
+    }
+    engineInstance.createConnection(nodes[0].id, nodes[1].id);
+    return true;
+}
+/** Enable or disable lasso selection tool interaction. */
+function setLassoEnabled(enabled) {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    engineInstance.setLassoEnabled(enabled);
+}
+
+export { connectFirstTwoNodes, createConnection, createShape, getPlacedNodes, initializeCanvas, setLassoEnabled };
 //# sourceMappingURL=index.js.map

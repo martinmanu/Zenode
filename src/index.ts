@@ -87,3 +87,11 @@ export function connectFirstTwoNodes(): boolean {
   engineInstance.createConnection(nodes[0].id, nodes[1].id);
   return true;
 }
+
+/** Enable or disable lasso selection tool interaction. */
+export function setLassoEnabled(enabled: boolean): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.setLassoEnabled(enabled);
+}

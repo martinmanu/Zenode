@@ -7,9 +7,14 @@ import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
 import { svgMouseMove } from "../events/mouseMove.js";
 import { svgMouseClick } from "../events/mouseClick.js";
-import { generatePlacedNodeId } from "../utils/helpers.js";
 import { renderPlacedNodes } from "../nodes/placement.js";
 import { renderConnections, StoredConnection } from "../connections/render.js";
+import { ShapeRegistry } from "../nodes/registry.js";
+import { RectangleRenderer } from "../nodes/shapes/rectangle.js";
+import { CircleRenderer } from "../nodes/shapes/circle.js";
+import { RhombusRenderer } from "../nodes/shapes/rhombus.js";
+import { ShapeRenderer, BoundingBox } from "../types/index.js";
+import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
 import * as d3 from "d3";
@@ -18,6 +23,7 @@ import { snapToGrid } from "../utils/helpers.js";
 export class ZenodeEngine {
   public container!: HTMLElement | null;
   private config: Config;
+  public shapeRegistry: ShapeRegistry;
   public svg: any;
   private grid: any;
   private alignmentLine: any;
@@ -31,6 +37,12 @@ export class ZenodeEngine {
   private connections: StoredConnection[] = [];
   /** Placed nodes on the canvas. Source of truth for g.placed-nodes layer. */
   private placedNodes: PlacedNode[] = [];
+  /** Selected node ids (single or multi-select). */
+  private selectedNodeIds: string[] = [];
+  /** Controls whether lasso interaction is active on canvas background drag. */
+  private lassoEnabled = true;
+  /** Prevents background click handler from clearing selection right after lasso mouseup. */
+  private suppressNextCanvasClick = false;
   /** When set, next click will place a node of this type/config (preview → placed). */
   private placementContext: { shapeType: string; shapeConfig: Shape } | null = null;
   private eventManager: EventManager;
@@ -43,14 +55,28 @@ export class ZenodeEngine {
     connections: null,
     placedNodes: null,
     guides: null,
+    lasso: null,
   };
   private canvasContainerGroup: unknown;
 
   constructor(container: HTMLElement | null, config: Partial<Config>) {
     this.container = container;
     this.config = mergeConfig(config);
+    this.shapeRegistry = new ShapeRegistry();
+    this.registerBuiltInShapes();
     this.eventManager = new EventManager();
     this.initializeCanvas();
+  }
+
+  private registerBuiltInShapes(): void {
+    this.shapeRegistry.register("rectangle", RectangleRenderer);
+    this.shapeRegistry.register("circle", CircleRenderer);
+    this.shapeRegistry.register("rhombus", RhombusRenderer);
+  }
+
+  /** Public API for custom shape extension. */
+  registerShape(name: string, renderer: ShapeRenderer): void {
+    this.shapeRegistry.register(name, renderer);
   }
 
   initializeCanvas() {
@@ -59,6 +85,7 @@ export class ZenodeEngine {
       this.config.canvas
     );
     this.svg = this.canvasObject.svg;
+    this.svg.attr("data-lasso-enabled", "false");
 
     this.grid = drawGrid(this.svg, this.config.canvas, this.canvasObject.grid);
     this.alignmentLine = this.svg.append("g").attr("class", "alignment-line");
@@ -72,11 +99,16 @@ export class ZenodeEngine {
       }
     );
 
-    console.log("SVG canvas and grid created.");
+    this.bindSelectionInteractions();
   }
 
   on(eventType: string, callback: (event: unknown) => void) {
     this.eventManager.on(eventType, callback);
+  }
+
+  /** SVG root DOM node — passed to DragApi for correct pointer coordinate transform */
+  get svgNode(): SVGSVGElement {
+    return this.svg.node() as SVGSVGElement;
   }
 
   /** Returns current placement context (shape type + config for next click). */
@@ -98,6 +130,42 @@ export class ZenodeEngine {
   removePlacementListeners(): void {
     this.svg.on("mousemove", null);
     this.svg.on("click", null);
+  }
+
+  /** Returns selected node ids. */
+  getSelectedNodeIds(): string[] {
+    return [...this.selectedNodeIds];
+  }
+
+  /** Sets selected node ids and re-renders selection rings. */
+  setSelectedNodeIds(ids: string[]): void {
+    this.selectedNodeIds = [...new Set(ids)];
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("node:selected", { ids: this.getSelectedNodeIds() });
+  }
+
+  /** Clears all node selections. */
+  clearSelection(): void {
+    if (!this.selectedNodeIds.length) return;
+    this.setSelectedNodeIds([]);
+  }
+
+  /** Enable/disable lasso selection interaction. */
+  setLassoEnabled(enabled: boolean): void {
+    this.lassoEnabled = enabled;
+    const style = this.config.canvasProperties.lassoStyle;
+    const cursor = enabled && style.enabled ? style.cursor : "default";
+    this.svg.attr("data-lasso-enabled", enabled && style.enabled ? "true" : "false");
+    this.svg.style("cursor", cursor);
+    if (!enabled) {
+      this.canvasObject.lasso?.selectAll("*").remove();
+    }
+  }
+
+  isLassoEnabled(): boolean {
+    return this.lassoEnabled;
   }
 
   /**
@@ -128,6 +196,22 @@ export class ZenodeEngine {
       this.reRenderConnections();
     }
     this.eventManager.trigger("node:moved", { id, x, y });
+  }
+
+  /** Deletes all currently selected nodes. */
+  deleteSelectedNodes(): void {
+    if (!this.selectedNodeIds.length) return;
+    const selected = new Set(this.selectedNodeIds);
+    this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
+    this.connections = this.connections.filter(
+      (c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId)
+    );
+    this.selectedNodeIds = [];
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.reRenderConnections();
+    this.eventManager.trigger("node:deleted", { ids: [...selected] });
   }
 
   private reRenderConnections(): void {
@@ -217,13 +301,227 @@ export class ZenodeEngine {
   gridToggles(toggle: boolean) {
     toggleGrid(toggle);
   }
+
+  private bindSelectionInteractions(): void {
+    // Canvas click deselect (kept namespaced so placement click can coexist).
+    this.svg.on("click.selection", (event: MouseEvent) => {
+      if (this.suppressNextCanvasClick) {
+        this.suppressNextCanvasClick = false;
+        return;
+      }
+      if (this.placementContext) return;
+      const target = event.target as Element | null;
+      if (target?.closest("g.placed-node")) return;
+      this.clearSelection();
+    });
+
+    // Keyboard selection actions.
+    window.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (this.isTypingTarget(event.target)) return;
+
+      const shortcuts = this.config.canvasProperties.keyboardShortcuts;
+      if (!shortcuts?.enabled) return;
+
+      const selectedNodeIds = this.getSelectedNodeIds();
+      const keyDownHandled = shortcuts.callbacks?.onKeyDown?.({
+        event,
+        action: "key:down",
+        selectedNodeIds,
+        engine: this,
+      });
+      if (keyDownHandled === false) return;
+
+      if (shortcuts.deleteSelection.some((s) => this.matchesShortcut(event, s))) {
+        const handled = shortcuts.callbacks?.onDeleteSelection?.({
+          event,
+          action: "selection:delete",
+          selectedNodeIds,
+          engine: this,
+        });
+        if (handled !== false) {
+          event.preventDefault();
+          this.deleteSelectedNodes();
+        }
+        return;
+      }
+
+      if (shortcuts.clearSelection.some((s) => this.matchesShortcut(event, s))) {
+        const handled = shortcuts.callbacks?.onClearSelection?.({
+          event,
+          action: "selection:clear",
+          selectedNodeIds,
+          engine: this,
+        });
+        if (handled !== false) {
+          event.preventDefault();
+          this.clearSelection();
+        }
+        return;
+      }
+
+      const customBindings = shortcuts.customBindings ?? {};
+      const customAction = Object.keys(customBindings).find((action) =>
+        (customBindings[action] ?? []).some((s) => this.matchesShortcut(event, s))
+      );
+      if (!customAction) return;
+
+      const customHandler = shortcuts.callbacks?.custom?.[customAction];
+      if (!customHandler) return;
+      const customHandled = customHandler({
+        event,
+        action: customAction,
+        selectedNodeIds,
+        engine: this,
+      });
+      if (customHandled !== false) {
+        event.preventDefault();
+      }
+    });
+
+    // Lasso multi-select.
+    this.svg.on("mousedown.lasso", (event: MouseEvent) => {
+      if (!this.lassoEnabled) return;
+      if (!this.config.canvasProperties.lassoStyle.enabled) return;
+      if (this.placementContext) return;
+      if (event.button !== 0) return;
+      const target = event.target as Element | null;
+      if (target?.closest("g.placed-node")) return;
+
+      const start = this.getCanvasPointRaw(event);
+      const lassoLayer = this.canvasObject.lasso;
+      if (!lassoLayer) return;
+      lassoLayer.selectAll("*").remove();
+      const lassoStyle = this.config.canvasProperties.lassoStyle;
+      this.svg.style("cursor", lassoStyle.activeCursor);
+
+      const rect = lassoLayer.append("rect")
+        .attr("class", "lasso-box")
+        .attr("x", start.x)
+        .attr("y", start.y)
+        .attr("width", 0)
+        .attr("height", 0)
+        .attr("fill", lassoStyle.fillColor)
+        .attr("fill-opacity", lassoStyle.fillOpacity)
+        .attr("stroke", lassoStyle.strokeColor)
+        .attr("stroke-width", lassoStyle.strokeWidth)
+        .attr("stroke-dasharray", lassoStyle.dashed ? lassoStyle.dashArray.join(" ") : null);
+
+      this.svg.on("mousemove.lasso", (moveEvent: MouseEvent) => {
+        const p = this.getCanvasPointRaw(moveEvent);
+        const x = Math.min(start.x, p.x);
+        const y = Math.min(start.y, p.y);
+        const width = Math.abs(p.x - start.x);
+        const height = Math.abs(p.y - start.y);
+        rect.attr("x", x).attr("y", y).attr("width", width).attr("height", height);
+      });
+
+      this.svg.on("mouseup.lasso", (upEvent: MouseEvent) => {
+        const end = this.getCanvasPointRaw(upEvent);
+        const lasso = {
+          x: Math.min(start.x, end.x),
+          y: Math.min(start.y, end.y),
+          width: Math.abs(end.x - start.x),
+          height: Math.abs(end.y - start.y),
+        };
+
+        if (lasso.width < 3 && lasso.height < 3) {
+          this.clearSelection();
+        } else {
+          const selected = this.placedNodes
+            .filter((node) => this.intersectsLasso(node, lasso))
+            .map((node) => node.id);
+          this.setSelectedNodeIds(selected);
+        }
+
+        // Mouseup after lasso is usually followed by a click on canvas.
+        // Ignore that one so selection isn't immediately cleared.
+        this.suppressNextCanvasClick = true;
+
+        lassoLayer.selectAll("*").remove();
+        this.svg.style("cursor", lassoStyle.cursor);
+        this.svg.on("mousemove.lasso", null);
+        this.svg.on("mouseup.lasso", null);
+      });
+    });
+  }
+
+  private getCanvasPointRaw(event: MouseEvent): { x: number; y: number } {
+    const zoomTransform = d3.zoomTransform(this.svg.node() as Element);
+    const [cursorX, cursorY] = d3.pointer(event, this.svg.node());
+    return {
+      x: (cursorX - zoomTransform.x) / zoomTransform.k,
+      y: (cursorY - zoomTransform.y) / zoomTransform.k,
+    };
+  }
+
+  private intersectsLasso(
+    node: PlacedNode,
+    lasso: { x: number; y: number; width: number; height: number }
+  ): boolean {
+    const style = this.getShapeStyle(node);
+    if (!style) return false;
+    const renderer = this.shapeRegistry.get(node.type);
+    const resolved = buildResolvedShapeConfig(node, style);
+    const localBounds = renderer.getBounds(resolved);
+    const bounds = this.toCanvasBounds(node, localBounds);
+
+    return !(
+      bounds.x + bounds.width < lasso.x ||
+      lasso.x + lasso.width < bounds.x ||
+      bounds.y + bounds.height < lasso.y ||
+      lasso.y + lasso.height < bounds.y
+    );
+  }
+
+  private toCanvasBounds(node: PlacedNode, local: BoundingBox): BoundingBox {
+    return {
+      x: node.x + local.x,
+      y: node.y + local.y,
+      width: local.width,
+      height: local.height,
+    };
+  }
+
+  private getShapeStyle(node: PlacedNode): Shape | undefined {
+    const list = this.config.shapes.default?.[node.type as keyof typeof this.config.shapes.default];
+    if (!Array.isArray(list)) return undefined;
+    return list.find((s: Shape) => s.id === node.shapeVariantId);
+  }
+
+  private matchesShortcut(event: KeyboardEvent, shortcut: string): boolean {
+    const tokens = shortcut.toLowerCase().split("+").map((t) => t.trim()).filter(Boolean);
+    if (!tokens.length) return false;
+
+    const wantsCtrl = tokens.includes("ctrl") || tokens.includes("control");
+    const wantsMeta = tokens.includes("meta") || tokens.includes("cmd") || tokens.includes("command");
+    const wantsAlt = tokens.includes("alt") || tokens.includes("option");
+    const wantsShift = tokens.includes("shift");
+
+    if (event.ctrlKey !== wantsCtrl) return false;
+    if (event.metaKey !== wantsMeta) return false;
+    if (event.altKey !== wantsAlt) return false;
+    if (event.shiftKey !== wantsShift) return false;
+
+    const keyToken = tokens.find(
+      (t) => !["ctrl", "control", "meta", "cmd", "command", "alt", "option", "shift"].includes(t)
+    );
+    if (!keyToken) return false;
+
+    return event.key.toLowerCase() === keyToken;
+  }
+
+  private isTypingTarget(target: EventTarget | null): boolean {
+    if (!(target instanceof Element)) return false;
+    const tag = target.tagName.toLowerCase();
+    return tag === "input" || tag === "textarea" || target.hasAttribute("contenteditable");
+  }
 }
 
 let engineInstance: ZenodeEngine | null = null;
 
 export function initializeCanvas(
   container: HTMLElement | null,
-  config: Partial<Config> 
+  config: Partial<Config>
 ) {
   if (!engineInstance) {
     engineInstance = new ZenodeEngine(container, config);
@@ -260,12 +558,19 @@ export function lockCanvas(isLocked: boolean) {
   engineInstance.lockedTheCanvas(isLocked);
 }
 
-export function alignmentLineToggle(toggle: boolean) {}
+export function alignmentLineToggle(toggle: boolean) { }
 
-export function deleteShape(toggle: boolean, shapeid: number) {}
+export function deleteShape(toggle: boolean, shapeid: number) { }
 
-export function resetCanvas(config: Config) {}
+export function resetCanvas(config: Config) { }
 
-export function activateLassoTool(activate: boolean) {}
+export function activateLassoTool(activate: boolean) { }
 
-export function createConnection(from: string, to: string) {}
+export function setLassoEnabled(enabled: boolean) {
+  if (!engineInstance) {
+    throw new Error("Engine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.setLassoEnabled(enabled);
+}
+
+export function createConnection(from: string, to: string) { }

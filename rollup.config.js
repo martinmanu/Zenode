@@ -3,28 +3,14 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: 'src/index.ts', // Entry point
-  output: [
-    {
-      file: 'dist/zenode.esm.js',
-      format: 'esm', // ES Module format
-      sourcemap: true,
-    },
-    {
-      file: 'dist/zenode.cjs.js',
-      format: 'cjs', // CommonJS format
-      sourcemap: true,
-    },
-    {
-      file: 'dist/zenode.umd.js',
-      format: 'umd', // UMD format (for browsers)
-      name: 'Zenode', // Global variable for browsers
-      globals: {
-        d3: 'd3',
-      },
-      sourcemap: true,
-    },
-  ],
+  input: ['src/index.ts', 'src/config/testConfig.ts'], // Entry points
+  output: {
+    dir: 'dist',
+    format: 'esm',
+    preserveModules: true,
+    preserveModulesRoot: 'src',
+    sourcemap: true,
+  },
   plugins: [
     nodeResolve(),   // Resolves dependencies
     commonjs(),      // Converts CommonJS modules to ES6
