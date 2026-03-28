@@ -11,11 +11,49 @@ export interface BorderRadius {
 }
 
 
+export interface ContextPadConfig {
+  enabled: boolean;
+  trigger: "hover" | "select";
+  position:
+    | "top-right"
+    | "top-left"
+    | "bottom-right"
+    | "bottom-left"
+    | "top-center"
+    | "bottom-center";
+  offset: { x: number; y: number };
+  showDefaults: boolean;
+  suppressDefaults?: string[];
+  layout?: "horizontal" | "vertical" | "grid";
+  gridColumns?: number;
+  style?: {
+    backgroundColor?: string;
+    borderColor?: string;
+    borderWidth?: string;
+    borderRadius?: string;
+    boxShadow?: string;
+    backdropBlur?: string;
+    padding?: string;
+    buttonSize?: number;
+    buttonWidth?: string;
+    buttonHeight?: string;
+    buttonPadding?: string;
+    buttonMargin?: string;
+    iconColor?: string;
+    buttonHoverColor?: string;
+    buttonActiveColor?: string;
+  };
+}
+
 export interface LineStyle {
   dashArray: number[];
   innerTextEnabled: boolean;
   innerText: string;
   innerTextColor: string;
+  innerTextSize?: number;
+  labelBackground?: string; // e.g. 'white' or '#ffffff'
+  labelPadding?: number;
+  labelBorderRadius?: number;
   icon?: string | null;
   clickFunction?: (() => void) | null;
 }
@@ -58,9 +96,83 @@ export interface CanvasProperties {
   zoomDuration: number; // in ms
   panEnabled: boolean;
   snapToGrid: boolean;
-  alignmentLines: AlignmentLines
+  alignmentLines: AlignmentLines;
+  ports?: PortStyle;
+  lassoStyle: LassoStyle;
+  ghostConnection: GhostConnectionStyle;
+  allowMultipleConnections: boolean;
+  keyboardShortcuts: KeyboardShortcuts;
+  contextPad?: ContextPadConfig;
   // defaultNodeSpacing: number;
   // dragType: string;
+}
+
+export interface PortStyle {
+  enabled: boolean;
+  radius: number;
+  fillColor: string;
+  strokeColor: string;
+  strokeWidth: number;
+  opacity: number;
+  showOnHoverOnly: boolean;
+  cursor: string;
+}
+
+export interface LassoStyle {
+  enabled: boolean;
+  strokeColor: string;
+  strokeWidth: number;
+  dashed: boolean;
+  dashArray: number[];
+  fillColor: string;
+  fillOpacity: number;
+  cursor: string;
+  activeCursor: string;
+}
+
+export interface GhostConnectionStyle {
+  enabled: boolean;
+  color: string;
+  strokeWidth: number;
+  dashed: boolean;
+  dashArray: number[];
+  opacity: number;
+}
+
+export interface KeyboardShortcutContext {
+  event: KeyboardEvent;
+  action: string;
+  selectedNodeIds: string[];
+  engine: unknown;
+}
+
+export type KeyboardShortcutHandler = (ctx: KeyboardShortcutContext) => boolean | void;
+
+export interface KeyboardShortcutCallbacks {
+  onDeleteSelection?: KeyboardShortcutHandler;
+  onClearSelection?: KeyboardShortcutHandler;
+  onKeyDown?: KeyboardShortcutHandler;
+  /**
+   * Additional action handlers matched against keyboardShortcuts.customBindings.
+   * Return false to prevent default handling.
+   */
+  custom?: Record<string, KeyboardShortcutHandler>;
+}
+
+export interface KeyboardShortcuts {
+  enabled: boolean;
+  deleteSelection: string[];
+  clearSelection: string[];
+  customBindings?: Record<string, string[]>;
+  callbacks?: KeyboardShortcutCallbacks;
+}
+
+export interface AlignmentGuideStyle {
+  enabled: boolean;
+  color: string;
+  width: number;
+  dashed: boolean;
+  dashArray: number[];
 }
 
 export interface AlignmentLines {
@@ -69,24 +181,41 @@ export interface AlignmentLines {
   width: number;
   dashed: boolean;
   dashArray: number[];
+  alignmentThreshold: number;
+  /** Optional per-edge overrides. Empty object {} means "use master alignment style". */
+  edgeGuides: Partial<AlignmentGuideStyle>;
+  /** Optional per-center overrides. Empty object {} means "use master alignment style". */
+  centerGuides: Partial<AlignmentGuideStyle>;
+  /** 'full' = infinite lines across entire canvas, 'partial' = short segment between nodes */
+  guideLineMode: 'full' | 'partial';
 }
 
 export interface Shape {
   id: string; // Unique identifier
-  radius?: number;
-  width?: number;
-  height?: number;
-  color: string;
+  radius?: number,
+  width?: number,
+  height?: number,
+  color: string,
   stroke: {
-    width: number;
-    color: string;
-    strokeType: string;
-    strokeDasharray: number[];
-  };
+    width: number,
+    color: string,
+    strokeDasharray: number[],
+  },
+  overlay: Overlay,
+  previewEnabled: boolean,
+  previewTransparency: number,
   transparency: number,
-  textColor: string;
-  boxShadow: string;
+  textColor: string,
+  boxShadow: string,
   borderRadius?: BorderRadius
+}
+
+export interface Overlay {
+  enabled: boolean,
+  color: string,
+  opacity: number,
+  strokeWidth: number,
+  type: 'line' | 'dash'
 }
 
 export interface Shapes {
@@ -103,11 +232,12 @@ export interface Shapes {
 }
 
 export interface Connections {
+  defaultType: string;
   default: {
     straight: Connection;
     curved: Connection;
-    sShaped: Connection;
-    lBent: Connection;
+    's-shaped': Connection;
+    'l-bent': Connection;
   };
   custom: any[];
 }

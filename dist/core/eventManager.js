@@ -1,19 +1,21 @@
-export class EventManager {
+class EventManager {
     constructor() {
-        this.eventListeners = {};
+        this.listeners = {};
     }
-    // Register a callback for an event
+    // Register a callback for an event type (e.g., "zoom", "shapePlaced", etc.)
     on(eventType, callback) {
-        if (!this.eventListeners[eventType]) {
-            this.eventListeners[eventType] = [];
+        if (!this.listeners[eventType]) {
+            this.listeners[eventType] = [];
         }
-        this.eventListeners[eventType].push(callback);
+        this.listeners[eventType].push(callback);
     }
-    // Trigger event (called internally)
+    // Trigger an event and call all callbacks registered for that event type
     trigger(eventType, event) {
-        if (this.eventListeners[eventType]) {
-            this.eventListeners[eventType].forEach(callback => callback(event));
+        if (this.listeners[eventType]) {
+            this.listeners[eventType].forEach(callback => callback(event));
         }
     }
 }
+
+export { EventManager };
 //# sourceMappingURL=eventManager.js.map
