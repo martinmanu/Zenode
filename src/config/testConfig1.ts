@@ -60,6 +60,15 @@ export const testConfig: Config = {
       cursor: 'crosshair',
       activeCursor: 'crosshair'
     },
+    allowMultipleConnections: true,
+    ghostConnection: {
+      enabled: true,
+      color: '#4A90E2',
+      strokeWidth: 2,
+      dashed: true,
+      dashArray: [4, 4],
+      opacity: 1
+    },
     keyboardShortcuts: {
       enabled: true,
       deleteSelection: ["Delete", "Backspace"],
@@ -171,6 +180,7 @@ export const testConfig: Config = {
     ],
   },
   connections: {
+    defaultType: "straight",
     default: {
       straight: {
         type: "line",
@@ -182,6 +192,10 @@ export const testConfig: Config = {
           innerTextEnabled: true, // Inner text enabled
           innerText: "Connection", // Label text for connection
           innerTextColor: "#000000", // Black text color
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null,
         },
@@ -196,11 +210,15 @@ export const testConfig: Config = {
           innerTextEnabled: true,
           innerText: "Curved Path", // Label for curved connection
           innerTextColor: "#FFFFFF", // White text color
+          innerTextSize: 12,
+          labelBackground: "#4682B4",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null,
         },
       },
-      sShaped: {
+      's-shaped': {
         type: "s-shaped",
         style: "smooth",
         color: "#2E8B57", // Sea green color
@@ -210,11 +228,15 @@ export const testConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null,
         },
       },
-      lBent: {
+      'l-bent': {
         type: "l-bent",
         style: "cornered",
         color: "#FF1493", // Deep pink color
@@ -224,6 +246,10 @@ export const testConfig: Config = {
           innerTextEnabled: true,
           innerText: "L-Bend", // Label for L-bend connection
           innerTextColor: "#000000", // Black text color
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null,
         },

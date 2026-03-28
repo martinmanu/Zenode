@@ -95,7 +95,46 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
           userConfig.canvasProperties?.keyboardShortcuts?.callbacks
           ?? defaultConfig.canvasProperties.keyboardShortcuts.callbacks,
       },
-      ports: userConfig.canvasProperties?.ports ?? defaultConfig.canvasProperties.ports
+      ports: userConfig.canvasProperties?.ports ?? defaultConfig.canvasProperties.ports,
+      ghostConnection: {
+        enabled: userConfig.canvasProperties?.ghostConnection?.enabled ?? defaultConfig.canvasProperties.ghostConnection.enabled,
+        color: userConfig.canvasProperties?.ghostConnection?.color ?? defaultConfig.canvasProperties.ghostConnection.color,
+        strokeWidth: userConfig.canvasProperties?.ghostConnection?.strokeWidth ?? defaultConfig.canvasProperties.ghostConnection.strokeWidth,
+        dashed: userConfig.canvasProperties?.ghostConnection?.dashed ?? defaultConfig.canvasProperties.ghostConnection.dashed,
+        dashArray: userConfig.canvasProperties?.ghostConnection?.dashArray ?? defaultConfig.canvasProperties.ghostConnection.dashArray,
+        opacity: userConfig.canvasProperties?.ghostConnection?.opacity ?? defaultConfig.canvasProperties.ghostConnection.opacity,
+      },
+      allowMultipleConnections: userConfig.canvasProperties?.allowMultipleConnections ?? defaultConfig.canvasProperties.allowMultipleConnections,
+      contextPad: {
+        enabled: userConfig.canvasProperties?.contextPad?.enabled ?? defaultConfig.canvasProperties.contextPad?.enabled ?? true,
+        trigger: userConfig.canvasProperties?.contextPad?.trigger ?? defaultConfig.canvasProperties.contextPad?.trigger ?? "select",
+        position: userConfig.canvasProperties?.contextPad?.position ?? defaultConfig.canvasProperties.contextPad?.position ?? "top-right",
+        offset: {
+          x: userConfig.canvasProperties?.contextPad?.offset?.x ?? defaultConfig.canvasProperties.contextPad?.offset?.x ?? 10,
+          y: userConfig.canvasProperties?.contextPad?.offset?.y ?? defaultConfig.canvasProperties.contextPad?.offset?.y ?? -10,
+        },
+        showDefaults: userConfig.canvasProperties?.contextPad?.showDefaults ?? defaultConfig.canvasProperties.contextPad?.showDefaults ?? true,
+        suppressDefaults: userConfig.canvasProperties?.contextPad?.suppressDefaults ?? defaultConfig.canvasProperties.contextPad?.suppressDefaults ?? [],
+        layout: userConfig.canvasProperties?.contextPad?.layout ?? defaultConfig.canvasProperties.contextPad?.layout ?? "horizontal",
+        gridColumns: userConfig.canvasProperties?.contextPad?.gridColumns ?? defaultConfig.canvasProperties.contextPad?.gridColumns ?? 3,
+        style: {
+          backgroundColor: userConfig.canvasProperties?.contextPad?.style?.backgroundColor ?? defaultConfig.canvasProperties.contextPad?.style?.backgroundColor,
+          borderColor: userConfig.canvasProperties?.contextPad?.style?.borderColor ?? defaultConfig.canvasProperties.contextPad?.style?.borderColor,
+          borderWidth: userConfig.canvasProperties?.contextPad?.style?.borderWidth ?? defaultConfig.canvasProperties.contextPad?.style?.borderWidth,
+          borderRadius: userConfig.canvasProperties?.contextPad?.style?.borderRadius ?? defaultConfig.canvasProperties.contextPad?.style?.borderRadius,
+          boxShadow: userConfig.canvasProperties?.contextPad?.style?.boxShadow ?? defaultConfig.canvasProperties.contextPad?.style?.boxShadow,
+          backdropBlur: userConfig.canvasProperties?.contextPad?.style?.backdropBlur ?? defaultConfig.canvasProperties.contextPad?.style?.backdropBlur,
+          padding: userConfig.canvasProperties?.contextPad?.style?.padding ?? defaultConfig.canvasProperties.contextPad?.style?.padding,
+          buttonSize: userConfig.canvasProperties?.contextPad?.style?.buttonSize ?? defaultConfig.canvasProperties.contextPad?.style?.buttonSize,
+          buttonWidth: userConfig.canvasProperties?.contextPad?.style?.buttonWidth ?? defaultConfig.canvasProperties.contextPad?.style?.buttonWidth,
+          buttonHeight: userConfig.canvasProperties?.contextPad?.style?.buttonHeight ?? defaultConfig.canvasProperties.contextPad?.style?.buttonHeight,
+          buttonPadding: userConfig.canvasProperties?.contextPad?.style?.buttonPadding ?? defaultConfig.canvasProperties.contextPad?.style?.buttonPadding,
+          buttonMargin: userConfig.canvasProperties?.contextPad?.style?.buttonMargin ?? defaultConfig.canvasProperties.contextPad?.style?.buttonMargin,
+          iconColor: userConfig.canvasProperties?.contextPad?.style?.iconColor ?? defaultConfig.canvasProperties.contextPad?.style?.iconColor,
+          buttonHoverColor: userConfig.canvasProperties?.contextPad?.style?.buttonHoverColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonHoverColor,
+          buttonActiveColor: userConfig.canvasProperties?.contextPad?.style?.buttonActiveColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonActiveColor,
+        }
+      }
     },
     shapes: userConfig.shapes ?? defaultConfig.shapes,
     connections: userConfig.connections ?? defaultConfig.connections,

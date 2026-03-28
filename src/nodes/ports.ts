@@ -15,7 +15,8 @@ export function renderPorts(
   nodeGroup: d3.Selection<SVGGElement, PlacedNode, any, any>,
   node: PlacedNode,
   config: Config,
-  registry: ShapeRegistry
+  registry: ShapeRegistry,
+  engine: any
 ): void {
   const portConfig = config.canvasProperties.ports;
   if (!portConfig || !portConfig.enabled) {
@@ -53,17 +54,58 @@ export function renderPorts(
     .attr("fill", portConfig.fillColor)
     .attr("stroke", portConfig.strokeColor)
     .attr("stroke-width", portConfig.strokeWidth)
-    .attr("opacity", portConfig.showOnHoverOnly ? 0 : portConfig.opacity)
-    .style("cursor", portConfig.cursor)
+    .attr("opacity", () => {
+        if (!engine.connectionModeEnabled) return 0;
+        return portConfig.showOnHoverOnly ? 0 : portConfig.opacity;
+    })
+    .style("cursor", () => engine.connectionModeEnabled ? portConfig.cursor : "default")
     .on("mouseenter", function() {
+        if (!engine.connectionModeEnabled) return;
         if (portConfig.showOnHoverOnly) {
             d3.select(this).transition().duration(200).attr("opacity", portConfig.opacity);
         }
     })
     .on("mouseleave", function() {
+        if (!engine.connectionModeEnabled) return;
         if (portConfig.showOnHoverOnly) {
             d3.select(this).transition().duration(200).attr("opacity", 0);
         }
+    })
+    .on("mousedown", function(event: MouseEvent, d) {
+        if (!engine.connectionModeEnabled) return;
+        event.stopPropagation();
+        event.preventDefault();
+        
+        const startPoint = engine.getCanvasPoint(event);
+        engine.startConnectionDrag(node.id, d.id, startPoint);
+
+        const onMouseMove = (moveEvent: MouseEvent) => {
+            const currentPoint = engine.getCanvasPoint(moveEvent);
+            engine.updateConnectionDrag(currentPoint);
+        };
+
+        const onMouseUp = (upEvent: MouseEvent) => {
+            const upTarget = upEvent.target as Element;
+            const portGroup = upTarget.closest(".port");
+            let targetNodeId: string | undefined;
+            let targetPortId: string | undefined;
+
+            if (portGroup) {
+                const portData = d3.select(portGroup).datum() as { id: string };
+                const nodeGroup = portGroup.closest(".node");
+                if (nodeGroup) {
+                    targetNodeId = d3.select(nodeGroup).attr("data-id") || undefined;
+                    targetPortId = portData.id;
+                }
+            }
+
+            engine.endConnectionDrag(targetNodeId, targetPortId);
+            window.removeEventListener("mousemove", onMouseMove);
+            window.removeEventListener("mouseup", onMouseUp);
+        };
+
+        window.addEventListener("mousemove", onMouseMove);
+        window.addEventListener("mouseup", onMouseUp);
     })
     .each(function() {
       // Bring ports to front manually by re-appending them to the end of the node group.

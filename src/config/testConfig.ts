@@ -4,10 +4,10 @@ import { Config } from "../model/configurationModel"
 
 export const testConfig: Config = {
   canvas: {
-    grid:{
+    grid: {
       gridEnabled: true,
       gridType: "dotted",
-      gridColor: "#0000FF",
+      gridColor: "#2b88deff",
       gridTransparency: 0.5,
       gridSize: 20,
       gridShape: 'circle',
@@ -15,7 +15,7 @@ export const testConfig: Config = {
       sheetDimension: 4,
       crossLength: 10
     },
-    backgroundColor: "#ffffff",
+    backgroundColor: "#ffffffff",
     width: 800,
     height: 500,
     canvasClasses: ["test-canvas"],
@@ -35,21 +35,21 @@ export const testConfig: Config = {
       color: '#1ee80c',
       width: 2,
       dashed: true,
-      dashArray: [2,3],
+      dashArray: [2, 3],
       alignmentThreshold: 5,
       edgeGuides: {
         enabled: true,
         color: '#340ce8',
         width: 2,
         dashed: true,
-        dashArray: [2,3],
+        dashArray: [2, 3],
       },
       centerGuides: {
         enabled: true,
         color: '#d9e80c',
         width: 2,
         dashed: true,
-        dashArray: [2,3],
+        dashArray: [2, 3],
       },
       guideLineMode: 'full'
     },
@@ -63,6 +63,15 @@ export const testConfig: Config = {
       fillOpacity: 0.12,
       cursor: 'crosshair',
       activeCursor: 'crosshair'
+    },
+    allowMultipleConnections: true,
+    ghostConnection: {
+      enabled: true,
+      color: '#005bc4',
+      strokeWidth: 2,
+      dashed: true,
+      dashArray: [4, 4],
+      opacity: 1
     },
     keyboardShortcuts: {
       enabled: true,
@@ -103,6 +112,31 @@ export const testConfig: Config = {
       opacity: 1,
       showOnHoverOnly: false,
       cursor: "crosshair"
+    },
+    contextPad: {
+      enabled: true,
+      trigger: "select",
+      position: "top-right",
+      offset: { x: -15, y: 0 },
+      showDefaults: true,
+      layout: "vertical", // Options: "horizontal", "vertical", "grid"
+      gridColumns: 3,
+      style: {
+        backgroundColor: "rgba(242, 242, 255, 0.8)",
+        borderColor: "rgba(13, 224, 115, 1)",
+        borderWidth: "2px",
+        borderRadius: "6px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+        backdropBlur: "12px",
+        padding: "2px",
+        buttonWidth: "30px",
+        buttonHeight: "30px",
+        buttonPadding: "2px",
+        buttonMargin: "2px",
+        iconColor: "#1c1c1e",
+        buttonHoverColor: "rgba(255, 19, 19, 0.8)",
+        buttonActiveColor: "rgba(74, 226, 109, 0.7)"
+      }
     }
     // dragType: "smooth"
   },
@@ -113,10 +147,10 @@ export const testConfig: Config = {
           "id": "circle1",
           "radius": 30,
           "color": "#008000",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -135,10 +169,10 @@ export const testConfig: Config = {
           "height": 60,
           "color": "#CDFE9B",
           "borderRadius": { "leftTop": 50, "leftBottom": 50, "rightTop": 5, "rightBottom": 5 },
-          "stroke": { "width": 2, "color": "#000000",  "strokeDasharray": [6, 3]},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [6, 3] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -155,10 +189,10 @@ export const testConfig: Config = {
           "height": 120,
           "color": "#00FFFF",
           "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#000000",
           "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -176,10 +210,10 @@ export const testConfig: Config = {
           "width": 80,
           "height": 80,
           "color": "#FF00FF",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -195,6 +229,7 @@ export const testConfig: Config = {
     extraShapes: []
   },
   connections: {
+    defaultType: "straight",
     default: {
       straight: {
         type: "line",
@@ -206,6 +241,10 @@ export const testConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
@@ -220,11 +259,15 @@ export const testConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
       },
-      sShaped: {
+      's-shaped': {
         type: "s-shaped",
         style: "smooth",
         color: "#333333",
@@ -234,11 +277,15 @@ export const testConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
       },
-      lBent: {
+      'l-bent': {
         type: "l-bent",
         style: "cornered",
         color: "#444444",
@@ -248,6 +295,10 @@ export const testConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }

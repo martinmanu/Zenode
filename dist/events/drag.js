@@ -1,6 +1,10 @@
-import * as d3 from 'd3';
+import '../node_modules/d3-transition/src/selection/index.js';
+import transform from '../node_modules/d3-zoom/src/transform.js';
 import { snapToGrid } from '../utils/helpers.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
+import drag from '../node_modules/d3-drag/src/drag.js';
+import select from '../node_modules/d3-selection/src/select.js';
+import pointer from '../node_modules/d3-selection/src/pointer.js';
 
 function getShapeStyle(node, config) {
     var _a;
@@ -70,16 +74,16 @@ function getGuideStyle(alignCfg, kind) {
  */
 function createDragBehavior(api) {
     let guideRaf = null;
-    return d3.drag()
+    return drag()
         .on("start", function (event, d) {
         event.sourceEvent.stopPropagation();
-        d3.select(this).raise().classed("dragging", true);
+        select(this).raise().classed("dragging", true);
     })
         .on("drag", function (event, d) {
         var _a, _b;
         const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-        const zoomTransform = d3.zoomTransform(api.svgNode);
-        const [px, py] = d3.pointer(event.sourceEvent, api.svgNode);
+        const zoomTransform = transform(api.svgNode);
+        const [px, py] = pointer(event.sourceEvent, api.svgNode);
         let newX = (px - zoomTransform.x) / zoomTransform.k;
         let newY = (py - zoomTransform.y) / zoomTransform.k;
         if (api.config.canvasProperties.snapToGrid) {
@@ -87,7 +91,9 @@ function createDragBehavior(api) {
             newX = snapped.x;
             newY = snapped.y;
         }
-        d3.select(this).attr("transform", `translate(${newX},${newY})`);
+        select(this).attr("transform", `translate(${newX},${newY})`);
+        // Real-time update for connections
+        api.updateNodePosition(d.id, newX, newY);
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
         }
@@ -98,10 +104,10 @@ function createDragBehavior(api) {
     })
         .on("end", function (event, d) {
         var _a, _b;
-        d3.select(this).classed("dragging", false);
+        select(this).classed("dragging", false);
         const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-        const zoomTransform = d3.zoomTransform(api.svgNode);
-        const [px, py] = d3.pointer(event.sourceEvent, api.svgNode);
+        const zoomTransform = transform(api.svgNode);
+        const [px, py] = pointer(event.sourceEvent, api.svgNode);
         let finalX = (px - zoomTransform.x) / zoomTransform.k;
         let finalY = (py - zoomTransform.y) / zoomTransform.k;
         if (api.config.canvasProperties.snapToGrid) {

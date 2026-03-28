@@ -5,6 +5,7 @@ import { Config, Shape } from "../model/configurationModel.js";
 import { EventManager } from "./eventManager.js";
 import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
+import { ContextPadAction, ContextPadTarget, ShapeRenderer, BoundingBox, VisualState } from "../types/index.js";
 import { svgMouseMove } from "../events/mouseMove.js";
 import { svgMouseClick } from "../events/mouseClick.js";
 import { renderPlacedNodes } from "../nodes/placement.js";
@@ -13,12 +14,16 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { RectangleRenderer } from "../nodes/shapes/rectangle.js";
 import { CircleRenderer } from "../nodes/shapes/circle.js";
 import { RhombusRenderer } from "../nodes/shapes/rhombus.js";
-import { ShapeRenderer, BoundingBox, VisualState } from "../types/index.js";
+import { LicenseManager } from "./license.js";
+import { SmartRouter } from "../connections/routing/smartRouter.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
 import * as d3 from "d3";
 import { snapToGrid } from "../utils/helpers.js";
+import { ContextPadRegistry } from "../contextpad/registry.js";
+import { ContextPadRenderer } from "../contextpad/renderer.js";
+import { defaultActions } from "../contextpad/defaults.js";
 
 export class ZenodeEngine {
   public container!: HTMLElement | null;
@@ -45,6 +50,18 @@ export class ZenodeEngine {
   private suppressNextCanvasClick = false;
   /** When set, next click will place a node of this type/config (preview → placed). */
   private placementContext: { shapeType: string; shapeConfig: Shape } | null = null;
+  /** When set, a connection is being dragged from this port. */
+  private connectionDragContext: {
+    sourceNodeId: string;
+    sourcePortId: string;
+    currentPoint: { x: number; y: number };
+    snapped?: { nodeId: string; portId: string; point: { x: number; y: number } };
+  } | null = null;
+  public connectionModeEnabled: boolean = false;
+  private licenseManager = new LicenseManager();
+  private smartRouter = new SmartRouter();
+  private smartRoutingEnabled = false;
+  private activeConnectionType: string = "straight";
   private eventManager: EventManager;
   public zoomManager!: ZoomManager;
   public canvasObject: CanvasElements = {
@@ -53,11 +70,16 @@ export class ZenodeEngine {
     elements: null,
     canvasContainer: null,
     connections: null,
+    /** Layer for ghost connection (highest layer, but below guides) */
+    ghostConnection: null,
+    /** Layer for placed nodes (above grid/connections, below preview) */
     placedNodes: null,
     guides: null,
     lasso: null,
   };
   private canvasContainerGroup: unknown;
+  private contextPadRegistry: ContextPadRegistry;
+  private contextPadRenderer!: ContextPadRenderer;
 
   constructor(container: HTMLElement | null, config: Partial<Config>) {
     this.container = container;
@@ -65,7 +87,73 @@ export class ZenodeEngine {
     this.shapeRegistry = new ShapeRegistry();
     this.registerBuiltInShapes();
     this.eventManager = new EventManager();
+    this.contextPadRegistry = new ContextPadRegistry();
     this.initializeCanvas();
+    this.initializeContextPad();
+  }
+
+  private initializeContextPad(): void {
+      if (this.container) {
+          this.contextPadRenderer = new ContextPadRenderer(this.container);
+          defaultActions.forEach(action => this.contextPadRegistry.register(action));
+
+          // Auto-disable connection mode when pad closes
+          this.on("contextpad:close", () => {
+             this.setConnectionModeEnabled(false);
+          });
+      }
+  }
+
+  /**
+   * Registers a custom action for the context pad.
+   */
+  public isConnectionModeEnabled(): boolean {
+    return this.connectionModeEnabled;
+  }
+
+  // --- External API for Context Pad ---
+  public registerContextPadAction(action: ContextPadAction): void {
+    this.contextPadRegistry.register(action);
+  }
+
+  public unregisterContextAction(id: string): void {
+    this.contextPadRegistry.unregister(id);
+  }
+
+  /**
+   * Listens to engine events (including context pad events).
+   */
+  public on(eventType: string, callback: (event: any) => void): void {
+    this.eventManager.on(eventType, callback);
+  }
+
+  /**
+   * Manually shows the context pad for a specific target.
+   */
+  public showContextPad(target: ContextPadTarget): void {
+    if (this.contextPadRenderer) {
+        const actions = this.contextPadRegistry.getActionsFor(target, this);
+        this.contextPadRenderer.render(target, actions, this);
+    }
+  }
+
+  /**
+   * Manually hides the context pad.
+   */
+  public hideContextPad(): void {
+    if (this.contextPadRenderer) {
+        this.contextPadRenderer.hide(this);
+    }
+  }
+
+  public emit(eventType: string, event: any): void {
+    this.eventManager.trigger(eventType, event);
+  }
+
+  private initDrag(): void {
+    // Modify existing drag handler to update pad
+    // Assuming d3.drag is set up in a way we can hook into
+    // I need to see where initDrag or similar is.
   }
 
   private registerBuiltInShapes(): void {
@@ -87,6 +175,8 @@ export class ZenodeEngine {
     this.svg = this.canvasObject.svg;
     this.svg.attr("data-lasso-enabled", "false");
 
+    this.activeConnectionType = this.config.connections.defaultType || "straight";
+
     this.grid = drawGrid(this.svg, this.config.canvas, this.canvasObject.grid);
     this.alignmentLine = this.svg.append("g").attr("class", "alignment-line");
     this.canvasContainerGroup = this.canvasObject.canvasContainer;
@@ -94,16 +184,15 @@ export class ZenodeEngine {
       this.canvasContainerGroup,
       this.svg,
       this.config,
-      (eventType: any, event: any) => {
+      (eventType: string, event: any) => {
+        if (eventType === "zoom") {
+          this.contextPadRenderer?.updatePosition(this);
+        }
         this.eventManager.trigger(eventType, event);
       }
     );
 
     this.bindSelectionInteractions();
-  }
-
-  on(eventType: string, callback: (event: unknown) => void) {
-    this.eventManager.on(eventType, callback);
   }
 
   /** SVG root DOM node — passed to DragApi for correct pointer coordinate transform */
@@ -137,12 +226,65 @@ export class ZenodeEngine {
     return [...this.selectedNodeIds];
   }
 
+  /** Returns whether a connection is currently being drawn. */
+  isDrawingConnection(): boolean {
+    return this.connectionDragContext !== null;
+  }
+
+  /** Sets whether connection drawing mode is enabled. */
+  setLicense(key: string): void {
+    this.licenseManager.setLicense(key);
+    this.reRenderConnections();
+  }
+
+  setSmartRoutingEnabled(enabled: boolean): void {
+    this.smartRoutingEnabled = enabled;
+    this.reRenderConnections();
+  }
+
+  getLicenseTier(): string {
+    return this.licenseManager.getTier();
+  }
+
+  isSmartRoutingEnabled(): boolean {
+    return this.smartRoutingEnabled && this.licenseManager.isPro();
+  }
+
+  setConnectionModeEnabled(enabled: boolean): void {
+    this.connectionModeEnabled = enabled;
+    // Re-render nodes to update port availability/UI
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("connection:mode:changed", { enabled });
+  }
+
+  /** Sets the active connection type for newly created connections. */
+  setActiveConnectionType(type: string): void {
+    this.activeConnectionType = type;
+  }
+
   /** Sets selected node ids and re-renders selection rings. */
   setSelectedNodeIds(ids: string[]): void {
     this.selectedNodeIds = [...new Set(ids)];
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
+
+    // Show context pad if exactly one node is selected
+    if (this.selectedNodeIds.length === 1) {
+      const node = this.placedNodes.find((n) => n.id === this.selectedNodeIds[0]);
+      if (node) {
+        const actions = this.contextPadRegistry.getActionsFor(
+          { kind: "node", id: node.id, data: node },
+          this
+        );
+        this.contextPadRenderer.render({ kind: "node", id: node.id, data: node }, actions, this);
+      }
+    } else {
+      this.contextPadRenderer?.hide(this);
+    }
+
     this.eventManager.trigger("node:selected", { ids: this.getSelectedNodeIds() });
   }
 
@@ -185,6 +327,11 @@ export class ZenodeEngine {
     return [...this.placedNodes];
   }
 
+  /** Returns a single placed node by id. */
+  getPlacedNode(id: string): PlacedNode | undefined {
+    return this.placedNodes.find((n) => n.id === id);
+  }
+
   /**
    * Updates a placed node's position and triggers sub-renders.
    */
@@ -195,7 +342,73 @@ export class ZenodeEngine {
     if (this.canvasObject.connections) {
       this.reRenderConnections();
     }
+    
+    // Update context pad position if one of the selected nodes is moved
+    if (this.selectedNodeIds.includes(id)) {
+        this.contextPadRenderer?.updatePosition(this);
+    }
+
     this.eventManager.trigger("node:moved", { id, x, y });
+  }
+
+  public zoomIn(): void {
+    this.zoomManager.zoomBy(this.svg, 1.2);
+  }
+
+  public zoomOut(): void {
+    this.zoomManager.zoomBy(this.svg, 0.8);
+  }
+
+  public focusOnNode(id: string): void {
+    const node = this.placedNodes.find(n => n.id === id);
+    if (node) {
+      const style = this.getShapeStyle(node);
+      const width = style?.width ?? 100;
+      const height = style?.height ?? 100;
+      const centerX = node.x + width / 2;
+      const centerY = node.y + height / 2;
+      this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY });
+    }
+  }
+
+  public focusOnSelectedNode(): void {
+    if (this.selectedNodeIds.length > 0) {
+      this.focusOnNode(this.selectedNodeIds[0]);
+    } else if (this.placedNodes.length > 0) {
+      // Focus on the center of all nodes AND zoom to fit if needed
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      this.placedNodes.forEach(n => {
+        const style = this.getShapeStyle(n);
+        const w = style?.width ?? 100;
+        const h = style?.height ?? 100;
+        minX = Math.min(minX, n.x);
+        minY = Math.min(minY, n.y);
+        maxX = Math.max(maxX, n.x + w);
+        maxY = Math.max(maxY, n.y + h);
+      });
+
+      const diagramWidth = maxX - minX;
+      const diagramHeight = maxY - minY;
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      // Calculate the scale to fit everything with some padding
+      const padding = 40;
+      const svgWidth = parseFloat(this.svg.attr("width") || "800");
+      const svgHeight = parseFloat(this.svg.attr("height") || "500");
+      
+      const scaleX = (svgWidth - padding * 2) / diagramWidth;
+      const scaleY = (svgHeight - padding * 2) / diagramHeight;
+      let fitScale = Math.min(scaleX, scaleY);
+      
+      // Don't zoom in too much, keep it at most 1.0 if it's small
+      fitScale = Math.min(fitScale, 1.0);
+      // But don't go below the minimum zoom extent
+      const minExtent = (this.zoomManager as any).config.canvasProperties.zoomExtent[0];
+      fitScale = Math.max(fitScale, minExtent);
+
+      this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY }, fitScale);
+    }
   }
 
   /** Deletes all currently selected nodes. */
@@ -214,9 +427,9 @@ export class ZenodeEngine {
     this.eventManager.trigger("node:deleted", { ids: [...selected] });
   }
 
-  private reRenderConnections(): void {
+  public reRenderConnections(): void {
     if (this.canvasObject.connections) {
-      renderConnections(this.canvasObject.connections, this.connections, this.placedNodes);
+      renderConnections(this.canvasObject.connections, this.connections, this.placedNodes, this);
     }
   }
 
@@ -280,7 +493,9 @@ export class ZenodeEngine {
     const connection: StoredConnection = {
       id: `conn-${sourceNodeId}-${targetNodeId}`,
       sourceNodeId,
+      sourcePortId: "center", // Default for programmatic connections
       targetNodeId,
+      targetPortId: "center", // Default
       type: "straight",
       visualState: { status: "idle" },
     };
@@ -343,6 +558,156 @@ export class ZenodeEngine {
 
     this.reRenderConnections();
     this.eventManager.trigger("edge:visualstate", { id, patch });
+  }
+
+  /**
+   * Starts a connection drag from a specific port.
+   */
+  startConnectionDrag(sourceNodeId: string, sourcePortId: string, startPoint: { x: number; y: number }): void {
+    if (!this.connectionModeEnabled) return;
+
+    this.connectionDragContext = {
+      sourceNodeId,
+      sourcePortId,
+      currentPoint: startPoint,
+    };
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("connection:dragstart", { sourceNodeId, sourcePortId, startPoint });
+  }
+
+  /**
+   * Updates the current drag point for the ghost connection.
+   */
+  updateConnectionDrag(currentPoint: { x: number; y: number }): void {
+    if (!this.connectionDragContext) return;
+    this.connectionDragContext.currentPoint = currentPoint;
+
+    // Snap to nearest port
+    this.connectionDragContext.snapped = this.findClosestPort(currentPoint);
+
+    this.renderGhostConnection();
+  }
+
+  public findClosestPort(point: { x: number; y: number }, threshold: number = 30): { nodeId: string; portId: string; point: { x: number; y: number } } | undefined {
+    let bestDist = threshold;
+    let result: { nodeId: string; portId: string; point: { x: number; y: number } } | undefined;
+
+    for (const node of this.placedNodes) {
+      // Don't snap to source node
+      if (node.id === this.connectionDragContext?.sourceNodeId) continue;
+
+      const style = this.getShapeStyle(node);
+      if (!style) continue;
+      const renderer = this.shapeRegistry.get(node.type);
+      const resolved = buildResolvedShapeConfig(node, style);
+      const ports = renderer.getPorts(resolved);
+
+      for (const [portId, pos] of Object.entries(ports)) {
+        const absX = node.x + (pos as any).x;
+        const absY = node.y + (pos as any).y;
+        const dist = Math.hypot(point.x - absX, point.y - absY);
+        if (dist < bestDist) {
+          bestDist = dist;
+          result = { nodeId: node.id, portId, point: { x: absX, y: absY } };
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Completes the connection drag and creates a new connection if dropped on a port.
+   */
+  endConnectionDrag(targetNodeId?: string, targetPortId?: string): void {
+    if (!this.connectionDragContext) return;
+
+    const finalTargetNodeId = targetNodeId || this.connectionDragContext.snapped?.nodeId;
+    const finalTargetPortId = targetPortId || this.connectionDragContext.snapped?.portId;
+
+    if (finalTargetNodeId && finalTargetPortId) {
+      this.createConnectionFromPorts(
+        this.connectionDragContext.sourceNodeId,
+        this.connectionDragContext.sourcePortId,
+        finalTargetNodeId,
+        finalTargetPortId
+      );
+    }
+
+    this.connectionDragContext = null;
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    if (this.canvasObject.ghostConnection) {
+      this.canvasObject.ghostConnection.selectAll("*").remove();
+    }
+    this.eventManager.trigger("connection:dragend", {});
+  }
+
+  public createConnectionFromPorts(
+    sourceNodeId: string,
+    sourcePortId: string,
+    targetNodeId: string,
+    targetPortId: string
+  ): void {
+    const allowMultiple = this.config.canvasProperties.allowMultipleConnections;
+
+    if (!allowMultiple) {
+      // Check if any connection already exists between these two specific nodes
+      const exists = this.connections.some(c =>
+        (c.sourceNodeId === sourceNodeId && c.targetNodeId === targetNodeId)
+      );
+      if (exists) return;
+    }
+
+    const connection: StoredConnection = {
+      // Use timestamp to ensure DOM uniqueness even for same ports
+      id: `conn-${sourceNodeId}-${targetNodeId}-${Date.now()}`,
+      sourceNodeId,
+      sourcePortId,
+      targetNodeId,
+      targetPortId,
+      type: this.activeConnectionType as any,
+      visualState: { status: "idle" },
+    };
+
+    this.connections = [...this.connections, connection];
+    this.reRenderConnections();
+    this.eventManager.trigger("connection:created", { connection });
+  }
+
+  private renderGhostConnection(): void {
+    if (!this.connectionDragContext || !this.canvasObject.ghostConnection) return;
+
+    const sourceNode = this.placedNodes.find(n => n.id === this.connectionDragContext!.sourceNodeId);
+    if (!sourceNode) return;
+
+    const style = this.getShapeStyle(sourceNode);
+    if (!style) return;
+
+    const renderer = this.shapeRegistry.get(sourceNode.type);
+    const resolved = buildResolvedShapeConfig(sourceNode, style);
+    const ports = renderer.getPorts(resolved);
+    const portPos = ports[this.connectionDragContext!.sourcePortId];
+    if (!portPos) return;
+
+    const from = { x: sourceNode.x + portPos.x, y: sourceNode.y + portPos.y };
+    const to = this.connectionDragContext.snapped
+      ? this.connectionDragContext.snapped.point
+      : this.connectionDragContext.currentPoint;
+
+    import("../connections/render.js").then(({ renderGhostConnection }) => {
+      renderGhostConnection(
+        this.canvasObject.ghostConnection!,
+        from,
+        to,
+        this.config.canvasProperties.ghostConnection,
+        this.activeConnectionType,
+        this.connectionDragContext?.sourcePortId,
+        this.connectionDragContext?.snapped?.portId
+      );
+    });
   }
 
   lockedTheCanvas(locked: boolean) {

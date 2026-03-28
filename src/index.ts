@@ -13,7 +13,7 @@ let engineInstance: ZenodeEngine | null = null;
  */
 export function initializeCanvas(containerSelector: string, userConfig: Partial<Config>) {
   if (!engineInstance) {
-    const inputConfig : Partial<Config> = { ...userConfig };
+    const inputConfig: Partial<Config> = { ...userConfig };
     const container = document.querySelector(containerSelector) as HTMLElement;
 
     if (!container) {
@@ -35,7 +35,7 @@ export function createShape(type: string, id: string) {
   if (!engineInstance) {
     throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
   }
-  
+
   if (typeof type !== "string" || !["rectangle", "circle", "rhombus"].includes(type)) {
     throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle, rhombus.`);
   }
@@ -71,22 +71,6 @@ export function getPlacedNodes() {
   return engineInstance.getPlacedNodes();
 }
 
-/**
- * Connects the first two placed nodes. Convenience for demos.
- * @returns true if a connection was created, false otherwise
- */
-export function connectFirstTwoNodes(): boolean {
-  if (!engineInstance) {
-    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
-  }
-  const nodes = engineInstance.getPlacedNodes();
-  if (nodes.length < 2) {
-    console.warn("Place at least 2 shapes on the canvas, then click Connect.");
-    return false;
-  }
-  engineInstance.createConnection(nodes[0].id, nodes[1].id);
-  return true;
-}
 
 /** Enable or disable lasso selection tool interaction. */
 export function setLassoEnabled(enabled: boolean): void {
@@ -114,4 +98,125 @@ export function updateEdgeVisualState(id: string, patch: Partial<VisualState>): 
     throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
   }
   engineInstance.updateEdgeVisualState(id, patch);
+}
+
+/** Sets the license key for the engine. */
+export function setLicense(key: string): void {
+  if (!engineInstance) {
+    throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
+  }
+  engineInstance.setLicense(key);
+}
+
+/** Enables or disables smart routing for connections. */
+export function setSmartRoutingEnabled(enabled: boolean): void {
+  if (!engineInstance) {
+    throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
+  }
+  engineInstance.setSmartRoutingEnabled(enabled);
+}
+
+/** Enables or disables the connection drawing mode globally. */
+export function setConnectionModeEnabled(enabled: boolean): void {
+  if (!engineInstance) {
+    throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
+  }
+  engineInstance.setConnectionModeEnabled(enabled);
+}
+
+/** Sets the active connection type for newly created connections. */
+export function setActiveConnectionType(type: string): void {
+  if (!engineInstance) {
+    throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
+  }
+  engineInstance.setActiveConnectionType(type);
+}
+
+/** Sets the label text and enabled state for all default connection types. */
+export function setConnectionLabel(text: string, enabled: boolean): void {
+  if (!engineInstance) {
+    throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
+  }
+  const types = ['straight', 'curved', 's-shaped', 'l-bent'] as const;
+  types.forEach(t => {
+    const conn = (engineInstance as any).config.connections.default[t];
+    if (conn) {
+      conn.lineStyle.innerTextEnabled = enabled;
+      conn.lineStyle.innerText = text;
+    }
+  });
+  engineInstance.reRenderConnections();
+}
+
+/** Returns the engine instance (advanced use). */
+export function getEngine() {
+  return engineInstance;
+}
+/** Returns the current license tier. */
+export function getLicenseTier(): string {
+  if (!engineInstance) return 'free';
+  return engineInstance.getLicenseTier();
+}
+
+/** Zooms the canvas in. */
+export function zoomIn(): void {
+  if (!engineInstance) return;
+  engineInstance.zoomIn();
+}
+
+/** Zooms the canvas out. */
+export function zoomOut(): void {
+  if (!engineInstance) return;
+  engineInstance.zoomOut();
+}
+
+/** Focuses (center + zoom) on the first selected node. */
+export function focusOnSelectedNode(): void {
+  if (!engineInstance) return;
+  engineInstance.focusOnSelectedNode();
+}
+
+/** Registers a custom action for the context pad. */
+export function registerContextPadAction(action: any): void {
+  if (!engineInstance) return;
+  engineInstance.registerContextPadAction(action);
+}
+
+/** 
+ * Demo: Registers a "Smart Connect" action that connects to the nearest port of another node.
+ */
+export function registerSmartConnect(): void {
+  if (!engineInstance) return;
+
+  engineInstance.registerContextPadAction({
+    id: 'smart-connect',
+    icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>`,
+    tooltip: 'Smart Connect to Nearest',
+    order: 10,
+    targets: ['node'],
+    style: {
+      color: '#4A90E2',
+      hoverColor: 'rgba(74, 144, 226, 0.1)'
+    },
+    handler: (target, engine) => {
+      if (target.kind !== 'node') return;
+      
+      const sourceNode = target.data;
+      const sourcePos = { x: sourceNode.x + 50, y: sourceNode.y + 50 }; // approx center
+      
+      // Find closest port on ANY other node
+      const closest = engine.findClosestPort(sourcePos, 1000); // large threshold to find anything
+      
+      if (closest) {
+        engine.createConnectionFromPorts(
+          sourceNode.id, 
+          'center', // use center for source
+          closest.nodeId, 
+          closest.portId
+        );
+      } else {
+        alert("No other nodes found to connect to!");
+      }
+    }
+  });
 }

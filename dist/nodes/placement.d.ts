@@ -10,6 +10,20 @@ export interface RenderApi extends DragApi {
     shapeRegistry: ShapeRegistry;
     getSelectedNodeIds(): string[];
     setSelectedNodeIds(ids: string[]): void;
+    getCanvasPoint(event: MouseEvent): {
+        x: number;
+        y: number;
+    };
+    startConnectionDrag(sourceNodeId: string, sourcePortId: string, startPoint: {
+        x: number;
+        y: number;
+    }): void;
+    updateConnectionDrag(currentPoint: {
+        x: number;
+        y: number;
+    }): void;
+    endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
+    isDrawingConnection(): boolean;
 }
 /**
  * Renders the placed nodes layer using a D3 data join. Call after state changes.

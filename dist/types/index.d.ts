@@ -76,3 +76,60 @@ export interface ShapeRenderer {
     getBounds: (config: ResolvedShapeConfig) => BoundingBox;
     getPorts: (config: ResolvedShapeConfig) => PortMap;
 }
+export type ContextPadTarget = {
+    kind: "node";
+    id: string;
+    data: any;
+} | {
+    kind: "edge";
+    id: string;
+    data: any;
+};
+export interface ContextPadAction {
+    id: string;
+    icon: string;
+    tooltip: string;
+    group?: "primary" | "secondary" | "danger" | string;
+    targets?: Array<"node" | "edge">;
+    appliesTo?: string[];
+    order?: number;
+    handler: (target: ContextPadTarget, engine: any) => void;
+    isVisible?: (target: ContextPadTarget, engine: any) => boolean;
+    isDisabled?: (target: ContextPadTarget, engine: any) => boolean;
+    isActive?: (target: ContextPadTarget, engine: any) => boolean;
+    style?: {
+        color?: string;
+        hoverColor?: string;
+        activeColor?: string;
+    };
+}
+export interface ContextPadConfig {
+    enabled: boolean;
+    trigger: "hover" | "select";
+    position: "top-right" | "top-left" | "bottom-right" | "bottom-left" | "top-center" | "bottom-center";
+    offset: {
+        x: number;
+        y: number;
+    };
+    showDefaults: boolean;
+    suppressDefaults?: string[];
+    layout?: "horizontal" | "vertical" | "grid";
+    gridColumns?: number;
+    style?: {
+        backgroundColor?: string;
+        borderColor?: string;
+        borderWidth?: string;
+        borderRadius?: string;
+        boxShadow?: string;
+        backdropBlur?: string;
+        padding?: string;
+        buttonSize?: number;
+        buttonWidth?: string;
+        buttonHeight?: string;
+        buttonPadding?: string;
+        buttonMargin?: string;
+        iconColor?: string;
+        buttonHoverColor?: string;
+        buttonActiveColor?: string;
+    };
+}

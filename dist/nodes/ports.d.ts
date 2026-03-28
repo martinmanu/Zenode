@@ -9,4 +9,4 @@ import { ShapeRegistry } from "./registry.js";
  * @param config - The engine configuration
  * @param registry - The shape registry to get the renderer
  */
-export declare function renderPorts(nodeGroup: d3.Selection<SVGGElement, PlacedNode, any, any>, node: PlacedNode, config: Config, registry: ShapeRegistry): void;
+export declare function renderPorts(nodeGroup: d3.Selection<SVGGElement, PlacedNode, any, any>, node: PlacedNode, config: Config, registry: ShapeRegistry, engine: any): void;

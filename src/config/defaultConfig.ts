@@ -2,7 +2,7 @@ import { Config } from "../model/configurationModel"
 
 export const defaultConfig: Config = {
   canvas: {
-    grid:{
+    grid: {
       gridEnabled: true,
       gridType: "dotted", // dotted, line , cross , sheet
       gridColor: "#000000",
@@ -33,7 +33,7 @@ export const defaultConfig: Config = {
       color: '#000000',
       width: 2,
       dashed: true,
-      dashArray: [2,3],
+      dashArray: [2, 3],
       alignmentThreshold: 5,
       edgeGuides: {
         enabled: true,
@@ -72,12 +72,44 @@ export const defaultConfig: Config = {
       cursor: 'crosshair',
       activeCursor: 'crosshair'
     },
+    ghostConnection: {
+      enabled: true,
+      color: 'var(--zenode-selection-color, #4A90E2)',
+      strokeWidth: 2,
+      dashed: true,
+      dashArray: [4, 4],
+      opacity: 1
+    },
+    allowMultipleConnections: true,
     keyboardShortcuts: {
       enabled: true,
       deleteSelection: ["Delete", "Backspace"],
       clearSelection: ["Escape"],
       customBindings: {},
       callbacks: {}
+    },
+    contextPad: {
+      enabled: true,
+      trigger: "select",
+      position: "top-right",
+      offset: { x: 10, y: -10 },
+      showDefaults: true,
+      style: {
+        backgroundColor: "rgba(28, 28, 30, 0.8)",
+        borderColor: "rgba(255, 255, 255, 0.1)",
+        borderWidth: "1px",
+        borderRadius: "12px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+        backdropBlur: "12px",
+        padding: "6px",
+        buttonWidth: "32px",
+        buttonHeight: "32px",
+        buttonPadding: "0px",
+        buttonMargin: "0px",
+        iconColor: "#ebebf5",
+        buttonHoverColor: "rgba(255, 255, 255, 0.1)",
+        buttonActiveColor: "rgba(74, 144, 226, 0.2)"
+      }
     }
     // defaultNodeSpacing: 50,
     // dragType: "smooth"
@@ -89,10 +121,10 @@ export const defaultConfig: Config = {
           "id": "circle1",
           "radius": 30,
           "color": "#008000",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -111,10 +143,10 @@ export const defaultConfig: Config = {
           "height": 60,
           "color": "#0000ff",
           "borderRadius": { "leftTop": 3, "leftBottom": 3, "rightTop": 3, "rightBottom": 3 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -131,10 +163,10 @@ export const defaultConfig: Config = {
           "height": 50,
           "color": "#00FFFF",
           "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#000000",
           "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -152,10 +184,10 @@ export const defaultConfig: Config = {
           "width": 80,
           "height": 80,
           "color": "#FF00FF",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": []},
+          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency" : 1,
+          "transparency": 1,
           "overlay": {
             "enabled": true,  // Enable selection overlay
             "color": "blue",  // Example color
@@ -171,6 +203,7 @@ export const defaultConfig: Config = {
     extraShapes: []
   },
   connections: {
+    defaultType: "straight",
     default: {
       straight: {
         type: "line",
@@ -182,6 +215,10 @@ export const defaultConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
@@ -196,11 +233,15 @@ export const defaultConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
       },
-      sShaped: {
+      's-shaped': {
         type: "s-shaped",
         style: "smooth",
         color: "#333333",
@@ -210,11 +251,15 @@ export const defaultConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }
       },
-      lBent: {
+      'l-bent': {
         type: "l-bent",
         style: "cornered",
         color: "#444444",
@@ -224,6 +269,10 @@ export const defaultConfig: Config = {
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
+          innerTextSize: 12,
+          labelBackground: "#ffffff",
+          labelPadding: 4,
+          labelBorderRadius: 4,
           icon: null,
           clickFunction: null
         }

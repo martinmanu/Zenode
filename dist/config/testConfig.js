@@ -5,7 +5,7 @@ const testConfig = {
         grid: {
             gridEnabled: true,
             gridType: "dotted",
-            gridColor: "#0000FF",
+            gridColor: "#2b88deff",
             gridTransparency: 0.5,
             gridSize: 20,
             gridShape: 'circle',
@@ -13,7 +13,7 @@ const testConfig = {
             sheetDimension: 4,
             crossLength: 10
         },
-        backgroundColor: "#ffffff",
+        backgroundColor: "#ffffffff",
         width: 800,
         height: 500,
         canvasClasses: ["test-canvas"],
@@ -62,6 +62,15 @@ const testConfig = {
             cursor: 'crosshair',
             activeCursor: 'crosshair'
         },
+        allowMultipleConnections: true,
+        ghostConnection: {
+            enabled: true,
+            color: '#005bc4',
+            strokeWidth: 2,
+            dashed: true,
+            dashArray: [4, 4],
+            opacity: 1
+        },
         keyboardShortcuts: {
             enabled: true,
             deleteSelection: ["Delete", "Backspace"],
@@ -103,6 +112,31 @@ const testConfig = {
             opacity: 1,
             showOnHoverOnly: false,
             cursor: "crosshair"
+        },
+        contextPad: {
+            enabled: true,
+            trigger: "select",
+            position: "top-right",
+            offset: { x: -15, y: 0 },
+            showDefaults: true,
+            layout: "vertical", // Options: "horizontal", "vertical", "grid"
+            gridColumns: 3,
+            style: {
+                backgroundColor: "rgba(242, 242, 255, 0.8)",
+                borderColor: "rgba(13, 224, 115, 1)",
+                borderWidth: "2px",
+                borderRadius: "6px",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+                backdropBlur: "12px",
+                padding: "2px",
+                buttonWidth: "30px",
+                buttonHeight: "30px",
+                buttonPadding: "2px",
+                buttonMargin: "2px",
+                iconColor: "#1c1c1e",
+                buttonHoverColor: "rgba(255, 19, 19, 0.8)",
+                buttonActiveColor: "rgba(74, 226, 109, 0.7)"
+            }
         }
         // dragType: "smooth"
     },
@@ -195,6 +229,7 @@ const testConfig = {
         extraShapes: []
     },
     connections: {
+        defaultType: "straight",
         default: {
             straight: {
                 type: "line",
@@ -206,6 +241,10 @@ const testConfig = {
                     innerTextEnabled: false,
                     innerText: "",
                     innerTextColor: "#000000",
+                    innerTextSize: 12,
+                    labelBackground: "#ffffff",
+                    labelPadding: 4,
+                    labelBorderRadius: 4,
                     icon: null,
                     clickFunction: null
                 }
@@ -220,11 +259,15 @@ const testConfig = {
                     innerTextEnabled: false,
                     innerText: "",
                     innerTextColor: "#000000",
+                    innerTextSize: 12,
+                    labelBackground: "#ffffff",
+                    labelPadding: 4,
+                    labelBorderRadius: 4,
                     icon: null,
                     clickFunction: null
                 }
             },
-            sShaped: {
+            's-shaped': {
                 type: "s-shaped",
                 style: "smooth",
                 color: "#333333",
@@ -234,11 +277,15 @@ const testConfig = {
                     innerTextEnabled: false,
                     innerText: "",
                     innerTextColor: "#000000",
+                    innerTextSize: 12,
+                    labelBackground: "#ffffff",
+                    labelPadding: 4,
+                    labelBorderRadius: 4,
                     icon: null,
                     clickFunction: null
                 }
             },
-            lBent: {
+            'l-bent': {
                 type: "l-bent",
                 style: "cornered",
                 color: "#444444",
@@ -248,6 +295,10 @@ const testConfig = {
                     innerTextEnabled: false,
                     innerText: "",
                     innerTextColor: "#000000",
+                    innerTextSize: 12,
+                    labelBackground: "#ffffff",
+                    labelPadding: 4,
+                    labelBorderRadius: 4,
                     icon: null,
                     clickFunction: null
                 }

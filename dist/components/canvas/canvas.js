@@ -1,9 +1,12 @@
 import { defaultConfig } from '../../config/defaultConfig.js';
-import * as d3 from 'd3';
+import '../../node_modules/d3-transition/src/selection/index.js';
+import '../../node_modules/d3-zoom/src/transform.js';
+import select from '../../node_modules/d3-selection/src/select.js';
+import selectAll from '../../node_modules/d3-selection/src/selectAll.js';
 
 // src/components/canvas/drawCanvas.ts
 function drawCanvas(containerSelector, canvasConfig) {
-    const container = d3.select(containerSelector);
+    const container = select(containerSelector);
     if (container.empty()) {
         throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
@@ -35,6 +38,10 @@ function drawCanvas(containerSelector, canvasConfig) {
     const placedNodesGroup = canvasContainerGroup
         .insert("g", ".elements-group")
         .attr("class", "placed-nodes");
+    const ghostConnectionGroup = canvasContainerGroup
+        .insert("g", ".elements-group")
+        .attr("class", "ghost-connection")
+        .style("pointer-events", "none");
     const guidesGroup = canvasContainerGroup
         .append("g")
         .attr("class", "guides")
@@ -50,6 +57,7 @@ function drawCanvas(containerSelector, canvasConfig) {
         svg: svg,
         canvasContainer: canvasContainerGroup,
         connections: connectionsGroup,
+        ghostConnection: ghostConnectionGroup,
         placedNodes: placedNodesGroup,
         guides: guidesGroup,
         lasso: lassoGroup,
@@ -59,12 +67,12 @@ function lockedCanvas(locked, svg, zoomBehaviour) {
     if (locked) {
         svg.on(".zoom", null); // Disable zoom and pan
         svg.style("cursor", "default");
-        d3.selectAll(".shape, .connection").style("pointer-events", "none");
+        selectAll(".shape, .connection").style("pointer-events", "none");
     }
     else {
         svg.call(zoomBehaviour); // Enable zoom and pan
         svg.style("cursor", "grab");
-        d3.selectAll(".shape, .connection").style("pointer-events", "all");
+        selectAll(".shape, .connection").style("pointer-events", "all");
     }
     console.log(`Canvas ${locked ? "locked (Preview Mode)" : "unlocked (Edit Mode)"}`);
 }

@@ -5,6 +5,7 @@ export declare function drawCanvas(containerSelector: string, canvasConfig: Canv
     elements: any;
     canvasContainer: any;
     connections: any;
+    ghostConnection: any;
     placedNodes: any;
     guides: any;
     lasso: any;

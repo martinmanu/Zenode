@@ -15,7 +15,7 @@
       "dom",
       "es2017"
     ],
-    "ignoreDeprecations": "6.0",
+    "ignoreDeprecations": "5.0",
     "paths": {
       "@components/*": [
         "./src/components/*"

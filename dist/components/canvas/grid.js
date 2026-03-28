@@ -1,5 +1,7 @@
-import * as d3 from 'd3';
+import '../../node_modules/d3-transition/src/selection/index.js';
+import '../../node_modules/d3-zoom/src/transform.js';
 import { defaultConfig } from '../../config/defaultConfig.js';
+import select from '../../node_modules/d3-selection/src/select.js';
 
 // src/components/canvas/drawGrid.ts
 function drawGrid(svg, canvasConfig, grid) {
@@ -30,7 +32,7 @@ function drawGrid(svg, canvasConfig, grid) {
     }
 }
 function toggleGrid(enable) {
-    d3.select(".grid-group").style("display", enable ? "block" : "none");
+    select(".grid-group").style("display", enable ? "block" : "none");
 }
 function createDottedGrid(canvasConfig, grid) {
     var _a, _b;

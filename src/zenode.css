@@ -24,3 +24,84 @@ g.placed-node.dragging {
 g.placed-node.selected .selection-ring {
   pointer-events: none;
 }
+
+/* Context Pad */
+:root {
+  --zenode-contextpad-bg: rgba(28, 28, 30, 0.85);
+  --zenode-contextpad-border: rgba(255, 255, 255, 0.1);
+  --zenode-contextpad-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --zenode-contextpad-radius: 12px;
+  --zenode-context-btn-hover: rgba(255, 255, 255, 0.1);
+  --zenode-context-btn-active: rgba(74, 144, 226, 0.2);
+}
+
+.zenode-context-pad {
+  animation: zenode-fade-in 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: all;
+  background: var(--zenode-contextpad-bg);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid var(--zenode-contextpad-border);
+  border-radius: var(--zenode-contextpad-radius);
+  box-shadow: var(--zenode-contextpad-shadow);
+  display: flex;
+  gap: 6px;
+  padding: 6px;
+  z-index: 1000;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zenode-fade-in {
+  from { opacity: 0; transform: scale(0.95) translateY(4px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+:root {
+  --zenode-context-btn-width: 32px;
+  --zenode-context-btn-height: 32px;
+  --zenode-context-btn-padding: 0;
+  --zenode-context-btn-margin: 0;
+  --zenode-context-btn-color: #ebebf5;
+}
+
+.zenode-context-btn {
+  width: var(--zenode-context-btn-width);
+  height: var(--zenode-context-btn-height);
+  padding: var(--zenode-context-btn-padding);
+  margin: var(--zenode-context-btn-margin);
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--zenode-context-btn-color);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.zenode-context-btn:hover {
+  background: var(--zenode-context-btn-hover) !important;
+  color: white;
+}
+
+.zenode-context-btn.active {
+  background: var(--zenode-context-btn-active) !important;
+  color: var(--zenode-selection-color);
+  box-shadow: inset 0 0 0 1px rgba(74, 144, 226, 0.3);
+}
+
+.zenode-context-btn.danger:hover {
+  color: #ff453a !important;
+  background: rgba(255, 69, 58, 0.15) !important;
+}
+
+.zenode-context-btn svg {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 18px;
+  height: 18px;
+}
+
+.zenode-context-btn:active {
+  transform: scale(0.92);
+}

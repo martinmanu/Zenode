@@ -16,5 +16,4 @@ export default {
     commonjs(),      // Converts CommonJS modules to ES6
     typescript(),    // Compiles TypeScript
   ],
-  external: ['d3'],  // Exclude D3.js from the bundle (users will install it separately)
 };

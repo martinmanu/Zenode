@@ -15,6 +15,11 @@ export interface RenderApi extends DragApi {
   shapeRegistry: ShapeRegistry;
   getSelectedNodeIds(): string[];
   setSelectedNodeIds(ids: string[]): void;
+  getCanvasPoint(event: MouseEvent): { x: number; y: number };
+  startConnectionDrag(sourceNodeId: string, sourcePortId: string, startPoint: { x: number; y: number }): void;
+  updateConnectionDrag(currentPoint: { x: number; y: number }): void;
+  endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
+  isDrawingConnection(): boolean;
 }
 
 function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
@@ -126,7 +131,7 @@ function syncSelectionRings(
     .selectAll<SVGGElement, PlacedNode>("g.node")
     .each(function (d) {
       const el = d3.select<SVGGElement, PlacedNode>(this);
-      renderPorts(el as any, d, api.config, api.shapeRegistry);
+      renderPorts(el as any, d, api.config, api.shapeRegistry, api);
     });
 
   // Guard for stale ids after node deletions.

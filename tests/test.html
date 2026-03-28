@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zenode Library Test</title>
   <style>
-    body{
-        background-color: black;
+    body {
+      background-color: black;
     }
+
     #canvasContainer {
       width: 800px;
       height: 500px;
@@ -15,19 +17,22 @@
       border: 1px solid #000;
       margin: 20px auto;
     }
+
     button {
       margin: 10px;
       padding: 10px;
     }
   </style>
 </head>
+
 <body>
   <h1>Zenode Library Test</h1>
-  
+
   <div id="canvasContainer"></div>
-  
+
   <button onclick="initCanvas()">Initialize Canvas</button>
   <button onclick="addRectangle()">Add Rectangle</button>
+  <button onclick="addRectangle1()">Add Rectangle1</button>
   <button onclick="addCircle()">Add Circle</button>
   <script type="module">
     import * as d3 from "../node_modules/d3"
@@ -39,21 +44,26 @@
 
     function initCanvas() {
       console.log("Canvas initialized.");
-      initializeCanvas("#canvasContainer",testConfig);
+      initializeCanvas("#canvasContainer", testConfig);
     }
 
     function addRectangle() {
       createShape("rectangle", "task0");
     }
+    function addRectangle1() {
+      createShape("rectangle", "task1")
+    }
 
     function addCircle() {
-        createShape("circle", "circle1");
+      createShape("circle", "circle1");
     }
 
     // Expose functions globally so inline onclick works
     window.initCanvas = initCanvas;
     window.addRectangle = addRectangle;
+    window.addRectangle1 = addRectangle1;
     window.addCircle = addCircle;
   </script>
 </body>
+
 </html>

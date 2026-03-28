@@ -12,6 +12,7 @@ export function drawCanvas(
   elements: any;
   canvasContainer: any;
   connections: any;
+  ghostConnection: any;
   placedNodes: any;
   guides: any;
   lasso: any;
@@ -48,6 +49,10 @@ export function drawCanvas(
   const placedNodesGroup = canvasContainerGroup
     .insert("g", ".elements-group")
     .attr("class", "placed-nodes");
+  const ghostConnectionGroup = canvasContainerGroup
+    .insert("g", ".elements-group")
+    .attr("class", "ghost-connection")
+    .style("pointer-events", "none");
   const guidesGroup = canvasContainerGroup
     .append("g")
     .attr("class", "guides")
@@ -66,6 +71,7 @@ export function drawCanvas(
     svg: svg,
     canvasContainer: canvasContainerGroup,
     connections: connectionsGroup,
+    ghostConnection: ghostConnectionGroup,
     placedNodes: placedNodesGroup,
     guides: guidesGroup,
     lasso: lassoGroup,

@@ -1,3 +1,4 @@
+import { ZenodeEngine } from "./core/engine.js";
 import { Config } from "./model/configurationModel.js";
 import { VisualState } from "./types/index.js";
 /**
@@ -25,11 +26,6 @@ export declare function createConnection(from: string, to: string): void;
  * Returns the list of placed nodes (for use with createConnection node ids).
  */
 export declare function getPlacedNodes(): import("./model/interface.js").PlacedNode[];
-/**
- * Connects the first two placed nodes. Convenience for demos.
- * @returns true if a connection was created, false otherwise
- */
-export declare function connectFirstTwoNodes(): boolean;
 /** Enable or disable lasso selection tool interaction. */
 export declare function setLassoEnabled(enabled: boolean): void;
 /**
@@ -40,3 +36,29 @@ export declare function updateNodeVisualState(id: string, patch: Partial<VisualS
  * Updates visual state for a connection/edge (effects/status only).
  */
 export declare function updateEdgeVisualState(id: string, patch: Partial<VisualState>): void;
+/** Sets the license key for the engine. */
+export declare function setLicense(key: string): void;
+/** Enables or disables smart routing for connections. */
+export declare function setSmartRoutingEnabled(enabled: boolean): void;
+/** Enables or disables the connection drawing mode globally. */
+export declare function setConnectionModeEnabled(enabled: boolean): void;
+/** Sets the active connection type for newly created connections. */
+export declare function setActiveConnectionType(type: string): void;
+/** Sets the label text and enabled state for all default connection types. */
+export declare function setConnectionLabel(text: string, enabled: boolean): void;
+/** Returns the engine instance (advanced use). */
+export declare function getEngine(): ZenodeEngine | null;
+/** Returns the current license tier. */
+export declare function getLicenseTier(): string;
+/** Zooms the canvas in. */
+export declare function zoomIn(): void;
+/** Zooms the canvas out. */
+export declare function zoomOut(): void;
+/** Focuses (center + zoom) on the first selected node. */
+export declare function focusOnSelectedNode(): void;
+/** Registers a custom action for the context pad. */
+export declare function registerContextPadAction(action: any): void;
+/**
+ * Demo: Registers a "Smart Connect" action that connects to the nearest port of another node.
+ */
+export declare function registerSmartConnect(): void;

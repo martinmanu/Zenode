@@ -4,4 +4,10 @@ export declare class ZoomManager {
     private container;
     private config;
     constructor(container: any, svg: any, config: Config, triggerEvent: Function);
+    zoomBy(svg: any, factor: number, duration?: number): void;
+    zoomTo(svg: any, scale: number, duration?: number): void;
+    centerOn(svg: any, point: {
+        x: number;
+        y: number;
+    }, scale?: number, duration?: number): void;
 }

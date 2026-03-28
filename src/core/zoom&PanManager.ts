@@ -37,7 +37,36 @@ export class ZoomManager {
       const zoomDuration = config.canvasProperties.zoomDuration || defaultConfig.canvasProperties.zoomDuration
       const initialTransform = d3.zoomIdentity.scale(initialZoom);
       svg.call(this.zoomBehaviour.transform, initialTransform).transition().duration(zoomDuration);
-      //addMarkers
   }
-  
+
+  public zoomBy(svg: any, factor: number, duration: number = 300): void {
+    const currentTransform = d3.zoomTransform(svg.node());
+    const targetScale = currentTransform.k * factor;
+    svg.transition()
+      .duration(duration)
+      .call(this.zoomBehaviour.scaleBy, factor);
+  }
+
+  public zoomTo(svg: any, scale: number, duration: number = 300): void {
+    svg.transition()
+      .duration(duration)
+      .call(this.zoomBehaviour.scaleTo, scale);
+  }
+
+  public centerOn(svg: any, point: { x: number; y: number }, scale?: number, duration: number = 500): void {
+    const width = parseFloat(svg.attr("width") || window.innerWidth.toString());
+    const height = parseFloat(svg.attr("height") || window.innerHeight.toString());
+    
+    const targetScale = scale ?? d3.zoomTransform(svg.node()).k;
+    
+    // Calculate transform to center the point
+    const transform = d3.zoomIdentity
+      .translate(width / 2, height / 2)
+      .scale(targetScale)
+      .translate(-point.x, -point.y);
+
+    svg.transition()
+      .duration(duration)
+      .call(this.zoomBehaviour.transform, transform);
+  }
 }

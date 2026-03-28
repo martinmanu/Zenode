@@ -130,6 +130,10 @@ export function createDragBehavior(api: DragApi) {
         newY = snapped.y;
       }
       d3.select(this).attr("transform", `translate(${newX},${newY})`);
+      
+      // Real-time update for connections
+      api.updateNodePosition(d.id, newX, newY);
+
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
       }

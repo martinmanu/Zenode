@@ -65,6 +65,8 @@ export interface ShapeConfig {
       canvasContainer: any;
       /** Layer for connection lines (below placed nodes) */
       connections: any;
+      /** Layer for ghost connection (highest layer, but below guides) */
+      ghostConnection: any;
       /** Layer for placed nodes (above grid/connections, below preview) */
       placedNodes: any;
       /** Layer for alignment guides (highest layer) */
