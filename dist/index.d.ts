@@ -1,4 +1,5 @@
 import { Config } from "./model/configurationModel.js";
+import { VisualState } from "./types/index.js";
 /**
  * Initializes the Zenode engine.
  * @param containerSelector The selector for the container element.
@@ -31,3 +32,11 @@ export declare function getPlacedNodes(): import("./model/interface.js").PlacedN
 export declare function connectFirstTwoNodes(): boolean;
 /** Enable or disable lasso selection tool interaction. */
 export declare function setLassoEnabled(enabled: boolean): void;
+/**
+ * Updates visual state for a placed node (effects/status only).
+ */
+export declare function updateNodeVisualState(id: string, patch: Partial<VisualState>): void;
+/**
+ * Updates visual state for a connection/edge (effects/status only).
+ */
+export declare function updateEdgeVisualState(id: string, patch: Partial<VisualState>): void;

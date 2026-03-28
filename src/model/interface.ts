@@ -1,9 +1,12 @@
+import type { VisualState } from "../types/index.js";
+
 export interface Connection {
   id: string;
   source: string;
   target: string;
   type: string;
   label?: string;
+  visualState?: VisualState;
 }
 
 export interface Node {
@@ -17,6 +20,7 @@ export interface Node {
   name?: string
   icon?: string;
   data?: any;
+  visualState?: VisualState;
 }
 
 /** A node that has been placed on the canvas. Stored in engine state. */
@@ -32,6 +36,7 @@ export interface PlacedNode {
   radius?: number;
   /** User-defined data attached to the node */
   meta: Record<string, unknown>;
+  visualState?: VisualState;
 }
 
 export interface ShapeConfig {

@@ -15,7 +15,7 @@ export const testConfig: Config = {
       sheetDimension: 4,
       crossLength: 10
     },
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#ffffff",
     width: 800,
     height: 500,
     canvasClasses: ["test-canvas"],
@@ -32,19 +32,34 @@ export const testConfig: Config = {
     snapToGrid: true,
     alignmentLines: {
       enabled: true,
-      color: '#ad1111',
+      color: '#1ee80c',
       width: 2,
       dashed: true,
       dashArray: [2,3],
+      alignmentThreshold: 5,
+      edgeGuides: {
+        enabled: true,
+        color: '#340ce8',
+        width: 2,
+        dashed: true,
+        dashArray: [2,3],
+      },
+      centerGuides: {
+        enabled: true,
+        color: '#d9e80c',
+        width: 2,
+        dashed: true,
+        dashArray: [2,3],
+      },
       guideLineMode: 'full'
     },
     lassoStyle: {
       enabled: true,
-      strokeColor: '#4A90E2',
+      strokeColor: '#005bc4',
       strokeWidth: 1,
       dashed: true,
       dashArray: [4, 2],
-      fillColor: '#4A90E2',
+      fillColor: '#619fe787',
       fillOpacity: 0.12,
       cursor: 'crosshair',
       activeCursor: 'crosshair'
@@ -78,6 +93,16 @@ export const testConfig: Config = {
           }
         }
       }
+    },
+    ports: {
+      enabled: true,
+      radius: 5,
+      fillColor: "#ffffff",
+      strokeColor: "#000000",
+      strokeWidth: 1,
+      opacity: 1,
+      showOnHoverOnly: false,
+      cursor: "crosshair"
     }
     // dragType: "smooth"
   },

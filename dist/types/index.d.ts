@@ -52,6 +52,24 @@ export interface ResolvedShapeConfig {
 export interface ThemeConfig {
     [key: string]: unknown;
 }
+export interface VisualState {
+    status?: "idle" | "running" | "success" | "error" | "warning";
+    effects?: {
+        glow?: {
+            color?: string;
+            intensity?: number;
+        };
+        strokeAnimation?: {
+            type: "flow";
+            speed?: number;
+        };
+        gradientFlow?: {
+            progress: number;
+            fromColor: string;
+            toColor: string;
+        };
+    };
+}
 export interface ShapeRenderer {
     draw: (g: D3Selection, config: ResolvedShapeConfig, theme: ThemeConfig) => void;
     getPath: (config: ResolvedShapeConfig) => string;

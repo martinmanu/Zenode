@@ -34,7 +34,32 @@ export const defaultConfig: Config = {
       width: 2,
       dashed: true,
       dashArray: [2,3],
+      alignmentThreshold: 5,
+      edgeGuides: {
+        enabled: true,
+        color: '#000000',
+        width: 2,
+        dashed: true,
+        dashArray: [2, 3]
+      },
+      centerGuides: {
+        enabled: true,
+        color: 'var(--zenode-guide-color, #ffaa00)',
+        width: 2,
+        dashed: true,
+        dashArray: [2, 3]
+      },
       guideLineMode: 'full'
+    },
+    ports: {
+      enabled: true,
+      radius: 5,
+      fillColor: 'var(--zenode-port-color, #4A90E2)',
+      strokeColor: '#ffffff',
+      strokeWidth: 1,
+      opacity: 1,
+      showOnHoverOnly: true,
+      cursor: 'crosshair'
     },
     lassoStyle: {
       enabled: true,

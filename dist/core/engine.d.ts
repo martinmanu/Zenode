@@ -2,7 +2,7 @@ import { Config, Shape } from "../model/configurationModel.js";
 import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
 import { ShapeRegistry } from "../nodes/registry.js";
-import { ShapeRenderer } from "../types/index.js";
+import { ShapeRenderer, VisualState } from "../types/index.js";
 export declare class ZenodeEngine {
     container: HTMLElement | null;
     private config;
@@ -93,6 +93,14 @@ export declare class ZenodeEngine {
      * @param targetNodeId - Placed node id.
      */
     createConnection(sourceNodeId: string, targetNodeId: string): void;
+    /**
+     * Updates a node's visual state without mutating geometry/state in place.
+     */
+    updateNodeVisualState(id: string, patch: Partial<VisualState>): void;
+    /**
+     * Updates an edge/connection visual state immutably and re-renders connections.
+     */
+    updateEdgeVisualState(id: string, patch: Partial<VisualState>): void;
     lockedTheCanvas(locked: boolean): void;
     gridToggles(toggle: boolean): void;
     private bindSelectionInteractions;

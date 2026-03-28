@@ -3,11 +3,13 @@
  */
 import * as d3 from "d3";
 import { PlacedNode } from "../model/interface.js";
+import { VisualState } from "../types/index.js";
 export interface StoredConnection {
     id: string;
     sourceNodeId: string;
     targetNodeId: string;
     type: string;
+    visualState?: VisualState;
 }
 /**
  * Draws all connections as straight lines between node centers.

@@ -8,6 +8,10 @@ g.guides, g.elements-group {
   pointer-events: none;
 }
 
+.port {
+  pointer-events: all;
+}
+
 g.placed-node {
   cursor: grab;
 }

@@ -13,7 +13,7 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { RectangleRenderer } from "../nodes/shapes/rectangle.js";
 import { CircleRenderer } from "../nodes/shapes/circle.js";
 import { RhombusRenderer } from "../nodes/shapes/rhombus.js";
-import { ShapeRenderer, BoundingBox } from "../types/index.js";
+import { ShapeRenderer, BoundingBox, VisualState } from "../types/index.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
@@ -282,6 +282,7 @@ export class ZenodeEngine {
       sourceNodeId,
       targetNodeId,
       type: "straight",
+      visualState: { status: "idle" },
     };
     this.connections = [...this.connections, connection];
     if (this.canvasObject.connections) {
@@ -292,6 +293,56 @@ export class ZenodeEngine {
       );
     }
     this.eventManager.trigger("connection:created", { connection });
+  }
+
+  /**
+   * Updates a node's visual state without mutating geometry/state in place.
+   */
+  updateNodeVisualState(id: string, patch: Partial<VisualState>): void {
+    this.placedNodes = this.placedNodes.map((n) => {
+      if (n.id !== id) return n;
+      const mergedEffects = {
+        ...(n.visualState?.effects ?? {}),
+        ...(patch.effects ?? {}),
+      };
+      return {
+        ...n,
+        visualState: {
+          ...(n.visualState ?? {}),
+          ...patch,
+          effects: mergedEffects,
+        },
+      };
+    });
+
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("node:visualstate", { id, patch });
+  }
+
+  /**
+   * Updates an edge/connection visual state immutably and re-renders connections.
+   */
+  updateEdgeVisualState(id: string, patch: Partial<VisualState>): void {
+    this.connections = this.connections.map((c) => {
+      if (c.id !== id) return c;
+      const mergedEffects = {
+        ...(c.visualState?.effects ?? {}),
+        ...(patch.effects ?? {}),
+      };
+      return {
+        ...c,
+        visualState: {
+          ...(c.visualState ?? {}),
+          ...patch,
+          effects: mergedEffects,
+        },
+      };
+    });
+
+    this.reRenderConnections();
+    this.eventManager.trigger("edge:visualstate", { id, patch });
   }
 
   lockedTheCanvas(locked: boolean) {

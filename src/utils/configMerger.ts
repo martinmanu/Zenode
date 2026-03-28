@@ -36,6 +36,17 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
         width: userConfig.canvasProperties?.alignmentLines?.width ?? defaultConfig.canvasProperties.alignmentLines.width,
         dashed: userConfig.canvasProperties?.alignmentLines?.dashed ?? defaultConfig.canvasProperties.alignmentLines.dashed,
         dashArray: userConfig.canvasProperties?.alignmentLines?.dashArray ?? defaultConfig.canvasProperties.alignmentLines.dashArray,
+        alignmentThreshold:
+          userConfig.canvasProperties?.alignmentLines?.alignmentThreshold
+          ?? defaultConfig.canvasProperties.alignmentLines.alignmentThreshold,
+        // Keep these as partial overrides.
+        // If user passes {}, drag logic falls back to master alignment style.
+        edgeGuides:
+          userConfig.canvasProperties?.alignmentLines?.edgeGuides
+          ?? defaultConfig.canvasProperties.alignmentLines.edgeGuides,
+        centerGuides:
+          userConfig.canvasProperties?.alignmentLines?.centerGuides
+          ?? defaultConfig.canvasProperties.alignmentLines.centerGuides,
         guideLineMode: userConfig.canvasProperties?.alignmentLines?.guideLineMode ?? defaultConfig.canvasProperties.alignmentLines.guideLineMode
       },
       lassoStyle: {
@@ -83,7 +94,8 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
         callbacks:
           userConfig.canvasProperties?.keyboardShortcuts?.callbacks
           ?? defaultConfig.canvasProperties.keyboardShortcuts.callbacks,
-      }
+      },
+      ports: userConfig.canvasProperties?.ports ?? defaultConfig.canvasProperties.ports
     },
     shapes: userConfig.shapes ?? defaultConfig.shapes,
     connections: userConfig.connections ?? defaultConfig.connections,

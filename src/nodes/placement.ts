@@ -6,7 +6,9 @@ import { PlacedNode } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { createDragBehavior, DragApi } from "../events/drag.js";
 import { ShapeRegistry } from "./registry.js";
+import { renderPorts } from "./ports.js";
 import { buildResolvedShapeConfig, renderSelectionRing } from "./overlay.js";
+import { applyEffects } from "../effects/engine.js";
 
 /** Minimal API for rendering and interaction */
 export interface RenderApi extends DragApi {
@@ -53,20 +55,44 @@ export function renderPlacedNodes(
             api.setSelectedNodeIds([d.id]);
           });
 
-        g.each(function (d) {
-          const style = getShapeStyle(d, api.config);
-          if (!style) return;
-          const el = d3.select<SVGGElement, PlacedNode>(this);
-          const renderer = api.shapeRegistry.get(d.type);
-          const resolvedConfig = buildResolvedShapeConfig(d, style);
-          renderer.draw(el as any, resolvedConfig, {});
-        });
-        return g;
-      },
-      (update) => update.attr("transform", (d) => `translate(${d.x},${d.y})`),
-      (exit) => exit.remove()
-    );
+      g.each(function (d) {
+        const style = getShapeStyle(d, api.config);
+        if (!style) return;
+        const el = d3.select<SVGGElement, PlacedNode>(this);
+        const renderer = api.shapeRegistry.get(d.type);
+        const resolvedConfig = buildResolvedShapeConfig(d, style);
 
+        // Clear only if needed, but renderer.draw usually appends.
+        // If renderer.draw is called every time, it might be doubling up elements.
+        el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
+
+        renderer.draw(el as any, resolvedConfig, {});
+        applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
+      });
+      return g;
+    },
+    (update) => {
+      update.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      update.each(function (d) {
+        const style = getShapeStyle(d, api.config);
+        if (!style) return;
+        const el = d3.select<SVGGElement, PlacedNode>(this);
+        const renderer = api.shapeRegistry.get(d.type);
+        const resolvedConfig = buildResolvedShapeConfig(d, style);
+
+        // Ensure we don't clear ports during update
+        el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
+
+        renderer.draw(el as any, resolvedConfig, {});
+        applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
+      });
+      return update;
+    },
+    (exit) => exit.remove()
+  );
+
+  // We don't need the second .each loop here because we moved the logic into join
+  // syncSelectionRings will still call renderPorts
   syncSelectionRings(placedNodesGroup, api, placedNodes);
 }
 
@@ -93,6 +119,14 @@ function syncSelectionRings(
       if (!style) return;
 
       renderSelectionRing(group, nodeDatum, style, api.shapeRegistry, selectionStroke, 4);
+    });
+
+  // Finally render ports for ALL nodes to ensure they are always on top
+  placedNodesGroup
+    .selectAll<SVGGElement, PlacedNode>("g.node")
+    .each(function (d) {
+      const el = d3.select<SVGGElement, PlacedNode>(this);
+      renderPorts(el as any, d, api.config, api.shapeRegistry);
     });
 
   // Guard for stale ids after node deletions.

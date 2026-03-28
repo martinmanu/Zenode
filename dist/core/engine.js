@@ -229,12 +229,43 @@ class ZenodeEngine {
             sourceNodeId,
             targetNodeId,
             type: "straight",
+            visualState: { status: "idle" },
         };
         this.connections = [...this.connections, connection];
         if (this.canvasObject.connections) {
             renderConnections(this.canvasObject.connections, this.connections, this.placedNodes);
         }
         this.eventManager.trigger("connection:created", { connection });
+    }
+    /**
+     * Updates a node's visual state without mutating geometry/state in place.
+     */
+    updateNodeVisualState(id, patch) {
+        this.placedNodes = this.placedNodes.map((n) => {
+            var _a, _b, _c, _d;
+            if (n.id !== id)
+                return n;
+            const mergedEffects = Object.assign(Object.assign({}, ((_b = (_a = n.visualState) === null || _a === void 0 ? void 0 : _a.effects) !== null && _b !== void 0 ? _b : {})), ((_c = patch.effects) !== null && _c !== void 0 ? _c : {}));
+            return Object.assign(Object.assign({}, n), { visualState: Object.assign(Object.assign(Object.assign({}, ((_d = n.visualState) !== null && _d !== void 0 ? _d : {})), patch), { effects: mergedEffects }) });
+        });
+        if (this.canvasObject.placedNodes) {
+            renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+        }
+        this.eventManager.trigger("node:visualstate", { id, patch });
+    }
+    /**
+     * Updates an edge/connection visual state immutably and re-renders connections.
+     */
+    updateEdgeVisualState(id, patch) {
+        this.connections = this.connections.map((c) => {
+            var _a, _b, _c, _d;
+            if (c.id !== id)
+                return c;
+            const mergedEffects = Object.assign(Object.assign({}, ((_b = (_a = c.visualState) === null || _a === void 0 ? void 0 : _a.effects) !== null && _b !== void 0 ? _b : {})), ((_c = patch.effects) !== null && _c !== void 0 ? _c : {}));
+            return Object.assign(Object.assign({}, c), { visualState: Object.assign(Object.assign(Object.assign({}, ((_d = c.visualState) !== null && _d !== void 0 ? _d : {})), patch), { effects: mergedEffects }) });
+        });
+        this.reRenderConnections();
+        this.eventManager.trigger("edge:visualstate", { id, patch });
     }
     lockedTheCanvas(locked) {
         lockedCanvas(locked, this.svg, this.zoomBehaviour);

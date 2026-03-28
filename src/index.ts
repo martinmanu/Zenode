@@ -1,5 +1,6 @@
 import { ZenodeEngine } from "./core/engine.js";
 import { Config } from "./model/configurationModel.js";
+import { VisualState } from "./types/index.js";
 import * as d3 from "d3";
 
 let engineInstance: ZenodeEngine | null = null;
@@ -13,7 +14,6 @@ let engineInstance: ZenodeEngine | null = null;
 export function initializeCanvas(containerSelector: string, userConfig: Partial<Config>) {
   if (!engineInstance) {
     const inputConfig : Partial<Config> = { ...userConfig };
-    console.log(inputConfig)
     const container = document.querySelector(containerSelector) as HTMLElement;
 
     if (!container) {
@@ -94,4 +94,24 @@ export function setLassoEnabled(enabled: boolean): void {
     throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
   }
   engineInstance.setLassoEnabled(enabled);
+}
+
+/**
+ * Updates visual state for a placed node (effects/status only).
+ */
+export function updateNodeVisualState(id: string, patch: Partial<VisualState>): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.updateNodeVisualState(id, patch);
+}
+
+/**
+ * Updates visual state for a connection/edge (effects/status only).
+ */
+export function updateEdgeVisualState(id: string, patch: Partial<VisualState>): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.updateEdgeVisualState(id, patch);
 }

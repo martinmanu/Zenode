@@ -36,6 +36,7 @@ export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
     height: shapeConfig.height,
     radius: shapeConfig.radius,
     meta: {},
+    visualState: { status: "idle" },
   };
 
   api.placeNode(node);

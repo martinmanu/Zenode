@@ -52,8 +52,19 @@ export interface CanvasProperties {
     panEnabled: boolean;
     snapToGrid: boolean;
     alignmentLines: AlignmentLines;
+    ports?: PortStyle;
     lassoStyle: LassoStyle;
     keyboardShortcuts: KeyboardShortcuts;
+}
+export interface PortStyle {
+    enabled: boolean;
+    radius: number;
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: number;
+    opacity: number;
+    showOnHoverOnly: boolean;
+    cursor: string;
 }
 export interface LassoStyle {
     enabled: boolean;
@@ -90,12 +101,24 @@ export interface KeyboardShortcuts {
     customBindings?: Record<string, string[]>;
     callbacks?: KeyboardShortcutCallbacks;
 }
+export interface AlignmentGuideStyle {
+    enabled: boolean;
+    color: string;
+    width: number;
+    dashed: boolean;
+    dashArray: number[];
+}
 export interface AlignmentLines {
     enabled: boolean;
     color: string;
     width: number;
     dashed: boolean;
     dashArray: number[];
+    alignmentThreshold: number;
+    /** Optional per-edge overrides. Empty object {} means "use master alignment style". */
+    edgeGuides: Partial<AlignmentGuideStyle>;
+    /** Optional per-center overrides. Empty object {} means "use master alignment style". */
+    centerGuides: Partial<AlignmentGuideStyle>;
     /** 'full' = infinite lines across entire canvas, 'partial' = short segment between nodes */
     guideLineMode: 'full' | 'partial';
 }

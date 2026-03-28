@@ -32,6 +32,21 @@ export const testConfig: Config = {
       width: 2,
       dashed: true,
       dashArray: [2,3],
+      alignmentThreshold: 5,
+      edgeGuides: {
+        enabled: true,
+        color: '#000000',
+        width: 2,
+        dashed: true,
+        dashArray: [2, 3]
+      },
+      centerGuides: {
+        enabled: true,
+        color: '#ffaa00',
+        width: 2,
+        dashed: true,
+        dashArray: [2, 3]
+      },
       guideLineMode: 'full'
     },
     lassoStyle: {
@@ -53,6 +68,16 @@ export const testConfig: Config = {
         "selection:clear": ["Ctrl+D"]
       },
       callbacks: {}
+    },
+    ports: {
+      enabled: true,
+      radius: 5,
+      fillColor: '#4A90E2',
+      strokeColor: '#ffffff',
+      strokeWidth: 1,
+      opacity: 1,
+      showOnHoverOnly: true,
+      cursor: 'crosshair'
     }
     // dragType: "smooth", // Keep drag smooth
   },

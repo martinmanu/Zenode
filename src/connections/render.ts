@@ -3,12 +3,15 @@
  */
 import * as d3 from "d3";
 import { PlacedNode } from "../model/interface.js";
+import { VisualState } from "../types/index.js";
+import { applyEffects } from "../effects/engine.js";
 
 export interface StoredConnection {
   id: string;
   sourceNodeId: string;
   targetNodeId: string;
   type: string;
+  visualState?: VisualState;
 }
 
 function getNodeCenter(node: PlacedNode): { x: number; y: number } {
@@ -29,30 +32,37 @@ export function renderConnections(
   );
 
   const binding = connectionsGroup
-    .selectAll<SVGLineElement, StoredConnection>("line.connection")
+    .selectAll<SVGGElement, StoredConnection>("g.connection")
     .data(valid, (d: StoredConnection) => d.id);
 
   binding
     .join(
       (enter) => {
-        return enter
-          .append("line")
+        const g = enter
+          .append("g")
           .attr("class", "connection")
-          .attr("data-connection-id", (d) => d.id)
-          .attr("stroke", "#333")
-          .attr("stroke-width", 2)
-          .attr("x1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)!).x)
-          .attr("y1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)!).y)
-          .attr("x2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)!).x)
-          .attr("y2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)!).y);
+          .attr("data-connection-id", (d) => d.id);
+
+        g.append("path").attr("class", "connection-line");
+        return g;
       },
-      (update) => {
-        return update
-          .attr("x1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)!).x)
-          .attr("y1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)!).y)
-          .attr("x2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)!).x)
-          .attr("y2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)!).y);
-      },
+      (update) => update,
       (exit) => exit.remove()
-    );
+    )
+    .each(function (d) {
+      const group = d3.select<SVGGElement, StoredConnection>(this);
+      const source = getNodeCenter(nodeById.get(d.sourceNodeId)!);
+      const target = getNodeCenter(nodeById.get(d.targetNodeId)!);
+      const path = `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+
+      group
+        .select<SVGPathElement>("path.connection-line")
+        .attr("d", path)
+        .attr("fill", "none")
+        .attr("stroke", "#333")
+        .attr("stroke-width", 2)
+        .style("pointer-events", "none");
+
+      applyEffects(group as any, path, d.visualState);
+    });
 }

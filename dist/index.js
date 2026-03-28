@@ -10,7 +10,6 @@ let engineInstance = null;
 function initializeCanvas(containerSelector, userConfig) {
     if (!engineInstance) {
         const inputConfig = Object.assign({}, userConfig);
-        console.log(inputConfig);
         const container = document.querySelector(containerSelector);
         if (!container) {
             throw new Error(`Container '${containerSelector}' not found in DOM.`);
@@ -84,6 +83,24 @@ function setLassoEnabled(enabled) {
     }
     engineInstance.setLassoEnabled(enabled);
 }
+/**
+ * Updates visual state for a placed node (effects/status only).
+ */
+function updateNodeVisualState(id, patch) {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    engineInstance.updateNodeVisualState(id, patch);
+}
+/**
+ * Updates visual state for a connection/edge (effects/status only).
+ */
+function updateEdgeVisualState(id, patch) {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    engineInstance.updateEdgeVisualState(id, patch);
+}
 
-export { connectFirstTwoNodes, createConnection, createShape, getPlacedNodes, initializeCanvas, setLassoEnabled };
+export { connectFirstTwoNodes, createConnection, createShape, getPlacedNodes, initializeCanvas, setLassoEnabled, updateEdgeVisualState, updateNodeVisualState };
 //# sourceMappingURL=index.js.map

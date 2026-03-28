@@ -1,3 +1,9 @@
+import * as d3 from 'd3';
+import { applyEffects } from '../effects/engine.js';
+
+/**
+ * Renders connection lines on g.connections layer. Straight line from source to target node center.
+ */
 function getNodeCenter(node) {
     return { x: node.x, y: node.y };
 }
@@ -8,27 +14,31 @@ function renderConnections(connectionsGroup, connections, placedNodes) {
     const nodeById = new Map(placedNodes.map((n) => [n.id, n]));
     const valid = connections.filter((c) => nodeById.has(c.sourceNodeId) && nodeById.has(c.targetNodeId));
     const binding = connectionsGroup
-        .selectAll("line.connection")
+        .selectAll("g.connection")
         .data(valid, (d) => d.id);
     binding
         .join((enter) => {
-        return enter
-            .append("line")
+        const g = enter
+            .append("g")
             .attr("class", "connection")
-            .attr("data-connection-id", (d) => d.id)
+            .attr("data-connection-id", (d) => d.id);
+        g.append("path").attr("class", "connection-line");
+        return g;
+    }, (update) => update, (exit) => exit.remove())
+        .each(function (d) {
+        const group = d3.select(this);
+        const source = getNodeCenter(nodeById.get(d.sourceNodeId));
+        const target = getNodeCenter(nodeById.get(d.targetNodeId));
+        const path = `M ${source.x} ${source.y} L ${target.x} ${target.y}`;
+        group
+            .select("path.connection-line")
+            .attr("d", path)
+            .attr("fill", "none")
             .attr("stroke", "#333")
             .attr("stroke-width", 2)
-            .attr("x1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)).x)
-            .attr("y1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)).y)
-            .attr("x2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)).x)
-            .attr("y2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)).y);
-    }, (update) => {
-        return update
-            .attr("x1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)).x)
-            .attr("y1", (d) => getNodeCenter(nodeById.get(d.sourceNodeId)).y)
-            .attr("x2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)).x)
-            .attr("y2", (d) => getNodeCenter(nodeById.get(d.targetNodeId)).y);
-    }, (exit) => exit.remove());
+            .style("pointer-events", "none");
+        applyEffects(group, path, d.visualState);
+    });
 }
 
 export { renderConnections };

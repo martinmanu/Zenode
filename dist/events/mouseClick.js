@@ -23,6 +23,7 @@ function svgMouseClick(event, api) {
         height: shapeConfig.height,
         radius: shapeConfig.radius,
         meta: {},
+        visualState: { status: "idle" },
     };
     api.placeNode(node);
     removeAllPreview(api.canvasObject);
