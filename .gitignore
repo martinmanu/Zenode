@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+
+# Development/Debug
+.env
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+tsc.log
+tsc.txt
+
+# OS metadata
+.DS_Store
+Thumbs.db
