@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "build": "npx rollup -c",
+    "build": "npx rollup -c && node build-vercel.js",
     "dev": "npx rollup -c -w",
     "start": "npm run build && npx http-server . -p 3000 -o playground/index.html",
     "prepublishOnly": "npm run build"
