@@ -18,8 +18,8 @@
     }
   },
   "scripts": {
-    "build": "rollup -c",
-    "dev": "rollup -c -w",
+    "build": "npx rollup -c",
+    "dev": "npx rollup -c -w",
     "start": "npm run build && npx http-server . -p 3000 -o playground/index.html",
     "prepublishOnly": "npm run build"
   },
