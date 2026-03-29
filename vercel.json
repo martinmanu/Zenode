@@ -1,7 +1,0 @@
-{
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/playground/index.html" },
-    { "source": "/zenode.css", "destination": "/playground/zenode.css" }
-  ]
-}
