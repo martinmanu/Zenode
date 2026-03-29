@@ -1,10 +1,6 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import transform from '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { snapToGrid } from '../utils/helpers.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
-import drag from '../node_modules/d3-drag/src/drag.js';
-import select from '../node_modules/d3-selection/src/select.js';
-import pointer from '../node_modules/d3-selection/src/pointer.js';
 
 function getShapeStyle(node, config) {
     var _a;
@@ -69,29 +65,68 @@ function getGuideStyle(alignCfg, kind) {
         dashArray: (_v = (_u = alignCfg.centerGuides) === null || _u === void 0 ? void 0 : _u.dashArray) !== null && _v !== void 0 ? _v : fallback.dashArray,
     };
 }
-/**
- * Creates and returns a D3 drag behavior for placed nodes.
- */
 function createDragBehavior(api) {
     let guideRaf = null;
-    return drag()
+    const initialPos = new Map();
+    const initialPointers = new Map();
+    return d3.drag()
         .on("start", function (event, d) {
-        event.sourceEvent.stopPropagation();
-        select(this).raise().classed("dragging", true);
+        var _a;
+        (_a = event.sourceEvent) === null || _a === void 0 ? void 0 : _a.stopPropagation();
+        d3.select(this).raise().classed("dragging", true);
+        api.setSelectedNodeIds([d.id]);
+        if (event.sourceEvent) {
+            const svgGroupNode = api.canvasObject.elements.node();
+            const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+            initialPointers.set(d.id, { x: px, y: py });
+            // Critically: Fetch the fresh state node instead of parsing the stale DOM datum `d` 
+            // to prevent shapes snapping back to origin during rapid chained interactions.
+            const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
+            initialPos.set(d.id, { x: freshNode.x, y: freshNode.y });
+        }
     })
         .on("drag", function (event, d) {
         var _a, _b;
+        if (!event.sourceEvent)
+            return;
+        const initialP = initialPointers.get(d.id);
+        const initialD = initialPos.get(d.id);
+        if (!initialP || !initialD)
+            return;
+        const svgGroupNode = api.canvasObject.elements.node();
+        const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+        const dx = px - initialP.x;
+        const dy = py - initialP.y;
+        let newX = initialD.x + dx;
+        let newY = initialD.y + dy;
         const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-        const zoomTransform = transform(api.svgNode);
-        const [px, py] = pointer(event.sourceEvent, api.svgNode);
-        let newX = (px - zoomTransform.x) / zoomTransform.k;
-        let newY = (py - zoomTransform.y) / zoomTransform.k;
         if (api.config.canvasProperties.snapToGrid) {
             const snapped = snapToGrid(newX, newY, gridSize);
             newX = snapped.x;
             newY = snapped.y;
         }
-        select(this).attr("transform", `translate(${newX},${newY})`);
+        // Auto-pan if reaching boundary
+        if (api.panBy) {
+            const rect = api.svgNode.getBoundingClientRect();
+            const margin = 40;
+            const moveX = event.sourceEvent.clientX; // screen relative
+            const moveY = event.sourceEvent.clientY;
+            let panX = 0;
+            let panY = 0;
+            const speed = 1.5; // Virtual logical step mapped strictly 1:1
+            if (moveX < rect.left + margin)
+                panX = speed;
+            else if (moveX > rect.right - margin)
+                panX = -1.5;
+            if (moveY < rect.top + margin)
+                panY = speed;
+            else if (moveY > rect.bottom - margin)
+                panY = -1.5;
+            if (panX !== 0 || panY !== 0) {
+                api.panBy(panX, panY);
+            }
+        }
+        d3.select(this).attr("transform", `translate(${newX},${newY})`);
         // Real-time update for connections
         api.updateNodePosition(d.id, newX, newY);
         if (guideRaf !== null) {
@@ -104,18 +139,31 @@ function createDragBehavior(api) {
     })
         .on("end", function (event, d) {
         var _a, _b;
-        select(this).classed("dragging", false);
+        d3.select(this).classed("dragging", false);
         const gridSize = (_b = (_a = api.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-        const zoomTransform = transform(api.svgNode);
-        const [px, py] = pointer(event.sourceEvent, api.svgNode);
-        let finalX = (px - zoomTransform.x) / zoomTransform.k;
-        let finalY = (py - zoomTransform.y) / zoomTransform.k;
-        if (api.config.canvasProperties.snapToGrid) {
-            const snapped = snapToGrid(finalX, finalY, gridSize);
-            finalX = snapped.x;
-            finalY = snapped.y;
+        if (!event.sourceEvent) {
+            initialPointers.delete(d.id);
+            initialPos.delete(d.id);
+            return;
         }
-        api.updateNodePosition(d.id, finalX, finalY);
+        const initialP = initialPointers.get(d.id);
+        const initialD = initialPos.get(d.id);
+        if (initialP && initialD) {
+            const svgGroupNode = api.canvasObject.elements.node();
+            const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+            const dx = px - initialP.x;
+            const dy = py - initialP.y;
+            let finalX = initialD.x + dx;
+            let finalY = initialD.y + dy;
+            if (api.config.canvasProperties.snapToGrid) {
+                const snapped = snapToGrid(finalX, finalY, gridSize);
+                finalX = snapped.x;
+                finalY = snapped.y;
+            }
+            api.updateNodePosition(d.id, finalX, finalY);
+        }
+        initialPointers.delete(d.id);
+        initialPos.delete(d.id);
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
             guideRaf = null;

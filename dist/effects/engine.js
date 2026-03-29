@@ -1,6 +1,4 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import '../node_modules/d3-zoom/src/transform.js';
-import select from '../node_modules/d3-selection/src/select.js';
+import * as d3 from 'd3';
 
 const EFFECTS_STYLE_ID = "zenode-effects-style";
 const FLOW_KEYFRAME = "zenode-stroke-flow";
@@ -82,7 +80,7 @@ function applyEffects(g, path, visualState) {
     if (!svgNode)
         return;
     ensureEffectsStyle();
-    const svg = select(svgNode);
+    const svg = d3.select(svgNode);
     const defs = ensureDefs(svg);
     const overlay = g
         .append("path")

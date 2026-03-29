@@ -1,14 +1,12 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import transform from '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { defaultConfig } from '../config/defaultConfig.js';
 import { snapToGrid } from '../utils/helpers.js';
 import { roundedRectPath } from '../nodes/geometry/rectanglePath.js';
-import pointer from '../node_modules/d3-selection/src/pointer.js';
 
 function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data) {
     const gridSize = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
-    const zoomTransform = transform(canvasObject.svg.node());
-    const [cursorX, cursorY] = pointer(event, canvasObject.svg.node());
+    const zoomTransform = d3.zoomTransform(canvasObject.svg.node());
+    const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
     const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
     const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
     let exactPosition;

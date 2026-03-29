@@ -10,8 +10,7 @@ export interface DragApi {
     canvasObject: CanvasElements;
     /** SVG root node — needed for correct pointer coordinate transform */
     svgNode: SVGSVGElement;
+    setSelectedNodeIds(ids: string[]): void;
+    panBy?: (dx: number, dy: number) => void;
 }
-/**
- * Creates and returns a D3 drag behavior for placed nodes.
- */
 export declare function createDragBehavior(api: DragApi): d3.DragBehavior<SVGGElement, PlacedNode, PlacedNode | d3.SubjectPosition>;

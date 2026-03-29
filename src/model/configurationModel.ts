@@ -15,12 +15,12 @@ export interface ContextPadConfig {
   enabled: boolean;
   trigger: "hover" | "select";
   position:
-    | "top-right"
-    | "top-left"
-    | "bottom-right"
-    | "bottom-left"
-    | "top-center"
-    | "bottom-center";
+  | "top-right"
+  | "top-left"
+  | "bottom-right"
+  | "bottom-left"
+  | "top-center"
+  | "bottom-center";
   offset: { x: number; y: number };
   showDefaults: boolean;
   suppressDefaults?: string[];
@@ -56,6 +56,8 @@ export interface LineStyle {
   labelBorderRadius?: number;
   icon?: string | null;
   clickFunction?: (() => void) | null;
+  animation?: { type: string; speed: number }; // e.g. { type: 'flow', speed: 1 }
+  markerEnd?: string; // "arrow", "circle", "none"
 }
 
 export interface Connection {
@@ -63,6 +65,8 @@ export interface Connection {
   style: string;
   color: string;
   width: number;
+  dashed?: boolean;
+  animated?: boolean;
   lineStyle: LineStyle;
 }
 

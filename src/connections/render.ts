@@ -28,6 +28,42 @@ function getNodePortPos(node: PlacedNode, portId: string, registry: any, config:
   return { x: node.x + port.x, y: node.y + port.y };
 }
 
+function getMarkerId(svg: any, type: string, color: string): string {
+    if (!type || type === "none") return "";
+    let defs = svg.select("defs.zenode-markers");
+    if (defs.empty()) {
+        defs = svg.append("defs").attr("class", "zenode-markers");
+    }
+    const safeColor = color.replace(/[^a-zA-Z0-9_-]/g, "");
+    const id = `marker-${type}-${safeColor}`;
+    if (defs.select(`#${id}`).empty()) {
+        const marker = defs.append("marker")
+            .attr("id", id)
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", type === "arrow" ? 9 : 5)
+            .attr("refY", 5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto-start-reverse");
+        if (type === "arrow") {
+            marker.append("path").attr("d", "M 0 0 L 10 5 L 0 10 z").attr("fill", color);
+        } else if (type === "circle") {
+            marker.append("circle").attr("cx", 5).attr("cy", 5).attr("r", 4).attr("fill", color);
+        }
+    }
+    return id;
+}
+
+function ensureStyles(): void {
+  if (typeof document === "undefined") return;
+  if (!document.getElementById("zenode-conn-styles")) {
+    const s = document.createElement("style");
+    s.id = "zenode-conn-styles";
+    s.textContent = `@keyframes zenode-stroke-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -32; } }`;
+    document.head.appendChild(s);
+  }
+}
+
 /**
  * Draws all connections using the specialized path calculators.
  */
@@ -57,6 +93,7 @@ export function renderConnections(
           .attr("class", "connection")
           .attr("data-connection-id", (d) => d.id);
 
+        g.append("path").attr("class", "connection-hitbox");
         g.append("path").attr("class", "connection-line");
         return g;
       },
@@ -106,14 +143,58 @@ export function renderConnections(
       const connConfig = config?.connections?.default?.[d.type as keyof typeof config.connections.default] || 
                          config?.connections?.default?.straight;
 
+      const isSelected = engine?.getSelectedEdgeIds?.()?.includes(d.id);
+      const strokeColor = isSelected ? "var(--zenode-selection-color, #4A90E2)" : (connConfig?.color || "#333");
+
+      ensureStyles();
+
+      const markerType = connConfig?.lineStyle?.markerEnd;
+      let markerId = "";
+      if (markerType && markerType !== "none") {
+          const svgNode = group.node()?.ownerSVGElement;
+          if (svgNode) {
+              markerId = getMarkerId(d3.select(svgNode), markerType, strokeColor);
+          }
+      }
+
+      group
+        .select<SVGPathElement>("path.connection-hitbox")
+        .attr("d", path)
+        .attr("fill", "none")
+        .attr("stroke", "transparent")
+        .attr("stroke-width", 15)
+        .style("cursor", "pointer")
+        .on("click", (event) => {
+           if (engine?.getPlacementContext?.()) return;
+           event.stopPropagation();
+           engine?.clearSelection?.();
+           engine?.setSelectedEdgeIds?.([d.id]);
+        });
+
       group
         .select<SVGPathElement>("path.connection-line")
         .attr("d", path)
         .attr("fill", "none")
-        .attr("stroke", connConfig?.color || "#333")
-        .attr("stroke-width", connConfig?.width || 2)
-        .attr("stroke-dasharray", connConfig?.lineStyle?.dashArray?.join(",") || null)
+        .attr("stroke", strokeColor)
+        .attr("stroke-width", isSelected ? Math.max((connConfig?.width || 2) + 1, 3) : (connConfig?.width || 2))
+        .attr("stroke-dasharray", () => {
+             if (connConfig?.dashed) {
+                 return connConfig?.lineStyle?.dashArray?.join(",") || "8,8";
+             }
+             return null;
+        })
+        .attr("marker-end", markerId ? `url(#${markerId})` : null)
         .style("pointer-events", "none");
+
+      const anim = connConfig?.lineStyle?.animation;
+      if (connConfig?.animated && anim && anim.type === "flow") {
+          const speed = Math.max(0.1, anim.speed ?? 1);
+          const duration = 1 / Math.max(0.01, speed);
+          group.select<SVGPathElement>("path.connection-line")
+               .style("animation", `zenode-stroke-flow ${duration.toFixed(3)}s linear infinite`);
+      } else {
+          group.select<SVGPathElement>("path.connection-line").style("animation", "none");
+      }
 
       // Render Label
       renderConnectionLabel(group, path, d, config);

@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
-
+dist/
+dist\
+zenode.cursorrules.md
+zenode_layer1_prompt.md
 # Logs
 *.log
 npm-debug.log*

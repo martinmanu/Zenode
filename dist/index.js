@@ -21,6 +21,24 @@ function initializeCanvas(containerSelector, userConfig) {
     }
 }
 /**
+ * Updates the engine configuration.
+ * @param userConfig New configuration object.
+ */
+function updateConfig(userConfig) {
+    if (!engineInstance) {
+        throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+    }
+    engineInstance.updateConfig(userConfig);
+}
+/**
+ * Resizes the canvas dimensions smoothly.
+ */
+function resizeCanvas(width, height) {
+    if (!engineInstance)
+        return;
+    engineInstance.resizeCanvas(width, height);
+}
+/**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").
  * @param name Optional shape name.
@@ -196,5 +214,5 @@ function registerSmartConnect() {
     });
 }
 
-export { createConnection, createShape, focusOnSelectedNode, getEngine, getLicenseTier, getPlacedNodes, initializeCanvas, registerContextPadAction, registerSmartConnect, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, updateEdgeVisualState, updateNodeVisualState, zoomIn, zoomOut };
+export { ZenodeEngine, createConnection, createShape, focusOnSelectedNode, getEngine, getLicenseTier, getPlacedNodes, initializeCanvas, registerContextPadAction, registerSmartConnect, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, updateConfig, updateEdgeVisualState, updateNodeVisualState, zoomIn, zoomOut };
 //# sourceMappingURL=index.js.map

@@ -1,5 +1,4 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import transform from '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 
 class ContextPadRenderer {
     constructor(container) {
@@ -139,14 +138,14 @@ class ContextPadRenderer {
      * Updates the pad position based on the current zoom transform.
      */
     updatePosition(engine) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         if (!this.padElement || !this.currentTarget)
             return;
         const config = engine.config.canvasProperties.contextPad || {
             position: "top-right",
             offset: { x: 10, y: -10 }};
         const svg = engine.svg;
-        const transform$1 = transform(svg.node());
+        const transform = d3.zoomTransform(svg.node());
         let x = 0;
         let y = 0;
         if (this.currentTarget.kind === 'node') {
@@ -156,11 +155,19 @@ class ContextPadRenderer {
             if (!node)
                 return;
             const style = engine.getShapeStyle(node);
-            const w = ((_a = style === null || style === void 0 ? void 0 : style.width) !== null && _a !== void 0 ? _a : 100);
-            const h = ((_b = style === null || style === void 0 ? void 0 : style.height) !== null && _b !== void 0 ? _b : 100);
-            // Base canvas coordinates
-            let canvasX = node.x;
-            let canvasY = node.y;
+            // Fallback for node properties, width/height is what gets rendered
+            let w = ((_b = (_a = style === null || style === void 0 ? void 0 : style.width) !== null && _a !== void 0 ? _a : node.width) !== null && _b !== void 0 ? _b : 100);
+            let h = ((_d = (_c = style === null || style === void 0 ? void 0 : style.height) !== null && _c !== void 0 ? _c : node.height) !== null && _d !== void 0 ? _d : 100);
+            // Handle circular shapes where dimensions are defined by radius
+            if (node.type === 'circle') {
+                const r = (_f = (_e = style === null || style === void 0 ? void 0 : style.radius) !== null && _e !== void 0 ? _e : node.radius) !== null && _f !== void 0 ? _f : 30;
+                w = r * 2;
+                h = r * 2;
+            }
+            // node.x and node.y are the center of the node.
+            // Convert to top-left of the bounding box.
+            let canvasX = node.x - w / 2;
+            let canvasY = node.y - h / 2;
             // Apply anchor position
             switch (config.position) {
                 case "top-right":
@@ -183,38 +190,29 @@ class ContextPadRenderer {
                     break;
             }
             // Project to screen
-            x = canvasX * transform$1.k + transform$1.x;
-            y = canvasY * transform$1.k + transform$1.y;
+            x = canvasX * transform.k + transform.x;
+            y = canvasY * transform.k + transform.y;
         }
         else {
             // For edges, position at midpoint
-            x = transform$1.x;
-            y = transform$1.y;
+            const edgeId = this.currentTarget.id;
+            const svgPath = (_g = engine.container) === null || _g === void 0 ? void 0 : _g.querySelector(`.connection[data-connection-id="${edgeId}"] path.connection-line`);
+            if (svgPath && typeof svgPath.getTotalLength === 'function') {
+                const totalLen = svgPath.getTotalLength();
+                const midpoint = svgPath.getPointAtLength(totalLen / 2);
+                x = midpoint.x * transform.k + transform.x;
+                y = midpoint.y * transform.k + transform.y;
+            }
+            else {
+                x = transform.x;
+                y = transform.y;
+            }
         }
         // Apply offset from config
-        const offsetX = (_d = (_c = config.offset) === null || _c === void 0 ? void 0 : _c.x) !== null && _d !== void 0 ? _d : 10;
-        const offsetY = (_f = (_e = config.offset) === null || _e === void 0 ? void 0 : _e.y) !== null && _f !== void 0 ? _f : -10;
+        const offsetX = (_j = (_h = config.offset) === null || _h === void 0 ? void 0 : _h.x) !== null && _j !== void 0 ? _j : 10;
+        const offsetY = (_l = (_k = config.offset) === null || _k === void 0 ? void 0 : _k.y) !== null && _l !== void 0 ? _l : -10;
         let finalX = x + offsetX;
         let finalY = y + offsetY;
-        // --- Containment Logic ---
-        // Ensure the pad stays within the container viewport
-        const padRect = this.padElement.getBoundingClientRect();
-        const containerRect = this.container.getBoundingClientRect();
-        const padding = 10; // Margin from edges
-        // Clamp X
-        if (finalX + padRect.width > containerRect.width - padding) {
-            finalX = containerRect.width - padRect.width - padding;
-        }
-        if (finalX < padding) {
-            finalX = padding;
-        }
-        // Clamp Y
-        if (finalY + padRect.height > containerRect.height - padding) {
-            finalY = containerRect.height - padRect.height - padding;
-        }
-        if (finalY < padding) {
-            finalY = padding;
-        }
         this.padElement.style.left = `${finalX}px`;
         this.padElement.style.top = `${finalY}px`;
         // Re-apply styles ensures that if the config was updated (e.g. testConfig.ts), 
@@ -230,6 +228,11 @@ class ContextPadRenderer {
                 engine.emit("contextpad:close", { target: this.currentTarget });
             this.padElement.remove();
             this.padElement = null;
+        }
+        // Guarantee sweep of any ghost instances created during rapid interaction
+        if (this.container) {
+            const ghosts = this.container.querySelectorAll(".zenode-context-pad");
+            ghosts.forEach(g => g.remove());
         }
         this.currentTarget = null;
         this.currentActions = [];

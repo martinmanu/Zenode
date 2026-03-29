@@ -49,12 +49,19 @@ export interface LineStyle {
     labelBorderRadius?: number;
     icon?: string | null;
     clickFunction?: (() => void) | null;
+    animation?: {
+        type: string;
+        speed: number;
+    };
+    markerEnd?: string;
 }
 export interface Connection {
     type: string;
     style: string;
     color: string;
     width: number;
+    dashed?: boolean;
+    animated?: boolean;
     lineStyle: LineStyle;
 }
 export interface Canvas {

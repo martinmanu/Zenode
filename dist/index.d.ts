@@ -1,6 +1,8 @@
 import { ZenodeEngine } from "./core/engine.js";
-import { Config } from "./model/configurationModel.js";
-import { VisualState } from "./types/index.js";
+import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
+import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
+import { VisualState, ContextPadAction, ContextPadTarget } from "./types/index.js";
+export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget };
 /**
  * Initializes the Zenode engine.
  * @param containerSelector The selector for the container element.
@@ -8,6 +10,15 @@ import { VisualState } from "./types/index.js";
  * @throws Error if container is not found.
  */
 export declare function initializeCanvas(containerSelector: string, userConfig: Partial<Config>): void;
+/**
+ * Updates the engine configuration.
+ * @param userConfig New configuration object.
+ */
+export declare function updateConfig(userConfig: Partial<Config>): void;
+/**
+ * Resizes the canvas dimensions smoothly.
+ */
+export declare function resizeCanvas(width: number, height: number): void;
 /**
  * Creates a shape dynamically on the canvas.
  * @param type Shape type (e.g., "rectangle", "circle").
@@ -25,7 +36,7 @@ export declare function createConnection(from: string, to: string): void;
 /**
  * Returns the list of placed nodes (for use with createConnection node ids).
  */
-export declare function getPlacedNodes(): import("./model/interface.js").PlacedNode[];
+export declare function getPlacedNodes(): PlacedNode[];
 /** Enable or disable lasso selection tool interaction. */
 export declare function setLassoEnabled(enabled: boolean): void;
 /**

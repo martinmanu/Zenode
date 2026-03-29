@@ -1,7 +1,5 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { buildResolvedShapeConfig } from './overlay.js';
-import select from '../node_modules/d3-selection/src/select.js';
 
 /**
  * Renders connection ports for a node.
@@ -47,16 +45,18 @@ function renderPorts(nodeGroup, node, config, registry, engine) {
         .on("mouseenter", function () {
         if (!engine.connectionModeEnabled)
             return;
-        if (portConfig.showOnHoverOnly) {
-            select(this).transition().duration(200).attr("opacity", portConfig.opacity);
-        }
+        const s = d3.select(this).transition().duration(200);
+        if (portConfig.showOnHoverOnly)
+            s.attr("opacity", portConfig.opacity);
+        s.attr("r", portConfig.radius * 1.5);
     })
         .on("mouseleave", function () {
         if (!engine.connectionModeEnabled)
             return;
-        if (portConfig.showOnHoverOnly) {
-            select(this).transition().duration(200).attr("opacity", 0);
-        }
+        const s = d3.select(this).transition().duration(200);
+        if (portConfig.showOnHoverOnly)
+            s.attr("opacity", 0);
+        s.attr("r", portConfig.radius);
     })
         .on("mousedown", function (event, d) {
         if (!engine.connectionModeEnabled)
@@ -75,10 +75,10 @@ function renderPorts(nodeGroup, node, config, registry, engine) {
             let targetNodeId;
             let targetPortId;
             if (portGroup) {
-                const portData = select(portGroup).datum();
+                const portData = d3.select(portGroup).datum();
                 const nodeGroup = portGroup.closest(".node");
                 if (nodeGroup) {
-                    targetNodeId = select(nodeGroup).attr("data-id") || undefined;
+                    targetNodeId = d3.select(nodeGroup).attr("data-id") || undefined;
                     targetPortId = portData.id;
                 }
             }

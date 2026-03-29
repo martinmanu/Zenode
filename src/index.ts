@@ -1,7 +1,14 @@
 import { ZenodeEngine } from "./core/engine.js";
-import { Config } from "./model/configurationModel.js";
-import { VisualState } from "./types/index.js";
-import * as d3 from "d3";
+import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
+import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
+import { VisualState, ContextPadAction, ContextPadTarget } from "./types/index.js";
+
+export { 
+  ZenodeEngine, 
+  Config, ConnectionConfig, CPConfig,
+  ConnectionInstance, PlacedNode, NodeInstance,
+  VisualState, ContextPadAction, ContextPadTarget
+};
 
 let engineInstance: ZenodeEngine | null = null;
 
@@ -23,6 +30,25 @@ export function initializeCanvas(containerSelector: string, userConfig: Partial<
   } else {
     console.warn("ZenodeEngine is already initialized!");
   }
+}
+
+/**
+ * Updates the engine configuration.
+ * @param userConfig New configuration object.
+ */
+export function updateConfig(userConfig: Partial<Config>) {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.updateConfig(userConfig);
+}
+
+/**
+ * Resizes the canvas dimensions smoothly.
+ */
+export function resizeCanvas(width: number, height: number) {
+  if (!engineInstance) return;
+  engineInstance.resizeCanvas(width, height);
 }
 
 /**

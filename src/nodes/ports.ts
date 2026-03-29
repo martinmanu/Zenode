@@ -61,15 +61,15 @@ export function renderPorts(
     .style("cursor", () => engine.connectionModeEnabled ? portConfig.cursor : "default")
     .on("mouseenter", function() {
         if (!engine.connectionModeEnabled) return;
-        if (portConfig.showOnHoverOnly) {
-            d3.select(this).transition().duration(200).attr("opacity", portConfig.opacity);
-        }
+        const s = d3.select(this).transition().duration(200);
+        if (portConfig.showOnHoverOnly) s.attr("opacity", portConfig.opacity);
+        s.attr("r", portConfig.radius * 1.5);
     })
     .on("mouseleave", function() {
         if (!engine.connectionModeEnabled) return;
-        if (portConfig.showOnHoverOnly) {
-            d3.select(this).transition().duration(200).attr("opacity", 0);
-        }
+        const s = d3.select(this).transition().duration(200);
+        if (portConfig.showOnHoverOnly) s.attr("opacity", 0);
+        s.attr("r", portConfig.radius);
     })
     .on("mousedown", function(event: MouseEvent, d) {
         if (!engine.connectionModeEnabled) return;

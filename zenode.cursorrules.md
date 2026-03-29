@@ -8,7 +8,7 @@ Paste this entire prompt at the start of your Cursor session or as a persistent 
 
 Zenode is a **modular JavaScript ecosystem for visual workflows**.
 
-Each package solves an independent problem. All packages work better together. Developers adopt one package and expand naturally. The full stack is more powerful than any individual part.
+Each package solves an independent problem. All packages work better together. Developers adopt one package and expand naturally. The full stack is more powerful than any individual part. 
 
 ```
 "Use just the canvas. Use just the runtime.

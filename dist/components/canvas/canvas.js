@@ -1,12 +1,9 @@
 import { defaultConfig } from '../../config/defaultConfig.js';
-import '../../node_modules/d3-transition/src/selection/index.js';
-import '../../node_modules/d3-zoom/src/transform.js';
-import select from '../../node_modules/d3-selection/src/select.js';
-import selectAll from '../../node_modules/d3-selection/src/selectAll.js';
+import * as d3 from 'd3';
 
 // src/components/canvas/drawCanvas.ts
 function drawCanvas(containerSelector, canvasConfig) {
-    const container = select(containerSelector);
+    const container = d3.select(containerSelector);
     if (container.empty()) {
         throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
@@ -21,9 +18,10 @@ function drawCanvas(containerSelector, canvasConfig) {
         .attr("class", canvasClasses.join(" "))
         .style("background-color", backgroundColor)
         .attr("viewBox", `0 0 ${width} ${height}`)
-        .attr("preserveAspectRatio", "xMidYMid meet")
         .style("display", "block")
-        .style("margin", "auto");
+        .style("width", "100%")
+        .style("height", "100%")
+        .attr("preserveAspectRatio", "xMidYMid meet");
     const canvasContainerGroup = svg
         .append("g")
         .attr("class", "canvas-container");
@@ -67,12 +65,12 @@ function lockedCanvas(locked, svg, zoomBehaviour) {
     if (locked) {
         svg.on(".zoom", null); // Disable zoom and pan
         svg.style("cursor", "default");
-        selectAll(".shape, .connection").style("pointer-events", "none");
+        d3.selectAll(".shape, .connection").style("pointer-events", "none");
     }
     else {
         svg.call(zoomBehaviour); // Enable zoom and pan
         svg.style("cursor", "grab");
-        selectAll(".shape, .connection").style("pointer-events", "all");
+        d3.selectAll(".shape, .connection").style("pointer-events", "all");
     }
     console.log(`Canvas ${locked ? "locked (Preview Mode)" : "unlocked (Edit Mode)"}`);
 }

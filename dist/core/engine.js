@@ -14,13 +14,11 @@ import { LicenseManager } from './license.js';
 import { SmartRouter } from '../connections/routing/smartRouter.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
 import { mergeConfig } from '../utils/configMerger.js';
-import '../node_modules/d3-transition/src/selection/index.js';
-import transform from '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { snapToGrid } from '../utils/helpers.js';
 import { ContextPadRegistry } from '../contextpad/registry.js';
 import { ContextPadRenderer } from '../contextpad/renderer.js';
 import { defaultActions } from '../contextpad/defaults.js';
-import pointer from '../node_modules/d3-selection/src/pointer.js';
 
 // src/core/engine.ts
 class ZenodeEngine {
@@ -32,6 +30,8 @@ class ZenodeEngine {
         this.placedNodes = [];
         /** Selected node ids (single or multi-select). */
         this.selectedNodeIds = [];
+        /** Selected edge ids (single or multi-select). */
+        this.selectedEdgeIds = [];
         /** Controls whether lasso interaction is active on canvas background drag. */
         this.lassoEnabled = true;
         /** Prevents background click handler from clearing selection right after lasso mouseup. */
@@ -71,6 +71,10 @@ class ZenodeEngine {
         if (this.container) {
             this.contextPadRenderer = new ContextPadRenderer(this.container);
             defaultActions.forEach(action => this.contextPadRegistry.register(action));
+            // Auto-disable connection mode when pad closes
+            this.on("contextpad:close", () => {
+                this.setConnectionModeEnabled(false);
+            });
         }
     }
     /**
@@ -99,6 +103,58 @@ class ZenodeEngine {
         if (this.contextPadRenderer) {
             const actions = this.contextPadRegistry.getActionsFor(target, this);
             this.contextPadRenderer.render(target, actions, this);
+        }
+    }
+    /**
+     * Updates canvas dimensions without a full re-render.
+     */
+    resizeCanvas(width, height) {
+        this.config.canvas.width = width;
+        this.config.canvas.height = height;
+        if (this.svg) {
+            this.svg
+                .attr("width", width)
+                .attr("height", height)
+                .attr("viewBox", `0 0 ${width} ${height}`);
+            // Update grid rect to match new dimensions if needed
+            if (this.grid) {
+                this.grid.selectAll("rect")
+                    .attr("x", -(width * 10000))
+                    .attr("y", -(height * 10000))
+                    .attr("width", width * 20000)
+                    .attr("height", height * 20000);
+            }
+        }
+    }
+    updateConfig(newConfig) {
+        const oldNodes = [...this.placedNodes];
+        const oldConns = [...this.connections];
+        const oldSelectedNodes = [...this.selectedNodeIds];
+        const oldSelectedEdges = [...this.selectedEdgeIds];
+        // Preserve viewport state (zoom and pan)
+        let currentTransform = d3.zoomIdentity;
+        if (this.svg) {
+            currentTransform = d3.zoomTransform(this.svg.node());
+        }
+        this.config = mergeConfig(newConfig);
+        // Complete re-render of the playground/canvas
+        if (this.container) {
+            this.container.innerHTML = "";
+            this.initializeCanvas();
+            this.initializeContextPad();
+            // Restore and re-render state into new SVG
+            this.placedNodes = oldNodes;
+            this.connections = oldConns;
+            this.selectedNodeIds = oldSelectedNodes;
+            this.selectedEdgeIds = oldSelectedEdges;
+            if (this.canvasObject.placedNodes) {
+                renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+            }
+            this.reRenderConnections();
+            // Restore viewport state
+            if (this.zoomManager && currentTransform) {
+                this.svg.call(this.zoomManager.getZoomBehaviour().transform, currentTransform);
+            }
         }
     }
     /**
@@ -214,16 +270,40 @@ class ZenodeEngine {
                 this.contextPadRenderer.render({ kind: "node", id: node.id, data: node }, actions, this);
             }
         }
-        else {
+        else if (this.selectedEdgeIds.length !== 1) {
             (_a = this.contextPadRenderer) === null || _a === void 0 ? void 0 : _a.hide(this);
         }
         this.eventManager.trigger("node:selected", { ids: this.getSelectedNodeIds() });
     }
-    /** Clears all node selections. */
+    /** Returns selected edge ids. */
+    getSelectedEdgeIds() {
+        return [...this.selectedEdgeIds];
+    }
+    /** Sets selected edge ids and re-renders selection state. */
+    setSelectedEdgeIds(ids) {
+        var _a;
+        this.selectedEdgeIds = [...new Set(ids)];
+        this.reRenderConnections();
+        if (this.selectedEdgeIds.length === 1) {
+            const edge = this.connections.find((e) => e.id === this.selectedEdgeIds[0]);
+            if (edge) {
+                const actions = this.contextPadRegistry.getActionsFor({ kind: "edge", id: edge.id, data: edge }, this);
+                this.contextPadRenderer.render({ kind: "edge", id: edge.id, data: edge }, actions, this);
+            }
+        }
+        else if (this.selectedNodeIds.length !== 1) {
+            (_a = this.contextPadRenderer) === null || _a === void 0 ? void 0 : _a.hide(this);
+        }
+        this.eventManager.trigger("edge:selected", { ids: this.getSelectedEdgeIds() });
+    }
+    /** Clears all selections. */
     clearSelection() {
-        if (!this.selectedNodeIds.length)
-            return;
-        this.setSelectedNodeIds([]);
+        if (this.selectedNodeIds.length) {
+            this.setSelectedNodeIds([]);
+        }
+        if (this.selectedEdgeIds.length) {
+            this.setSelectedEdgeIds([]);
+        }
     }
     /** Enable/disable lasso selection interaction. */
     setLassoEnabled(enabled) {
@@ -330,19 +410,37 @@ class ZenodeEngine {
             this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY }, fitScale);
         }
     }
-    /** Deletes all currently selected nodes. */
-    deleteSelectedNodes() {
-        if (!this.selectedNodeIds.length)
-            return;
-        const selected = new Set(this.selectedNodeIds);
-        this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
-        this.connections = this.connections.filter((c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId));
-        this.selectedNodeIds = [];
-        if (this.canvasObject.placedNodes) {
-            renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+    panBy(dx, dy) {
+        if (this.zoomManager) {
+            this.zoomManager.panBy(this.svg, dx, dy);
         }
-        this.reRenderConnections();
-        this.eventManager.trigger("node:deleted", { ids: [...selected] });
+    }
+    deleteSelection() {
+        let changed = false;
+        if (this.selectedNodeIds.length) {
+            const selected = new Set(this.selectedNodeIds);
+            this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
+            this.connections = this.connections.filter((c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId));
+            this.selectedNodeIds = [];
+            changed = true;
+            this.eventManager.trigger("node:deleted", { ids: [...selected] });
+        }
+        if (this.selectedEdgeIds.length) {
+            const selectedE = new Set(this.selectedEdgeIds);
+            this.connections = this.connections.filter((c) => !selectedE.has(c.id));
+            this.selectedEdgeIds = [];
+            changed = true;
+            this.eventManager.trigger("edge:deleted", { ids: [...selectedE] });
+        }
+        if (changed) {
+            if (this.contextPadRenderer) {
+                this.contextPadRenderer.hide(this);
+            }
+            if (this.canvasObject.placedNodes) {
+                renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+            }
+            this.reRenderConnections();
+        }
     }
     reRenderConnections() {
         if (this.canvasObject.connections) {
@@ -356,8 +454,8 @@ class ZenodeEngine {
     getCanvasPoint(event) {
         var _a, _b;
         const gridSize = (_b = (_a = this.config.canvas.grid) === null || _a === void 0 ? void 0 : _a.gridSize) !== null && _b !== void 0 ? _b : 20;
-        const zoomTransform = transform(this.svg.node());
-        const [cursorX, cursorY] = pointer(event, this.svg.node());
+        const zoomTransform = d3.zoomTransform(this.svg.node());
+        const [cursorX, cursorY] = d3.pointer(event, this.svg.node());
         const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
         const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
         if (this.config.canvasProperties.snapToGrid) {
@@ -612,7 +710,7 @@ class ZenodeEngine {
                 });
                 if (handled !== false) {
                     event.preventDefault();
-                    this.deleteSelectedNodes();
+                    this.deleteSelection();
                 }
                 return;
             }
@@ -713,8 +811,8 @@ class ZenodeEngine {
         });
     }
     getCanvasPointRaw(event) {
-        const zoomTransform = transform(this.svg.node());
-        const [cursorX, cursorY] = pointer(event, this.svg.node());
+        const zoomTransform = d3.zoomTransform(this.svg.node());
+        const [cursorX, cursorY] = d3.pointer(event, this.svg.node());
         return {
             x: (cursorX - zoomTransform.x) / zoomTransform.k,
             y: (cursorY - zoomTransform.y) / zoomTransform.k,

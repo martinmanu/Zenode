@@ -166,12 +166,21 @@ export class ContextPadRenderer {
         if (!node) return;
 
         const style = engine.getShapeStyle(node);
-        const w = (style?.width ?? 100);
-        const h = (style?.height ?? 100);
+        // Fallback for node properties, width/height is what gets rendered
+        let w = (style?.width ?? node.width ?? 100);
+        let h = (style?.height ?? node.height ?? 100);
+        
+        // Handle circular shapes where dimensions are defined by radius
+        if (node.type === 'circle') {
+            const r = style?.radius ?? node.radius ?? 30;
+            w = r * 2;
+            h = r * 2;
+        }
 
-        // Base canvas coordinates
-        let canvasX = node.x;
-        let canvasY = node.y;
+        // node.x and node.y are the center of the node.
+        // Convert to top-left of the bounding box.
+        let canvasX = node.x - w / 2;
+        let canvasY = node.y - h / 2;
 
         // Apply anchor position
         switch (config.position) {
@@ -188,8 +197,17 @@ export class ContextPadRenderer {
         y = canvasY * transform.k + transform.y;
     } else {
         // For edges, position at midpoint
-        x = transform.x;
-        y = transform.y;
+        const edgeId = this.currentTarget.id;
+        const svgPath = engine.container?.querySelector(`.connection[data-connection-id="${edgeId}"] path.connection-line`);
+        if (svgPath && typeof svgPath.getTotalLength === 'function') {
+            const totalLen = svgPath.getTotalLength();
+            const midpoint = svgPath.getPointAtLength(totalLen / 2);
+            x = midpoint.x * transform.k + transform.x;
+            y = midpoint.y * transform.k + transform.y;
+        } else {
+            x = transform.x;
+            y = transform.y;
+        }
     }
 
     // Apply offset from config
@@ -198,29 +216,6 @@ export class ContextPadRenderer {
 
     let finalX = x + offsetX;
     let finalY = y + offsetY;
-
-    // --- Containment Logic ---
-    // Ensure the pad stays within the container viewport
-    const padRect = this.padElement.getBoundingClientRect();
-    const containerRect = this.container.getBoundingClientRect();
-
-    const padding = 10; // Margin from edges
-    
-    // Clamp X
-    if (finalX + padRect.width > containerRect.width - padding) {
-        finalX = containerRect.width - padRect.width - padding;
-    }
-    if (finalX < padding) {
-        finalX = padding;
-    }
-
-    // Clamp Y
-    if (finalY + padRect.height > containerRect.height - padding) {
-        finalY = containerRect.height - padRect.height - padding;
-    }
-    if (finalY < padding) {
-        finalY = padding;
-    }
 
     this.padElement.style.left = `${finalX}px`;
     this.padElement.style.top = `${finalY}px`;
@@ -238,6 +233,11 @@ export class ContextPadRenderer {
       if (engine) engine.emit("contextpad:close", { target: this.currentTarget });
       this.padElement.remove();
       this.padElement = null;
+    }
+    // Guarantee sweep of any ghost instances created during rapid interaction
+    if (this.container) {
+        const ghosts = this.container.querySelectorAll(".zenode-context-pad");
+        ghosts.forEach(g => g.remove());
     }
     this.currentTarget = null;
     this.currentActions = [];

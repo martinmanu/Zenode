@@ -1,9 +1,7 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { applyEffects } from '../effects/engine.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
 import { PathCalculators } from './paths/index.js';
-import select from '../node_modules/d3-selection/src/select.js';
 
 function getNodePortPos(node, portId, registry, config) {
     var _a, _b;
@@ -16,6 +14,43 @@ function getNodePortPos(node, portId, registry, config) {
     const ports = renderer.getPorts(resolved);
     const port = ports[portId] || ports.center || { x: 0, y: 0 };
     return { x: node.x + port.x, y: node.y + port.y };
+}
+function getMarkerId(svg, type, color) {
+    if (!type || type === "none")
+        return "";
+    let defs = svg.select("defs.zenode-markers");
+    if (defs.empty()) {
+        defs = svg.append("defs").attr("class", "zenode-markers");
+    }
+    const safeColor = color.replace(/[^a-zA-Z0-9_-]/g, "");
+    const id = `marker-${type}-${safeColor}`;
+    if (defs.select(`#${id}`).empty()) {
+        const marker = defs.append("marker")
+            .attr("id", id)
+            .attr("viewBox", "0 0 10 10")
+            .attr("refX", type === "arrow" ? 9 : 5)
+            .attr("refY", 5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto-start-reverse");
+        if (type === "arrow") {
+            marker.append("path").attr("d", "M 0 0 L 10 5 L 0 10 z").attr("fill", color);
+        }
+        else if (type === "circle") {
+            marker.append("circle").attr("cx", 5).attr("cy", 5).attr("r", 4).attr("fill", color);
+        }
+    }
+    return id;
+}
+function ensureStyles() {
+    if (typeof document === "undefined")
+        return;
+    if (!document.getElementById("zenode-conn-styles")) {
+        const s = document.createElement("style");
+        s.id = "zenode-conn-styles";
+        s.textContent = `@keyframes zenode-stroke-flow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -32; } }`;
+        document.head.appendChild(s);
+    }
 }
 /**
  * Draws all connections using the specialized path calculators.
@@ -35,12 +70,13 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
             .append("g")
             .attr("class", "connection")
             .attr("data-connection-id", (d) => d.id);
+        g.append("path").attr("class", "connection-hitbox");
         g.append("path").attr("class", "connection-line");
         return g;
     }, (update) => update, (exit) => exit.remove())
         .each(function (d) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
-        const group = select(this);
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        const group = d3.select(this);
         const sourceNode = nodeById.get(d.sourceNodeId);
         const targetNode = nodeById.get(d.targetNodeId);
         let source = { x: sourceNode.x, y: sourceNode.y };
@@ -78,14 +114,57 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
         // Style from config
         const connConfig = ((_g = (_f = config === null || config === void 0 ? void 0 : config.connections) === null || _f === void 0 ? void 0 : _f.default) === null || _g === void 0 ? void 0 : _g[d.type]) ||
             ((_j = (_h = config === null || config === void 0 ? void 0 : config.connections) === null || _h === void 0 ? void 0 : _h.default) === null || _j === void 0 ? void 0 : _j.straight);
+        const isSelected = (_l = (_k = engine === null || engine === void 0 ? void 0 : engine.getSelectedEdgeIds) === null || _k === void 0 ? void 0 : _k.call(engine)) === null || _l === void 0 ? void 0 : _l.includes(d.id);
+        const strokeColor = isSelected ? "var(--zenode-selection-color, #4A90E2)" : ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.color) || "#333");
+        ensureStyles();
+        const markerType = (_m = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _m === void 0 ? void 0 : _m.markerEnd;
+        let markerId = "";
+        if (markerType && markerType !== "none") {
+            const svgNode = (_o = group.node()) === null || _o === void 0 ? void 0 : _o.ownerSVGElement;
+            if (svgNode) {
+                markerId = getMarkerId(d3.select(svgNode), markerType, strokeColor);
+            }
+        }
+        group
+            .select("path.connection-hitbox")
+            .attr("d", path)
+            .attr("fill", "none")
+            .attr("stroke", "transparent")
+            .attr("stroke-width", 15)
+            .style("cursor", "pointer")
+            .on("click", (event) => {
+            var _a, _b, _c;
+            if ((_a = engine === null || engine === void 0 ? void 0 : engine.getPlacementContext) === null || _a === void 0 ? void 0 : _a.call(engine))
+                return;
+            event.stopPropagation();
+            (_b = engine === null || engine === void 0 ? void 0 : engine.clearSelection) === null || _b === void 0 ? void 0 : _b.call(engine);
+            (_c = engine === null || engine === void 0 ? void 0 : engine.setSelectedEdgeIds) === null || _c === void 0 ? void 0 : _c.call(engine, [d.id]);
+        });
         group
             .select("path.connection-line")
             .attr("d", path)
             .attr("fill", "none")
-            .attr("stroke", (connConfig === null || connConfig === void 0 ? void 0 : connConfig.color) || "#333")
-            .attr("stroke-width", (connConfig === null || connConfig === void 0 ? void 0 : connConfig.width) || 2)
-            .attr("stroke-dasharray", ((_l = (_k = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _k === void 0 ? void 0 : _k.dashArray) === null || _l === void 0 ? void 0 : _l.join(",")) || null)
+            .attr("stroke", strokeColor)
+            .attr("stroke-width", isSelected ? Math.max(((connConfig === null || connConfig === void 0 ? void 0 : connConfig.width) || 2) + 1, 3) : ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.width) || 2))
+            .attr("stroke-dasharray", () => {
+            var _a, _b;
+            if (connConfig === null || connConfig === void 0 ? void 0 : connConfig.dashed) {
+                return ((_b = (_a = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _a === void 0 ? void 0 : _a.dashArray) === null || _b === void 0 ? void 0 : _b.join(",")) || "8,8";
+            }
+            return null;
+        })
+            .attr("marker-end", markerId ? `url(#${markerId})` : null)
             .style("pointer-events", "none");
+        const anim = (_p = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _p === void 0 ? void 0 : _p.animation;
+        if ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.animated) && anim && anim.type === "flow") {
+            const speed = Math.max(0.1, (_q = anim.speed) !== null && _q !== void 0 ? _q : 1);
+            const duration = 1 / Math.max(0.01, speed);
+            group.select("path.connection-line")
+                .style("animation", `zenode-stroke-flow ${duration.toFixed(3)}s linear infinite`);
+        }
+        else {
+            group.select("path.connection-line").style("animation", "none");
+        }
         // Render Label
         renderConnectionLabel(group, path, d, config);
         applyEffects(group, path, d.visualState);

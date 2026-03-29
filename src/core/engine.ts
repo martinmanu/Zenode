@@ -44,6 +44,8 @@ export class ZenodeEngine {
   private placedNodes: PlacedNode[] = [];
   /** Selected node ids (single or multi-select). */
   private selectedNodeIds: string[] = [];
+  /** Selected edge ids (single or multi-select). */
+  private selectedEdgeIds: string[] = [];
   /** Controls whether lasso interaction is active on canvas background drag. */
   private lassoEnabled = true;
   /** Prevents background click handler from clearing selection right after lasso mouseup. */
@@ -134,6 +136,68 @@ export class ZenodeEngine {
     if (this.contextPadRenderer) {
         const actions = this.contextPadRegistry.getActionsFor(target, this);
         this.contextPadRenderer.render(target, actions, this);
+    }
+  }
+
+  /**
+   * Updates canvas dimensions without a full re-render.
+   */
+  public resizeCanvas(width: number, height: number): void {
+    this.config.canvas.width = width;
+    this.config.canvas.height = height;
+
+    if (this.svg) {
+        this.svg
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`);
+        
+        // Update grid rect to match new dimensions if needed
+        if (this.grid) {
+            this.grid.selectAll("rect")
+                .attr("x", -(width * 10000))
+                .attr("y", -(height * 10000))
+                .attr("width", width * 20000)
+                .attr("height", height * 20000);
+        }
+    }
+  }
+
+  public updateConfig(newConfig: Partial<Config>): void {
+    const oldNodes = [...this.placedNodes];
+    const oldConns = [...this.connections];
+    const oldSelectedNodes = [...this.selectedNodeIds];
+    const oldSelectedEdges = [...this.selectedEdgeIds];
+
+    // Preserve viewport state (zoom and pan)
+    let currentTransform = d3.zoomIdentity;
+    if (this.svg) {
+      currentTransform = d3.zoomTransform(this.svg.node());
+    }
+
+    this.config = mergeConfig(newConfig);
+
+    // Complete re-render of the playground/canvas
+    if (this.container) {
+      this.container.innerHTML = "";
+      this.initializeCanvas();
+      this.initializeContextPad();
+
+      // Restore and re-render state into new SVG
+      this.placedNodes = oldNodes;
+      this.connections = oldConns;
+      this.selectedNodeIds = oldSelectedNodes;
+      this.selectedEdgeIds = oldSelectedEdges;
+
+      if (this.canvasObject.placedNodes) {
+        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      }
+      this.reRenderConnections();
+
+      // Restore viewport state
+      if (this.zoomManager && currentTransform) {
+        this.svg.call(this.zoomManager.getZoomBehaviour().transform, currentTransform);
+      }
     }
   }
 
@@ -281,17 +345,50 @@ export class ZenodeEngine {
         );
         this.contextPadRenderer.render({ kind: "node", id: node.id, data: node }, actions, this);
       }
-    } else {
+    } else if (this.selectedEdgeIds.length !== 1) {
       this.contextPadRenderer?.hide(this);
     }
 
     this.eventManager.trigger("node:selected", { ids: this.getSelectedNodeIds() });
   }
 
-  /** Clears all node selections. */
+  /** Returns selected edge ids. */
+  getSelectedEdgeIds(): string[] {
+    return [...this.selectedEdgeIds];
+  }
+
+  /** Sets selected edge ids and re-renders selection state. */
+  setSelectedEdgeIds(ids: string[]): void {
+    this.selectedEdgeIds = [...new Set(ids)];
+    this.reRenderConnections();
+
+    if (this.selectedEdgeIds.length === 1) {
+      const edge = this.connections.find((e) => e.id === this.selectedEdgeIds[0]);
+      if (edge) {
+        const actions = this.contextPadRegistry.getActionsFor(
+          { kind: "edge", id: edge.id, data: edge },
+          this
+        );
+        this.contextPadRenderer.render({ kind: "edge", id: edge.id, data: edge }, actions, this);
+      }
+    } else if (this.selectedNodeIds.length !== 1) {
+      this.contextPadRenderer?.hide(this);
+    }
+
+    this.eventManager.trigger("edge:selected", { ids: this.getSelectedEdgeIds() });
+  }
+
+  /** Clears all selections. */
   clearSelection(): void {
-    if (!this.selectedNodeIds.length) return;
-    this.setSelectedNodeIds([]);
+    let changed = false;
+    if (this.selectedNodeIds.length) {
+      this.setSelectedNodeIds([]);
+      changed = true;
+    }
+    if (this.selectedEdgeIds.length) {
+      this.setSelectedEdgeIds([]);
+      changed = true;
+    }
   }
 
   /** Enable/disable lasso selection interaction. */
@@ -411,20 +508,41 @@ export class ZenodeEngine {
     }
   }
 
-  /** Deletes all currently selected nodes. */
-  deleteSelectedNodes(): void {
-    if (!this.selectedNodeIds.length) return;
-    const selected = new Set(this.selectedNodeIds);
-    this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
-    this.connections = this.connections.filter(
-      (c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId)
-    );
-    this.selectedNodeIds = [];
-    if (this.canvasObject.placedNodes) {
-      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+  public panBy(dx: number, dy: number): void {
+    if (this.zoomManager) {
+      this.zoomManager.panBy(this.svg, dx, dy);
     }
-    this.reRenderConnections();
-    this.eventManager.trigger("node:deleted", { ids: [...selected] });
+  }
+
+  deleteSelection(): void {
+    let changed = false;
+    if (this.selectedNodeIds.length) {
+      const selected = new Set(this.selectedNodeIds);
+      this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
+      this.connections = this.connections.filter(
+        (c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId)
+      );
+      this.selectedNodeIds = [];
+      changed = true;
+      this.eventManager.trigger("node:deleted", { ids: [...selected] });
+    }
+    if (this.selectedEdgeIds.length) {
+      const selectedE = new Set(this.selectedEdgeIds);
+      this.connections = this.connections.filter((c) => !selectedE.has(c.id));
+      this.selectedEdgeIds = [];
+      changed = true;
+      this.eventManager.trigger("edge:deleted", { ids: [...selectedE] });
+    }
+    
+    if (changed) {
+      if (this.contextPadRenderer) {
+          this.contextPadRenderer.hide(this);
+      }
+      if (this.canvasObject.placedNodes) {
+        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      }
+      this.reRenderConnections();
+    }
   }
 
   public reRenderConnections(): void {
@@ -756,7 +874,7 @@ export class ZenodeEngine {
         });
         if (handled !== false) {
           event.preventDefault();
-          this.deleteSelectedNodes();
+          this.deleteSelection();
         }
         return;
       }

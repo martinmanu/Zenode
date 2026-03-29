@@ -47,6 +47,10 @@ export class ZoomManager {
       .call(this.zoomBehaviour.scaleBy, factor);
   }
 
+  public panBy(svg: any, dx: number, dy: number): void {
+    this.zoomBehaviour.translateBy(svg, dx, dy);
+  }
+
   public zoomTo(svg: any, scale: number, duration: number = 300): void {
     svg.transition()
       .duration(duration)
@@ -68,5 +72,9 @@ export class ZoomManager {
     svg.transition()
       .duration(duration)
       .call(this.zoomBehaviour.transform, transform);
+  }
+
+  public getZoomBehaviour(): any {
+    return this.zoomBehaviour;
   }
 }

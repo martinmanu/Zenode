@@ -32,9 +32,10 @@ export function drawCanvas(
     .attr("class", canvasClasses.join(" "))
     .style("background-color", backgroundColor)
     .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
     .style("display", "block")
-    .style("margin", "auto");
+    .style("width", "100%")
+    .style("height", "100%")
+    .attr("preserveAspectRatio", "xMidYMid meet");
   const canvasContainerGroup = svg
     .append("g")
     .attr("class", "canvas-container");

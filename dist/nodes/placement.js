@@ -1,10 +1,8 @@
-import '../node_modules/d3-transition/src/selection/index.js';
-import '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 import { createDragBehavior } from '../events/drag.js';
 import { renderPorts } from './ports.js';
 import { buildResolvedShapeConfig, renderSelectionRing } from './overlay.js';
 import { applyEffects } from '../effects/engine.js';
-import select from '../node_modules/d3-selection/src/select.js';
 
 /**
  * Renders placed nodes using D3 data join. Keeps g.placed-nodes in sync with engine state.
@@ -37,7 +35,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             .call(dragBehavior)
             .on("click", function (event) {
             event.stopPropagation();
-            const sel = select(this);
+            const sel = d3.select(this);
             const d = sel.datum();
             api.setSelectedNodeIds([d.id]);
         });
@@ -45,7 +43,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             const style = getShapeStyle(d, api.config);
             if (!style)
                 return;
-            const el = select(this);
+            const el = d3.select(this);
             const renderer = api.shapeRegistry.get(d.type);
             const resolvedConfig = buildResolvedShapeConfig(d, style);
             // Clear only if needed, but renderer.draw usually appends.
@@ -61,7 +59,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             const style = getShapeStyle(d, api.config);
             if (!style)
                 return;
-            const el = select(this);
+            const el = d3.select(this);
             const renderer = api.shapeRegistry.get(d.type);
             const resolvedConfig = buildResolvedShapeConfig(d, style);
             // Ensure we don't clear ports during update
@@ -81,7 +79,7 @@ function syncSelectionRings(placedNodesGroup, api, placedNodes) {
     placedNodesGroup
         .selectAll("g.node")
         .each(function (nodeDatum) {
-        const group = select(this);
+        const group = d3.select(this);
         const isSelected = selected.has(nodeDatum.id);
         group.classed("selected", isSelected);
         group.selectAll(".selection-ring").remove();
@@ -96,7 +94,7 @@ function syncSelectionRings(placedNodesGroup, api, placedNodes) {
     placedNodesGroup
         .selectAll("g.node")
         .each(function (d) {
-        const el = select(this);
+        const el = d3.select(this);
         renderPorts(el, d, api.config, api.shapeRegistry, api);
     });
     // Guard for stale ids after node deletions.

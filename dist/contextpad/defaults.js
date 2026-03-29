@@ -4,7 +4,7 @@ const defaultActions = [
         icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 0h6"/></svg>`,
         tooltip: "Delete Node",
         group: "danger",
-        targets: ["node"],
+        targets: ["node", "edge"],
         style: {
             color: "#ff453a",
             hoverColor: "rgba(255, 69, 58, 0.2)"
@@ -12,12 +12,11 @@ const defaultActions = [
         handler: (target, engine) => {
             if (target.kind === "node") {
                 engine.setSelectedNodeIds([target.id]);
-                engine.deleteSelectedNodes();
             }
             else {
-                // Edge deletion to be implemented
-                console.log("Delete edge", target.id);
+                engine.setSelectedEdgeIds([target.id]);
             }
+            engine.deleteSelection();
         },
     },
     {

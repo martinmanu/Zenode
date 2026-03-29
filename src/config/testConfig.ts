@@ -117,25 +117,25 @@ export const testConfig: Config = {
       enabled: true,
       trigger: "select",
       position: "top-right",
-      offset: { x: -15, y: 0 },
+      offset: { x: 10, y: -10 },
       showDefaults: true,
-      layout: "vertical", // Options: "horizontal", "vertical", "grid"
-      gridColumns: 3,
+      layout: "grid", // Options: "horizontal", "vertical", "grid"
+      gridColumns: 2,
       style: {
-        backgroundColor: "rgba(242, 242, 255, 0.8)",
-        borderColor: "rgba(13, 224, 115, 1)",
-        borderWidth: "2px",
-        borderRadius: "6px",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
-        backdropBlur: "12px",
-        padding: "2px",
-        buttonWidth: "30px",
-        buttonHeight: "30px",
-        buttonPadding: "2px",
+        backgroundColor: "rgba(255, 255, 255, 0)", // White background a la BPMN
+        borderColor: "rgba(200, 200, 200, 0)",
+        borderWidth: "1px",
+        borderRadius: "4px",
+        boxShadow: "0 2px 8px rgba(0, 0, 0, 0)",
+        backdropBlur: "0px",
+        padding: "4px",
+        buttonWidth: "28px",
+        buttonHeight: "28px",
+        buttonPadding: "4px",
         buttonMargin: "2px",
-        iconColor: "#1c1c1e",
-        buttonHoverColor: "rgba(255, 19, 19, 0.8)",
-        buttonActiveColor: "rgba(74, 226, 109, 0.7)"
+        iconColor: "#202020ff",
+        buttonHoverColor: "rgba(198, 255, 196, 1)",
+        buttonActiveColor: "rgba(124, 172, 255, 1)"
       }
     }
     // dragType: "smooth"
@@ -146,7 +146,7 @@ export const testConfig: Config = {
         {
           "id": "circle1",
           "radius": 30,
-          "color": "#008000",
+          "color": "#ff00008e",
           "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
@@ -165,7 +165,7 @@ export const testConfig: Config = {
       "rectangle": [
         {
           "id": "task0",
-          "width": 120,
+          "width": 60,
           "height": 60,
           "color": "#CDFE9B",
           "borderRadius": { "leftTop": 50, "leftBottom": 50, "rightTop": 5, "rightBottom": 5 },
@@ -187,9 +187,9 @@ export const testConfig: Config = {
           "id": "task1",
           "width": 240,
           "height": 120,
-          "color": "#00FFFF",
+          "color": "#00ffff4c",
           "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+          "stroke": { "width": 6, "color": "#0af7ffff", "strokeDasharray": [] },
           "textColor": "#000000",
           "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
           "transparency": 1,
@@ -202,6 +202,26 @@ export const testConfig: Config = {
           },
           'previewEnabled': true,
           'previewTransparency': 0.4
+        },
+        {
+          "id": "rectangle1",
+          "width": 150,
+          "height": 75,
+          "color": "#3b82f64c",
+          "borderRadius": { "leftTop": 12, "leftBottom": 12, "rightTop": 12, "rightBottom": 12 },
+          "stroke": { "width": 2, "color": "#3b82f6", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 10px rgba(0, 0, 0, 0.2)",
+          "transparency": 1,
+          "overlay": {
+            "enabled": true,
+            "color": "white",
+            "strokeWidth": 2,
+            "opacity": 1,
+            "type": "line"
+          },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
         }
       ],
       "rhombus": [
@@ -209,7 +229,7 @@ export const testConfig: Config = {
           "id": "rhombus1",
           "width": 80,
           "height": 80,
-          "color": "#FF00FF",
+          "color": "#ff005188",
           "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
           "textColor": "#ffffff",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
@@ -236,8 +256,12 @@ export const testConfig: Config = {
         style: "solid",
         color: "#000000",
         width: 2,
+        dashed: true, // Example toggle
+        animated: true, // Example toggle
         lineStyle: {
-          dashArray: [],
+          dashArray: [8, 4],
+          animation: { type: "flow", speed: 5 },
+          markerEnd: "arrow",
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
@@ -254,8 +278,12 @@ export const testConfig: Config = {
         style: "smooth",
         color: "#666666",
         width: 2,
+        dashed: true,
+        animated: true,
         lineStyle: {
-          dashArray: [],
+          dashArray: [8, 4],
+          animation: { type: "flow", speed: 2 },
+          markerEnd: "arrow",
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
@@ -272,8 +300,13 @@ export const testConfig: Config = {
         style: "smooth",
         color: "#333333",
         width: 2,
+        dashed: true,
+        animated: true,
         lineStyle: {
-          dashArray: [],
+          dashArray: [4, 2],
+          animation: { type: "flow", speed: 1 },
+          markerEnd: "arrow",
+
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",
@@ -290,8 +323,12 @@ export const testConfig: Config = {
         style: "cornered",
         color: "#444444",
         width: 2,
+        dashed: true,
+        animated: true,
         lineStyle: {
-          dashArray: [],
+          dashArray: [8, 4],
+          animation: { type: "flow", speed: 2 },
+          markerEnd: "arrow",
           innerTextEnabled: false,
           innerText: "",
           innerTextColor: "#000000",

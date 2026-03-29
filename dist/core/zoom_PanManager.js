@@ -1,13 +1,11 @@
 import { defaultConfig } from '../config/defaultConfig.js';
-import '../node_modules/d3-transition/src/selection/index.js';
-import zoom from '../node_modules/d3-zoom/src/zoom.js';
-import transform, { identity } from '../node_modules/d3-zoom/src/transform.js';
+import * as d3 from 'd3';
 
 class ZoomManager {
     constructor(container, svg, config, triggerEvent) {
         this.container = container;
         this.config = config;
-        this.zoomBehaviour = zoom()
+        this.zoomBehaviour = d3.zoom()
             .scaleExtent(this.config.canvasProperties.zoomExtent)
             .translateExtent([
             [-1e4, -1e4], [10000, 10000]
@@ -35,15 +33,18 @@ class ZoomManager {
         svg.call(this.zoomBehaviour);
         const initialZoom = config.canvasProperties.zoomScale || defaultConfig.canvasProperties.zoomScale;
         const zoomDuration = config.canvasProperties.zoomDuration || defaultConfig.canvasProperties.zoomDuration;
-        const initialTransform = identity.scale(initialZoom);
+        const initialTransform = d3.zoomIdentity.scale(initialZoom);
         svg.call(this.zoomBehaviour.transform, initialTransform).transition().duration(zoomDuration);
     }
     zoomBy(svg, factor, duration = 300) {
-        const currentTransform = transform(svg.node());
+        const currentTransform = d3.zoomTransform(svg.node());
         currentTransform.k * factor;
         svg.transition()
             .duration(duration)
             .call(this.zoomBehaviour.scaleBy, factor);
+    }
+    panBy(svg, dx, dy) {
+        this.zoomBehaviour.translateBy(svg, dx, dy);
     }
     zoomTo(svg, scale, duration = 300) {
         svg.transition()
@@ -53,15 +54,18 @@ class ZoomManager {
     centerOn(svg, point, scale, duration = 500) {
         const width = parseFloat(svg.attr("width") || window.innerWidth.toString());
         const height = parseFloat(svg.attr("height") || window.innerHeight.toString());
-        const targetScale = scale !== null && scale !== void 0 ? scale : transform(svg.node()).k;
+        const targetScale = scale !== null && scale !== void 0 ? scale : d3.zoomTransform(svg.node()).k;
         // Calculate transform to center the point
-        const transform$1 = identity
+        const transform = d3.zoomIdentity
             .translate(width / 2, height / 2)
             .scale(targetScale)
             .translate(-point.x, -point.y);
         svg.transition()
             .duration(duration)
-            .call(this.zoomBehaviour.transform, transform$1);
+            .call(this.zoomBehaviour.transform, transform);
+    }
+    getZoomBehaviour() {
+        return this.zoomBehaviour;
     }
 }
 

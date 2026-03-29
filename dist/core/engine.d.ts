@@ -19,6 +19,8 @@ export declare class ZenodeEngine {
     private placedNodes;
     /** Selected node ids (single or multi-select). */
     private selectedNodeIds;
+    /** Selected edge ids (single or multi-select). */
+    private selectedEdgeIds;
     /** Controls whether lasso interaction is active on canvas background drag. */
     private lassoEnabled;
     /** Prevents background click handler from clearing selection right after lasso mouseup. */
@@ -54,6 +56,11 @@ export declare class ZenodeEngine {
      * Manually shows the context pad for a specific target.
      */
     showContextPad(target: ContextPadTarget): void;
+    /**
+     * Updates canvas dimensions without a full re-render.
+     */
+    resizeCanvas(width: number, height: number): void;
+    updateConfig(newConfig: Partial<Config>): void;
     /**
      * Manually hides the context pad.
      */
@@ -91,7 +98,11 @@ export declare class ZenodeEngine {
     setActiveConnectionType(type: string): void;
     /** Sets selected node ids and re-renders selection rings. */
     setSelectedNodeIds(ids: string[]): void;
-    /** Clears all node selections. */
+    /** Returns selected edge ids. */
+    getSelectedEdgeIds(): string[];
+    /** Sets selected edge ids and re-renders selection state. */
+    setSelectedEdgeIds(ids: string[]): void;
+    /** Clears all selections. */
     clearSelection(): void;
     /** Enable/disable lasso selection interaction. */
     setLassoEnabled(enabled: boolean): void;
@@ -113,8 +124,8 @@ export declare class ZenodeEngine {
     zoomOut(): void;
     focusOnNode(id: string): void;
     focusOnSelectedNode(): void;
-    /** Deletes all currently selected nodes. */
-    deleteSelectedNodes(): void;
+    panBy(dx: number, dy: number): void;
+    deleteSelection(): void;
     reRenderConnections(): void;
     /**
      * Converts a mouse event to canvas coordinates (with optional grid snap).
