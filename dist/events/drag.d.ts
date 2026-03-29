@@ -1,0 +1,16 @@
+import * as d3 from "d3";
+import { PlacedNode, CanvasElements } from "../model/interface.js";
+import { Config } from "../model/configurationModel.js";
+import { ShapeRegistry } from "../nodes/registry.js";
+export interface DragApi {
+    updateNodePosition(id: string, x: number, y: number): void;
+    getPlacedNodes(): PlacedNode[];
+    config: Config;
+    shapeRegistry: ShapeRegistry;
+    canvasObject: CanvasElements;
+    /** SVG root node — needed for correct pointer coordinate transform */
+    svgNode: SVGSVGElement;
+    setSelectedNodeIds(ids: string[]): void;
+    panBy?: (dx: number, dy: number) => void;
+}
+export declare function createDragBehavior(api: DragApi): d3.DragBehavior<SVGGElement, PlacedNode, PlacedNode | d3.SubjectPosition>;

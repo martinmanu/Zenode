@@ -3,29 +3,39 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 
 export default {
-  input: 'src/index.ts', // Entry point
+  input: [
+    'src/index.ts', 
+    'src/config/defaultConfig.ts', 
+    'src/config/testConfig.ts'
+  ],
+  external: ['d3'],
   output: [
     {
-      file: 'dist/zenode.esm.js',
-      format: 'esm', // ES Module format
+      dir: 'dist',
+      format: 'esm',
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].js',
       sourcemap: true,
     },
     {
-      file: 'dist/zenode.cjs.js',
-      format: 'cjs', // CommonJS format
+      dir: 'dist',
+      format: 'cjs',
+      preserveModules: true,
+      preserveModulesRoot: 'src',
+      entryFileNames: '[name].cjs',
       sourcemap: true,
-    },
-    {
-      file: 'dist/zenode.umd.js',
-      format: 'umd', // UMD format (for browsers)
-      name: 'Zenode', // Global variable for browsers
-      sourcemap: true,
-    },
+      exports: 'auto'
+    }
   ],
   plugins: [
-    nodeResolve(),   // Resolves dependencies
-    commonjs(),      // Converts CommonJS modules to ES6
-    typescript(),    // Compiles TypeScript
+    nodeResolve(),
+    commonjs(),
+    typescript({
+      tsconfig: './tsconfig.json',
+      declaration: true,
+      declarationDir: 'dist',
+      rootDir: 'src'
+    }),
   ],
-  external: ['d3'],  // Exclude D3.js from the bundle (users will install it separately)
 };

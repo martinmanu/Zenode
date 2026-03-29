@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenode Playground | Advanced Designer</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./zenode.css">
+    <script type="importmap">
+    {
+      "imports": {
+        "d3": "https://esm.sh/d3@7"
+      }
+    }
+    </script>
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --border: #334155;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --sidebar-width: 400px;
+            --left-panel-width: 80px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Left Panel: Toolbox */
+        .left-panel {
+            width: var(--left-panel-width);
+            background: var(--panel-bg);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 0;
+            gap: 24px;
+            z-index: 100;
+            box-shadow: 10px 0 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .toolbox-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: center;
+            width: 100%;
+        }
+
+        .toolbox-label {
+            font-size: 8px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.6;
+        }
+
+        /* Workspace - Pure Floating Style */
+        .workspace {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            overflow: hidden;
+        }
+
+        /* Sidebars are now truly fixed/floating, so they don't affect workspace layout */
+
+        #canvasContainer {
+            flex: 1;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+
+        /* Sidebars */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            height: 100%;
+            width: var(--sidebar-width);
+            background: var(--panel-bg);
+            border-left: 1px solid var(--border);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -20px 0 60px rgba(0,0,0,0.6);
+        }
+
+        .sidebar.active {
+            transform: translateX(0);
+        }
+
+        .panel-header {
+            padding: 20px 24px;
+            font-weight: 800;
+            font-size: 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(15, 23, 42, 0.4);
+            letter-spacing: 0.5px;
+        }
+
+        .form-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            background: #111827;
+        }
+
+        .json-container {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+            background: #0d1117;
+        }
+
+        #jsonPreview {
+            font-family: 'Fira Code', monospace;
+            font-size: 12px;
+            line-height: 1.625;
+            color: #7ee787;
+            margin: 0;
+        }
+
+        /* Form (Premium Cards) */
+        .config-card {
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s;
+        }
+
+        .config-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .config-card-header {
+            padding: 12px 16px;
+            background: rgba(51, 65, 85, 0.3);
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .config-card-body {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .config-item {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .config-item.row {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .config-item label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            opacity: 0.9;
+        }
+
+        .config-input {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+            outline: none;
+            width: 100%;
+        }
+
+        .config-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        select.config-input {
+            appearance: none;
+            cursor: pointer;
+        }
+
+        .color-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .color-swatch {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            padding: 0;
+            cursor: pointer;
+            overflow: hidden;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .color-swatch input[type="color"] {
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        /* Logo & Header */
+        .header-bar {
+            position: absolute;
+            top: 32px;
+            left: 32px;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 10px 20px 10px 10px;
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .zenode-logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 25px var(--accent-glow);
+            margin-right: 14px;
+        }
+
+        .zenode-logo::after {
+            content: "Z";
+            color: white;
+            font-weight: 900;
+            font-size: 24px;
+        }
+
+        /* Toolbars */
+        .toolbar {
+            position: absolute;
+            top: 32px;
+            right: 32px;
+            display: flex;
+            gap: 10px;
+            background: rgba(30, 41, 59, 0.8);
+            padding: 10px;
+            border-radius: 16px;
+            backdrop-filter: blur(16px);
+            z-index: 100;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        .nav-controls {
+            position: absolute;
+            bottom: 32px;
+            left: 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .tool-btn {
+            background: #334155;
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .tool-btn:hover {
+            background: #475569;
+            transform: translateY(-2px);
+            border-color: #64748b;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .tool-btn.active {
+            background: var(--accent);
+            border-color: #60a5fa;
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .tool-btn.icon-only {
+            width: 48px;
+            height: 48px;
+            font-size: 24px;
+        }
+
+        /* Popover for Connection Settings */
+        .connection-settings-popover {
+            position: absolute;
+            left: calc(var(--left-panel-width) + 16px);
+            bottom: 32px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            padding: 24px;
+            border-radius: 20px;
+            width: 320px;
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.7);
+            z-index: 200;
+            backdrop-filter: blur(16px);
+        }
+
+        .connection-settings-popover.active {
+            display: flex;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .setting-group label {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .pro-badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 6px;
+            color: white;
+            font-weight: 900;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 10px;
+            border: 2px solid #111827;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="left-panel">
+        <div class="toolbox-section">
+            <span class="toolbox-label">Shapes</span>
+            <button class="tool-btn icon-only" onclick="Zenode.createShape('rectangle', 'task0')"
+                title="Default Rectangle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                </svg>
+            </button>
+            <button class="tool-btn icon-only" onclick="Zenode.createShape('rectangle', 'rectangle1')"
+                title="Pro Rectangle (Rounded)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <rect x="4" y="6" width="16" height="12" rx="4" ry="4" />
+                </svg>
+            </button>
+            <button class="tool-btn icon-only" onclick="Zenode.createShape('circle', 'circle1')" title="Circle">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                </svg>
+            </button>
+            <button class="tool-btn icon-only" onclick="Zenode.createShape('rhombus', 'rhombus1')" title="Rhombus">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L22 12L12 22L2 12Z" />
+                </svg>
+            </button>
+        </div>
+
+        <div style="width: 50%; height: 1px; background: var(--border); opacity: 0.5;"></div>
+
+        <div class="toolbox-section">
+            <span class="toolbox-label">Select</span>
+            <button id="lassoBtn" class="tool-btn icon-only" onclick="toggleLasso()" title="Lasso Selection">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 4" />
+                    <path d="M15 15l5 5" stroke-linecap="round" />
+                </svg>
+            </button>
+        </div>
+
+        <div style="flex: 1;"></div>
+
+        <div class="toolbox-section">
+            <span class="toolbox-label">Connections</span>
+            <button id="connBtn" class="tool-btn icon-only" onclick="toggleConnection()" title="Connection Mode">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+            </button>
+            <button class="tool-btn icon-only" onclick="toggleConnSettings()" title="Link Style & Features">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="4" y1="21" x2="4" y2="14" />
+                    <line x1="4" y1="10" x2="4" y2="3" />
+                    <line x1="12" y1="21" x2="12" y2="12" />
+                    <line x1="12" y1="8" x2="12" y2="3" />
+                    <line x1="20" y1="21" x2="20" y2="16" />
+                    <line x1="20" y1="12" x2="20" y2="3" />
+                    <line x1="2" y1="14" x2="6" y2="14" />
+                    <line x1="10" y1="8" x2="14" y2="8" />
+                    <line x1="18" y1="16" x2="22" y2="16" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Connection Settings Popover -->
+    <div id="connSettings" class="connection-settings-popover">
+        <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 4px; color: var(--accent);">Link Engine Settings
+        </h4>
+        <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Configure default routing and visual
+            styles.</p>
+
+        <div class="setting-group">
+            <label>Routing Strategy</label>
+            <select id="connTypeSelect" class="config-input" onchange="updateConnSettings()">
+                <option value="straight">Straight Line</option>
+                <option value="curved">Curved (Bezier)</option>
+                <option value="s-shaped">S-Shaped Dynamic</option>
+                <option value="l-bent">L-Bent (Cornered)</option>
+            </select>
+        </div>
+
+        <div style="height: 1px; background: var(--border); margin: 8px 0;"></div>
+
+        <div class="setting-row">
+            <span>Animated Flow</span>
+            <input type="checkbox" id="connAnimCheck" onchange="updateConnSettings()">
+        </div>
+        <div class="setting-row">
+            <span>Dashed Pathing</span>
+            <input type="checkbox" id="connDashCheck" onchange="updateConnSettings()">
+        </div>
+
+        <button class="tool-btn" style="width: 100%; margin-top: 10px; font-size: 12px;"
+            onclick="Zenode.registerSmartConnect()">Enable BPMN Smart Connect</button>
+    </div>
+
+    <div class="workspace">
+        <div class="header-bar">
+            <div class="zenode-logo"></div>
+            <div>
+                <h1 style="font-size: 19px; font-weight: 800; line-height: 1.1;">Zenode Designer</h1>
+                <div style="margin-top: 4px;"><span class="pro-badge">ENGINE V1.5 (PRO)</span></div>
+            </div>
+        </div>
+
+        <div id="canvasContainer"></div>
+
+        <div class="toolbar">
+            <button id="inspectorToggleBtn" class="tool-btn icon-only" onclick="toggleInspector()"
+                title="Live System State">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="16 18 22 12 16 6" />
+                    <polyline points="8 6 2 12 8 18" />
+                </svg>
+            </button>
+            <button id="settingsToggleBtn" class="tool-btn icon-only" onclick="toggleSettings()"
+                title="Global Canvas Settings">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                </svg>
+            </button>
+        </div>
+
+        <div class="nav-controls">
+            <button class="tool-btn icon-only" onclick="Zenode.zoomIn()" title="Zoom In"><b>+</b></button>
+            <button class="tool-btn icon-only" onclick="Zenode.zoomOut()" title="Zoom Out"><b>-</b></button>
+            <button class="tool-btn icon-only" onclick="Zenode.focusOnSelectedNode()" title="Focus on Content">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3" />
+                    <path d="M19 12c0 3.866-3.134 7-7 7s-7-3.134-7-7 3.134-7 7-7 7 3.134 7 7z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Right Panels -->
+    <div id="settingsPanel" class="sidebar">
+        <div class="panel-header">
+            <span>Configuration Engine</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="tool-btn icon-only" onclick="resetConfig()" title="Reset to Defaults"
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5">
+                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                        <path d="M21 3v5h-5" />
+                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                        <path d="M3 21v-5h5" />
+                    </svg>
+                </button>
+                <button class="tool-btn icon-only" onclick="toggleSettings()"
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">✕</button>
+            </div>
+        </div>
+        <div id="formContainer" class="form-container"></div>
+        <div style="padding: 20px; border-top: 1px solid var(--border); background: #0f172a;">
+            <button class="tool-btn" style="width: 100%; border-radius: 14px; padding: 12px;"
+                onclick="copyConfig()">EXPORT SYSTEM CONFIG</button>
+        </div>
+    </div>
+
+    <div id="inspectorPanel" class="sidebar" style="width: 500px;">
+        <div class="panel-header">
+            <span style="color: #7ee787;">System State Inspector</span>
+            <div style="display: flex; gap: 10px;">
+                <button class="tool-btn" onclick="copyConfig()"
+                    style="font-size: 11px; padding: 4px 12px; height: 32px;">COPY JSON</button>
+                <button class="tool-btn icon-only" onclick="toggleInspector()"
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">✕</button>
+            </div>
+        </div>
+        <div class="json-container">
+            <pre id="jsonPreview"></pre>
+        </div>
+    </div>
+
+    <script type="module">
+        import * as Zenode from "../dist/index.js";
+        import { testConfig as initialConfig } from "../dist/config/testConfig.js";
+
+        window.Zenode = Zenode;
+        let currentConfig = JSON.parse(JSON.stringify(initialConfig));
+        let updateTimeout;
+        let lassoOn = false;
+        let connOn = false;
+
+        function init() {
+            const container = document.getElementById('canvasContainer');
+            if (!container) return;
+            container.innerHTML = "";
+            const rect = container.getBoundingClientRect();
+            currentConfig.canvas.width = rect.width;
+            currentConfig.canvas.height = rect.height;
+            currentConfig.canvasProperties.zoomScale = 1.0;
+
+            Zenode.initializeCanvas("#canvasContainer", currentConfig);
+
+            const formRoot = document.getElementById('formContainer');
+            if (formRoot) renderForm(currentConfig, formRoot);
+            updatePreview();
+        }
+
+        // --- UI Operations ---
+        function closeAll() {
+            document.getElementById('settingsPanel').classList.remove('active');
+            document.getElementById('inspectorPanel').classList.remove('active');
+            document.getElementById('connSettings').classList.remove('active');
+            document.body.classList.remove('panel-open');
+        }
+
+        window.toggleSettings = () => {
+            const sp = document.getElementById('settingsPanel');
+            const isActive = sp.classList.contains('active');
+            closeAll();
+            if (!isActive) {
+                sp.classList.add('active');
+                document.body.classList.add('panel-open');
+            }
+        }
+
+        window.toggleInspector = () => {
+            const ip = document.getElementById('inspectorPanel');
+            const isActive = ip.classList.contains('active');
+            closeAll();
+            if (!isActive) {
+                ip.classList.add('active');
+                document.body.classList.add('panel-open');
+            }
+        }
+
+        window.toggleConnSettings = () => {
+            document.getElementById('connSettings').classList.toggle('active');
+        }
+
+        window.toggleLasso = () => {
+            lassoOn = !lassoOn;
+            Zenode.setLassoEnabled(lassoOn);
+            document.getElementById('lassoBtn').classList.toggle('active', lassoOn);
+        }
+        window.toggleConnection = () => {
+            connOn = !connOn;
+            Zenode.setConnectionModeEnabled(connOn);
+            document.getElementById('connBtn').classList.toggle('active', connOn);
+        }
+
+        window.updateConnSettings = () => {
+            const type = document.getElementById('connTypeSelect').value;
+            const animated = document.getElementById('connAnimCheck').checked;
+            const dashed = document.getElementById('connDashCheck').checked;
+
+            currentConfig.connections.defaultType = type;
+            Zenode.updateConfig(currentConfig);
+            updatePreview();
+        }
+
+        function updateValue(path, value) {
+            const keys = path.split('.');
+            let last = currentConfig;
+            for (let i = 0; i < keys.length - 1; i++) {
+                last = last[keys[i]];
+            }
+            last[keys[keys.length - 1]] = value;
+
+            clearTimeout(updateTimeout);
+            updateTimeout = setTimeout(() => {
+                Zenode.updateConfig(currentConfig);
+                updatePreview();
+            }, 60);
+        }
+
+        function updatePreview() {
+            const pre = document.getElementById('jsonPreview');
+            if (pre) pre.textContent = JSON.stringify(currentConfig, null, 2);
+        }
+
+        function renderForm(obj, container, path = "") {
+            if (!container) return;
+            container.innerHTML = "";
+            const keys = Object.keys(obj).sort((a, b) => {
+                const aType = typeof obj[a];
+                const bType = typeof obj[b];
+                if (aType === 'object' && bType !== 'object') return 1;
+                if (aType !== 'object' && bType === 'object') return -1;
+                return a.localeCompare(b);
+            });
+
+            keys.forEach(key => {
+                const value = obj[key];
+                const fullPath = path ? `${path}.${key}` : key;
+                if (['guides', 'placed-nodes', 'connections', 'callbacks'].includes(key)) return;
+
+                if (Array.isArray(value)) {
+                    renderArrayItem(key, value, fullPath, container);
+                } else if (typeof value === 'object' && value !== null) {
+                    const card = document.createElement('div');
+                    card.className = "config-card";
+
+                    const header = document.createElement('div');
+                    header.className = "config-card-header";
+                    header.innerHTML = `<span>${key}</span> <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>`;
+
+                    const body = document.createElement('div');
+                    body.className = "config-card-body";
+                    renderForm(value, body, fullPath);
+
+                    header.onclick = () => {
+                        const isHidden = body.style.display === 'none';
+                        body.style.display = isHidden ? 'flex' : 'none';
+                        header.querySelector('svg').style.transform = isHidden ? '' : 'rotate(-90deg)';
+                    };
+
+                    card.appendChild(header);
+                    card.appendChild(body);
+                    container.appendChild(card);
+                } else {
+                    renderLeafItem(key, value, fullPath, container);
+                }
+            });
+        }
+
+        function renderLeafItem(key, value, path, container) {
+            const item = document.createElement('div');
+            item.className = "config-item";
+            const isBool = typeof value === 'boolean';
+            if (isBool) item.classList.add('row');
+
+            const label = document.createElement('label');
+            label.textContent = key;
+            item.appendChild(label);
+
+            let input;
+            if (isBool) {
+                input = document.createElement('input');
+                input.type = 'checkbox';
+                input.checked = value;
+                input.onchange = (e) => updateValue(path, e.target.checked);
+            } else if (typeof value === 'number') {
+                input = document.createElement('input');
+                input.className = "config-input";
+                input.type = 'number';
+                input.value = value;
+                input.oninput = (e) => updateValue(path, parseFloat(e.target.value));
+            } else if (key.toLowerCase().includes('color') || (typeof value === 'string' && (value.startsWith('#') || value.startsWith('rgba')))) {
+                const wrapper = document.createElement('div');
+                wrapper.className = "color-group";
+
+                const swatch = document.createElement('div');
+                swatch.className = "color-swatch";
+                swatch.style.background = value;
+
+                const cp = document.createElement('input');
+                cp.type = 'color';
+                cp.value = value.startsWith('#') ? value : '#3b82f6';
+                cp.oninput = (e) => {
+                    input.value = e.target.value;
+                    swatch.style.background = e.target.value;
+                    updateValue(path, e.target.value);
+                };
+
+                input = document.createElement('input');
+                input.className = "config-input";
+                input.style.flex = "1";
+                input.type = 'text';
+                input.value = value;
+                input.oninput = (e) => {
+                    swatch.style.background = e.target.value;
+                    updateValue(path, e.target.value);
+                };
+
+                swatch.appendChild(cp);
+                wrapper.appendChild(swatch);
+                wrapper.appendChild(input);
+                item.appendChild(wrapper);
+                container.appendChild(item);
+                return;
+            } else {
+                const enums = {
+                    'gridType': ['dotted', 'line', 'cross', 'sheet'],
+                    'position': ['top-right', 'top-left', 'bottom-right', 'bottom-left', 'top-center', 'bottom-center'],
+                    'markerEnd': ['arrow', 'circle', 'square', 'none'],
+                    'layout': ['grid', 'horizontal', 'vertical'],
+                    'trigger': ['select', 'hover', 'click']
+                };
+                if (enums[key]) {
+                    input = document.createElement('select');
+                    input.className = "config-input";
+                    enums[key].forEach(opt => {
+                        const o = document.createElement('option');
+                        o.value = opt;
+                        o.textContent = opt;
+                        if (opt === value) o.selected = true;
+                        input.appendChild(o);
+                    });
+                    input.onchange = (e) => updateValue(path, e.target.value);
+                } else {
+                    input = document.createElement('input');
+                    input.className = "config-input";
+                    input.type = 'text';
+                    input.value = value;
+                    input.oninput = (e) => updateValue(path, e.target.value);
+                }
+            }
+            item.appendChild(input);
+            container.appendChild(item);
+        }
+
+        function renderArrayItem(key, value, path, container) {
+            const item = document.createElement('div');
+            item.className = "config-item";
+            item.innerHTML = `<label style="margin-bottom:4px; display:block;">${key} (Array)</label>`;
+            const input = document.createElement('input');
+            input.className = "config-input";
+            input.type = 'text';
+            input.value = value.join(', ');
+            input.oninput = (e) => {
+                const arr = e.target.value.split(',').map(v => {
+                    const t = v.trim(); return isNaN(parseFloat(t)) ? t : parseFloat(t);
+                });
+                updateValue(path, arr);
+            };
+            item.appendChild(input);
+            container.appendChild(item);
+        }
+
+        window.resetConfig = () => {
+            const container = document.getElementById('canvasContainer');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            currentConfig = JSON.parse(JSON.stringify(initialConfig));
+            currentConfig.canvas.width = rect.width;
+            currentConfig.canvas.height = rect.height;
+            // Set scale to 1.0 on reset for better initial view
+            currentConfig.canvasProperties.zoomScale = 1.0;
+            
+            Zenode.updateConfig(currentConfig);
+            const formRoot = document.getElementById('formContainer');
+            if (formRoot) renderForm(currentConfig, formRoot);
+            updatePreview();
+        };
+
+        window.copyConfig = () => {
+            navigator.clipboard.writeText(JSON.stringify(currentConfig, null, 4));
+            alert('System configuration state copied to clipboard!');
+        };
+
+        window.addEventListener('resize', () => {
+            const container = document.getElementById('canvasContainer');
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            currentConfig.canvas.width = rect.width;
+            currentConfig.canvas.height = rect.height;
+            // Use smooth resize instead of full re-render
+            Zenode.resizeCanvas(rect.width, rect.height);
+        });
+
+        document.addEventListener("DOMContentLoaded", init);
+    </script>
+</body>
+
+</html>

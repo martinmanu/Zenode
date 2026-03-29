@@ -1,5 +1,5 @@
 // src/components/canvas/drawGrid.ts
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+import * as d3 from "d3";
 import { Canvas } from "../../model/configurationModel.js";
 import { defaultConfig } from "../../config/defaultConfig.js";
 
@@ -9,26 +9,30 @@ export function drawGrid(
   grid: d3.Selection<SVGSVGElement, unknown, HTMLElement, any>
 ): d3.Selection<SVGSVGElement, unknown, HTMLElement, any> {
   //Check if the grid is enabled
-  if (!canvasConfig.grid.gridEnabled) {
+  if (!canvasConfig?.grid?.gridEnabled) {
     return grid;
   }
 
   // Check Grid Type
-  if (canvasConfig.grid.gridType === "dotted") {
+  if (canvasConfig?.grid?.gridType === "dotted") {
     let gridPattern = createDottedGrid(canvasConfig, grid);
     return gridPattern;
-  } else if (canvasConfig.grid.gridType === "line") {
+  } else if (canvasConfig?.grid?.gridType === "line") {
     let gridPattern = createLineGrid(canvasConfig, grid);
     return gridPattern;
-  } else if (canvasConfig.grid.gridType === "cross") {
+  } else if (canvasConfig?.grid?.gridType === "cross") {
     let gridPattern = createCrossGrid(canvasConfig, grid);
     return gridPattern;
-  } else if (canvasConfig.grid.gridType === "sheet") {
+  } else if (canvasConfig?.grid?.gridType === "sheet") {
     let gridPattern = createSquareGrid(canvasConfig, grid);
     return gridPattern;
   } else {
     return grid;
   }
+}
+
+export function toggleGrid(enable: boolean) {
+  d3.select(".grid-group").style("display", enable ? "block" : "none");
 }
 
 function createDottedGrid(
@@ -71,12 +75,13 @@ function createDottedGrid(
       .append("circle")
       .attr(
         "cx",
-        canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize / 4
+        (canvasConfig.grid.gridSize ?? defaultConfig.canvas.grid.gridSize) / 4
       )
       .attr(
         "cy",
-        canvasConfig.grid.gridSize || defaultConfig.canvas.grid.gridSize / 4
+        (canvasConfig.grid.gridSize ?? defaultConfig.canvas.grid.gridSize) / 4
       )
+      
       .attr(
         "r",
         canvasConfig.grid.gridDimension ||
@@ -91,10 +96,10 @@ function createDottedGrid(
   // Set the Grid
   grid
     .append("rect")
-    .attr("x", -(canvasConfig.width * 1000))
-    .attr("y", -(canvasConfig.height * 1000))
-    .attr("width", canvasConfig.width * 2000)
-    .attr("height", canvasConfig.height * 2000)
+    .attr("x", -(canvasConfig.width * 10000))
+    .attr("y", -(canvasConfig.height * 10000))
+    .attr("width", canvasConfig.width * 20000)
+    .attr("height", canvasConfig.height * 20000)
     .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
     .attr("fill", "url(#dotPattern)");
     
@@ -161,10 +166,10 @@ function createLineGrid(
   // Set the Grid
   grid
     .append("rect")
-    .attr("x", -(canvasConfig.width || defaultConfig.canvas.width * 1000))
-    .attr("y", -(canvasConfig.height || defaultConfig.canvas.height * 1000))
-    .attr("width", canvasConfig.width || defaultConfig.canvas.width * 2000)
-    .attr("height", canvasConfig.height || defaultConfig.canvas.height * 2000)
+    .attr("x", -((canvasConfig.width || defaultConfig.canvas.width )* 10000))
+    .attr("y", -((canvasConfig.height || defaultConfig.canvas.height) * 10000))
+    .attr("width", (canvasConfig.width || defaultConfig.canvas.width) * 20000)
+    .attr("height", (canvasConfig.height || defaultConfig.canvas.height) * 20000)
     .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
     .attr("fill", "url(#linePattern)");
 
@@ -211,10 +216,10 @@ function createCrossGrid(
     .attr("stroke-width", strokeWidth);
 
   grid.append("rect")
-    .attr("x", -(canvasConfig.width * 1000))
-    .attr("y", -(canvasConfig.height * 1000))
-    .attr("width", canvasConfig.width * 2000)
-    .attr("height", canvasConfig.height * 2000)
+    .attr("x", -(canvasConfig.width * 10000))
+    .attr("y", -(canvasConfig.height * 10000))
+    .attr("width", canvasConfig.width * 20000)
+    .attr("height", canvasConfig.height * 20000)
     .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
     .attr("fill", "url(#crossGridPattern)");
 
@@ -272,10 +277,10 @@ function createSquareGrid(
     .attr("stroke-width", thickStroke);
 
   grid.append("rect")
-    .attr("x", -(canvasConfig.width * 1000))
-    .attr("y", -(canvasConfig.height * 1000))
-    .attr("width", canvasConfig.width * 2000)
-    .attr("height", canvasConfig.height * 2000)
+    .attr("x", -(canvasConfig.width * 10000))
+    .attr("y", -(canvasConfig.height * 10000))
+    .attr("width", canvasConfig.width * 20000)
+    .attr("height", canvasConfig.height * 20000)
     .attr("opacity", canvasConfig.grid.gridTransparency || defaultConfig.canvas.grid.gridTransparency)
     .attr("fill", "url(#sheetPattern)");
 
