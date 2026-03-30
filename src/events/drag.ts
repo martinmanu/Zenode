@@ -173,7 +173,7 @@ export function createDragBehavior(api: DragApi) {
         }
       }
 
-      d3.select(this).attr("transform", `translate(${newX},${newY})`);
+      d3.select(this).attr("transform", `translate(${newX},${newY}) rotate(${d.rotation || 0})`);
       
       // Real-time update for connections
       api.updateNodePosition(d.id, newX, newY);

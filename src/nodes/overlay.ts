@@ -5,9 +5,9 @@ import { ShapeRegistry } from "./registry.js";
 import { ResolvedShapeConfig } from "../types/index.js";
 
 export function buildResolvedShapeConfig(node: PlacedNode, style: Shape): ResolvedShapeConfig {
-  const width = style.width ?? node.width ?? 120;
-  const height = style.height ?? node.height ?? 60;
-  const radius = style.radius ?? node.radius ?? 30;
+  const width = node.width ?? style.width ?? 120;
+  const height = node.height ?? style.height ?? 60;
+  const radius = node.radius ?? style.radius ?? 30;
 
   if (node.type === "circle") {
     return {

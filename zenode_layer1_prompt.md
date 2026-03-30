@@ -632,6 +632,7 @@ engine.highlight(id: string, durationMs?: number): void
 engine.duplicateNode(id: string): string
 engine.lock(): void
 engine.unlock(): void
+engine.addPortToNodes(): void
 engine.setReadOnly(bool: boolean): void
 ```
 

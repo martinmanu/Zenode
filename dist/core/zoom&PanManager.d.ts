@@ -3,6 +3,7 @@ export declare class ZoomManager {
     private zoomBehaviour;
     private container;
     private config;
+    private svg;
     constructor(container: any, svg: any, config: Config, triggerEvent: Function);
     zoomBy(svg: any, factor: number, duration?: number): void;
     panBy(svg: any, dx: number, dy: number): void;

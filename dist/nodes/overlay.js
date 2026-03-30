@@ -1,8 +1,8 @@
 function buildResolvedShapeConfig(node, style) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
-    const width = (_b = (_a = style.width) !== null && _a !== void 0 ? _a : node.width) !== null && _b !== void 0 ? _b : 120;
-    const height = (_d = (_c = style.height) !== null && _c !== void 0 ? _c : node.height) !== null && _d !== void 0 ? _d : 60;
-    const radius = (_f = (_e = style.radius) !== null && _e !== void 0 ? _e : node.radius) !== null && _f !== void 0 ? _f : 30;
+    const width = (_b = (_a = node.width) !== null && _a !== void 0 ? _a : style.width) !== null && _b !== void 0 ? _b : 120;
+    const height = (_d = (_c = node.height) !== null && _c !== void 0 ? _c : style.height) !== null && _d !== void 0 ? _d : 60;
+    const radius = (_f = (_e = node.radius) !== null && _e !== void 0 ? _e : style.radius) !== null && _f !== void 0 ? _f : 30;
     if (node.type === "circle") {
         return {
             type: node.type,

@@ -11,7 +11,7 @@ export const defaultActions: ContextPadAction[] = [
       color: "#ff453a",
       hoverColor: "rgba(255, 69, 58, 0.2)"
     },
-    handler: (target, engine) => {
+    handler: (target, engine, event) => {
       if (target.kind === "node") {
         engine.setSelectedNodeIds([target.id]);
       } else {
@@ -26,7 +26,7 @@ export const defaultActions: ContextPadAction[] = [
     tooltip: "Connect",
     group: "primary",
     targets: ["node"],
-    handler: (target, engine) => {
+    handler: (target, engine, event) => {
       if (target.kind === "node") {
         const isEnabled = engine.isConnectionModeEnabled();
         engine.setConnectionModeEnabled(!isEnabled);
@@ -42,10 +42,42 @@ export const defaultActions: ContextPadAction[] = [
       tooltip: "Visual Settings",
       group: "secondary",
       targets: ["node"],
-      handler: (target, engine) => {
+      handler: (target, engine, event) => {
           engine.emit("contextpad:settings", { target });
           // Default fallback if no listener: update visual state
           engine.updateNodeVisualState(target.id, { status: "running" });
       }
+  },
+  {
+    id: "rotate",
+    icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6M3 12a9 9 0 0 1 15-6.7L21 8M3 22v-6h6M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>`,
+    tooltip: "Toggle Rotation Mode",
+    group: "secondary",
+    targets: ["node"],
+    handler: (target, engine, event) => {
+        if (target.kind === "node") {
+          const isEnabled = engine.isRotationModeEnabled();
+          engine.setRotationModeEnabled(!isEnabled);
+        }
+    },
+    isActive: (target, engine) => {
+      return engine.isRotationModeEnabled();
+    }
+  },
+  {
+    id: "reshape",
+    icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>`,
+    tooltip: "Toggle Resize Mode",
+    group: "secondary",
+    targets: ["node"],
+    handler: (target, engine, event) => {
+        if (target.kind === "node") {
+          const isEnabled = engine.isResizeModeEnabled();
+          engine.setResizeModeEnabled(!isEnabled);
+        }
+    },
+    isActive: (target, engine) => {
+      return engine.isResizeModeEnabled();
+    }
   }
 ];

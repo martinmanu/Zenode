@@ -231,6 +231,15 @@ export interface Shapes {
     triangle?: Shape[];  // Allow multiple triangle definitions
     pentagon?: Shape[];  // Allow multiple pentagon definitions
     parallelogram?: Shape[]; // Allow multiple parallelogram definitions
+    semicircle?: Shape[];    // Allow multiple semicircle definitions
+    octagon?: Shape[];       // Allow multiple octagon definitions
+    star?: Shape[];          // Allow multiple star definitions
+    oval?: Shape[];
+    trapezoid?: Shape[];
+    kite?: Shape[];
+    heptagon?: Shape[];
+    nonagon?: Shape[];
+    decagon?: Shape[];
   };
   extraShapes: Shape[]; // For additional, custom shapes
 }

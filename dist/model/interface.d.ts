@@ -31,6 +31,13 @@ export interface PlacedNode {
     width?: number;
     height?: number;
     radius?: number;
+    rotation?: number;
+    /** Original dimensions at placement — used to constrain resize min/max */
+    baseDimensions?: {
+        width?: number;
+        height?: number;
+        radius?: number;
+    };
     /** User-defined data attached to the node */
     meta: Record<string, unknown>;
     visualState?: VisualState;

@@ -14,6 +14,19 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { RectangleRenderer } from "../nodes/shapes/rectangle.js";
 import { CircleRenderer } from "../nodes/shapes/circle.js";
 import { RhombusRenderer } from "../nodes/shapes/rhombus.js";
+import { SemicircleRenderer } from "../nodes/shapes/semicircle.js";
+import { PentagonRenderer } from "../nodes/shapes/pentagon.js";
+import { OctagonRenderer } from "../nodes/shapes/octagon.js";
+import { StarRenderer } from "../nodes/shapes/star.js";
+import { OvalRenderer } from "../nodes/shapes/oval.js";
+import { TriangleRenderer } from "../nodes/shapes/triangle.js";
+import { TrapezoidRenderer } from "../nodes/shapes/trapezoid.js";
+import { ParallelogramRenderer } from "../nodes/shapes/parallelogram.js";
+import { KiteRenderer } from "../nodes/shapes/kite.js";
+import { HexagonRenderer } from "../nodes/shapes/hexagon.js";
+import { HeptagonRenderer } from "../nodes/shapes/heptagon.js";
+import { NonagonRenderer } from "../nodes/shapes/nonagon.js";
+import { DecagonRenderer } from "../nodes/shapes/decagon.js";
 import { LicenseManager } from "./license.js";
 import { SmartRouter } from "../connections/routing/smartRouter.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
@@ -60,6 +73,8 @@ export class ZenodeEngine {
     snapped?: { nodeId: string; portId: string; point: { x: number; y: number } };
   } | null = null;
   public connectionModeEnabled: boolean = false;
+  public rotationModeEnabled: boolean = false;
+  public resizeModeEnabled: boolean = false;
   private licenseManager = new LicenseManager();
   private smartRouter = new SmartRouter();
   private smartRoutingEnabled = false;
@@ -215,6 +230,19 @@ export class ZenodeEngine {
     this.shapeRegistry.register("rectangle", RectangleRenderer);
     this.shapeRegistry.register("circle", CircleRenderer);
     this.shapeRegistry.register("rhombus", RhombusRenderer);
+    this.shapeRegistry.register("semicircle", SemicircleRenderer);
+    this.shapeRegistry.register("pentagon", PentagonRenderer);
+    this.shapeRegistry.register("octagon", OctagonRenderer);
+    this.shapeRegistry.register("star", StarRenderer);
+    this.shapeRegistry.register("oval", OvalRenderer);
+    this.shapeRegistry.register("triangle", TriangleRenderer);
+    this.shapeRegistry.register("trapezoid", TrapezoidRenderer);
+    this.shapeRegistry.register("parallelogram", ParallelogramRenderer);
+    this.shapeRegistry.register("kite", KiteRenderer);
+    this.shapeRegistry.register("hexagon", HexagonRenderer);
+    this.shapeRegistry.register("heptagon", HeptagonRenderer);
+    this.shapeRegistry.register("nonagon", NonagonRenderer);
+    this.shapeRegistry.register("decagon", DecagonRenderer);
   }
 
   /** Public API for custom shape extension. */
@@ -306,12 +334,47 @@ export class ZenodeEngine {
   }
 
   setConnectionModeEnabled(enabled: boolean): void {
+    if (enabled) {
+        this.rotationModeEnabled = false;
+        this.resizeModeEnabled = false;
+    }
     this.connectionModeEnabled = enabled;
-    // Re-render nodes to update port availability/UI
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.eventManager.trigger("connection:mode:changed", { enabled });
+  }
+
+  isRotationModeEnabled(): boolean {
+      return this.rotationModeEnabled;
+  }
+
+  setRotationModeEnabled(enabled: boolean): void {
+      if (enabled) {
+          this.connectionModeEnabled = false;
+          this.resizeModeEnabled = false;
+      }
+      this.rotationModeEnabled = enabled;
+      if (this.canvasObject.placedNodes) {
+          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      }
+      this.eventManager.trigger("rotation:mode:changed", { enabled });
+  }
+
+  isResizeModeEnabled(): boolean {
+      return this.resizeModeEnabled;
+  }
+
+  setResizeModeEnabled(enabled: boolean): void {
+      if (enabled) {
+          this.connectionModeEnabled = false;
+          this.rotationModeEnabled = false;
+      }
+      this.resizeModeEnabled = enabled;
+      if (this.canvasObject.placedNodes) {
+          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      }
+      this.eventManager.trigger("resize:mode:changed", { enabled });
   }
 
   /** Sets the active connection type for newly created connections. */
@@ -437,6 +500,45 @@ export class ZenodeEngine {
     }
 
     this.eventManager.trigger("node:moved", { id, x, y });
+  }
+
+  /**
+   * Updates a node's rotation.
+   */
+  rotateNode(id: string, rotation: number): void {
+    this.placedNodes = this.placedNodes.map((n) => (n.id === id ? { ...n, rotation } : n));
+    if (this.canvasObject.placedNodes) {
+        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.reRenderConnections();
+    this.eventManager.trigger("node:rotated", { id, rotation });
+  }
+
+  /**
+   * Updates a node's dimensions (width/height or radius).
+   */
+  updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }): void {
+    this.placedNodes = this.placedNodes.map((n) => {
+        if (n.id !== id) return n;
+        // Capture original dimensions on first resize
+        const baseDimensions = n.baseDimensions ?? {
+            width: n.width,
+            height: n.height,
+            radius: n.radius,
+        };
+        return {
+            ...n,
+            baseDimensions,
+            width: dimensions.width ?? n.width,
+            height: dimensions.height ?? n.height,
+            radius: dimensions.radius ?? n.radius,
+        };
+    });
+    if (this.canvasObject.placedNodes) {
+        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.reRenderConnections();
+    this.eventManager.trigger("node:resized", { id, dimensions });
   }
 
   public zoomIn(): void {
@@ -579,7 +681,7 @@ export class ZenodeEngine {
     this.removePlacementListeners();
     this.setPlacementContext(shapeType, shapeToFind);
     this.svg.on("mousemove", (event: MouseEvent) =>
-      svgMouseMove(event, shapeType, shapeToFind, this.grid, this.config, this.canvasObject, data)
+      svgMouseMove(event, shapeType, shapeToFind, this.grid, this.config, this.canvasObject, data, this.shapeRegistry)
     );
     this.svg.on("click", (event: MouseEvent) => svgMouseClick(event, this));
   }
@@ -713,9 +815,16 @@ export class ZenodeEngine {
       const resolved = buildResolvedShapeConfig(node, style);
       const ports = renderer.getPorts(resolved);
 
+      const rotation = (node.rotation || 0) * (Math.PI / 180);
+      const cos = Math.cos(rotation);
+      const sin = Math.sin(rotation);
+
       for (const [portId, pos] of Object.entries(ports)) {
-        const absX = node.x + (pos as any).x;
-        const absY = node.y + (pos as any).y;
+        const p = pos as { x: number; y: number };
+        const rotatedX = p.x * cos - p.y * sin;
+        const rotatedY = p.x * sin + p.y * cos;
+        const absX = node.x + rotatedX;
+        const absY = node.y + rotatedY;
         const dist = Math.hypot(point.x - absX, point.y - absY);
         if (dist < bestDist) {
           bestDist = dist;
@@ -736,6 +845,15 @@ export class ZenodeEngine {
     const finalTargetPortId = targetPortId || this.connectionDragContext.snapped?.portId;
 
     if (finalTargetNodeId && finalTargetPortId) {
+      // Prevent self-connection
+      if (finalTargetNodeId === this.connectionDragContext.sourceNodeId) {
+          this.connectionDragContext = null;
+          if (this.canvasObject.ghostConnection) {
+              this.canvasObject.ghostConnection.selectAll("*").remove();
+          }
+          return;
+      }
+
       this.createConnectionFromPorts(
         this.connectionDragContext.sourceNodeId,
         this.connectionDragContext.sourcePortId,
@@ -801,7 +919,14 @@ export class ZenodeEngine {
     const portPos = ports[this.connectionDragContext!.sourcePortId];
     if (!portPos) return;
 
-    const from = { x: sourceNode.x + portPos.x, y: sourceNode.y + portPos.y };
+    const rotation = (sourceNode.rotation || 0) * (Math.PI / 180);
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    
+    const rotatedX = portPos.x * cos - portPos.y * sin;
+    const rotatedY = portPos.x * sin + portPos.y * cos;
+
+    const from = { x: sourceNode.x + rotatedX, y: sourceNode.y + rotatedY };
     const to = this.connectionDragContext.snapped
       ? this.connectionDragContext.snapped.point
       : this.connectionDragContext.currentPoint;
@@ -838,6 +963,15 @@ export class ZenodeEngine {
       const target = event.target as Element | null;
       if (target?.closest("g.placed-node")) return;
       this.clearSelection();
+      this.connectionModeEnabled = false;
+      this.rotationModeEnabled = false;
+      this.resizeModeEnabled = false;
+      if (this.canvasObject.ghostConnection) {
+          this.canvasObject.ghostConnection.selectAll("*").remove();
+      }
+      if (this.canvasObject.placedNodes) {
+          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      }
     });
 
     // Keyboard selection actions.

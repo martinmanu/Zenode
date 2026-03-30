@@ -122,18 +122,12 @@ export const defaultConfig: Config = {
         {
           "id": "circle1",
           "radius": 30,
-          "color": "#008000",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
-          "textColor": "#ffffff",
-          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency": 1,
-          "overlay": {
-            "enabled": true,  // Enable selection overlay
-            "color": "blue",  // Example color
-            "strokeWidth": 2, // Example stroke width
-            "opacity": 1,
-            "type": "line"
-          },
+          "color": "#3B82F6",
+          "stroke": { "width": 1.5, "color": "#1D4ED8", "strokeDasharray": [] },
+          "textColor": "#1e3a5f",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#3B82F6", "strokeWidth": 2, "opacity": 1, "type": "line" },
           'previewEnabled': true,
           'previewTransparency': 0.4
         },
@@ -143,19 +137,13 @@ export const defaultConfig: Config = {
           "id": "task0",
           "width": 120,
           "height": 60,
-          "color": "#0000ff",
-          "borderRadius": { "leftTop": 3, "leftBottom": 3, "rightTop": 3, "rightBottom": 3 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+          "color": "#6366F1",
+          "borderRadius": { "leftTop": 4, "leftBottom": 4, "rightTop": 4, "rightBottom": 4 },
+          "stroke": { "width": 1.5, "color": "#4338CA", "strokeDasharray": [] },
           "textColor": "#ffffff",
-          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency": 1,
-          "overlay": {
-            "enabled": true,  // Enable selection overlay
-            "color": "blue",  // Example color
-            "strokeWidth": 2, // Example stroke width
-            "opacity": 1,
-            "type": "line"
-          },
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#6366F1", "strokeWidth": 2, "opacity": 1, "type": "line" },
           'previewEnabled': true,
           'previewTransparency': 0.4
         },
@@ -163,19 +151,27 @@ export const defaultConfig: Config = {
           "id": "task1",
           "width": 100,
           "height": 50,
-          "color": "#00FFFF",
+          "color": "#8B5CF6",
           "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
-          "textColor": "#000000",
-          "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.1)",
-          "transparency": 1,
-          "overlay": {
-            "enabled": true,  // Enable selection overlay
-            "color": "blue",  // Example color
-            "strokeWidth": 2, // Example stroke width
-            "opacity": 1,
-            "type": "line"
-          },
+          "stroke": { "width": 1.5, "color": "#6D28D9", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 3px 5px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#8B5CF6", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        },
+        {
+          "id": "long-card",
+          "width": 200,
+          "height": 80,
+          "color": "#F8FAFC",
+          "borderRadius": { "leftTop": 8, "leftBottom": 8, "rightTop": 8, "rightBottom": 8 },
+          "stroke": { "width": 1, "color": "#CBD5E1", "strokeDasharray": [] },
+          "textColor": "#0f172a",
+          "boxShadow": "0px 10px 15px -3px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.9,
+          "overlay": { "enabled": true, "color": "#3b82f6", "strokeWidth": 2, "opacity": 1, "type": "line" },
           'previewEnabled': true,
           'previewTransparency': 0.4
         }
@@ -185,22 +181,212 @@ export const defaultConfig: Config = {
           "id": "rhombus1",
           "width": 80,
           "height": 80,
-          "color": "#FF00FF",
-          "stroke": { "width": 2, "color": "#000000", "strokeDasharray": [] },
+          "color": "#EC4899",
+          "stroke": { "width": 1.5, "color": "#BE185D", "strokeDasharray": [] },
           "textColor": "#ffffff",
-          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.1)",
-          "transparency": 1,
-          "overlay": {
-            "enabled": true,  // Enable selection overlay
-            "color": "blue",  // Example color
-            "strokeWidth": 2, // Example stroke width
-            "opacity": 1,
-            "type": "line"
-          },
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#EC4899", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "pentagon": [
+        {
+          "id": "pentagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#F97316",
+          "stroke": { "width": 1.5, "color": "#C2410C", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#F97316", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "semicircle": [
+        {
+          "id": "semicircle1",
+          "width": 100,
+          "height": 50,
+          "color": "#14B8A6",
+          "stroke": { "width": 1.5, "color": "#0F766E", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#14B8A6", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "octagon": [
+        {
+          "id": "octagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#EF4444",
+          "stroke": { "width": 1.5, "color": "#B91C1C", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#EF4444", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "star": [
+        {
+          "id": "star1",
+          "width": 80,
+          "height": 80,
+          "color": "#EAB308",
+          "stroke": { "width": 1.5, "color": "#A16207", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#EAB308", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "oval": [
+        {
+          "id": "oval1",
+          "width": 80,
+          "height": 120,
+          "color": "#06B6D4",
+          "stroke": { "width": 1.5, "color": "#0E7490", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#06B6D4", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "triangle": [
+        {
+          "id": "triangle1",
+          "width": 80,
+          "height": 80,
+          "color": "#22C55E",
+          "stroke": { "width": 1.5, "color": "#15803D", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#22C55E", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "trapezoid": [
+        {
+          "id": "trapezoid1",
+          "width": 100,
+          "height": 60,
+          "color": "#7C3AED",
+          "stroke": { "width": 1.5, "color": "#5B21B6", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#7C3AED", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "parallelogram": [
+        {
+          "id": "parallelogram1",
+          "width": 100,
+          "height": 60,
+          "color": "#F59E0B",
+          "stroke": { "width": 1.5, "color": "#B45309", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#F59E0B", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "kite": [
+        {
+          "id": "kite1",
+          "width": 80,
+          "height": 100,
+          "color": "#10B981",
+          "stroke": { "width": 1.5, "color": "#047857", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#10B981", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "hexagon": [
+        {
+          "id": "hexagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#0EA5E9",
+          "stroke": { "width": 1.5, "color": "#0369A1", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#0EA5E9", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "heptagon": [
+        {
+          "id": "heptagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#D946EF",
+          "stroke": { "width": 1.5, "color": "#A21CAF", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#D946EF", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "nonagon": [
+        {
+          "id": "nonagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#FB923C",
+          "stroke": { "width": 1.5, "color": "#C2410C", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#FB923C", "strokeWidth": 2, "opacity": 1, "type": "line" },
+          'previewEnabled': true,
+          'previewTransparency': 0.4
+        }
+      ],
+      "decagon": [
+        {
+          "id": "decagon1",
+          "width": 80,
+          "height": 80,
+          "color": "#34D399",
+          "stroke": { "width": 1.5, "color": "#059669", "strokeDasharray": [] },
+          "textColor": "#ffffff",
+          "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",
+          "transparency": 0.35,
+          "overlay": { "enabled": true, "color": "#34D399", "strokeWidth": 2, "opacity": 1, "type": "line" },
           'previewEnabled': true,
           'previewTransparency': 0.4
         }
       ]
+
     },
     extraShapes: []
   },

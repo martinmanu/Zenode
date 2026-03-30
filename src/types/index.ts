@@ -11,12 +11,12 @@ export interface BoundingBox {
 }
 
 export interface PortMap {
-  top: { x: number; y: number };
-  bottom: { x: number; y: number };
-  left: { x: number; y: number };
-  right: { x: number; y: number };
-  center: { x: number; y: number };
-  [key: string]: { x: number; y: number };
+  top?: { x: number; y: number };
+  bottom?: { x: number; y: number };
+  left?: { x: number; y: number };
+  right?: { x: number; y: number };
+  center?: { x: number; y: number };
+  [key: string]: { x: number; y: number } | undefined;
 }
 
 /**
@@ -70,7 +70,7 @@ export interface ContextPadAction {
   targets?: Array<"node" | "edge">;
   appliesTo?: string[]; // node/edge types
   order?: number;
-  handler: (target: ContextPadTarget, engine: any) => void;
+  handler: (target: ContextPadTarget, engine: any, event: MouseEvent) => void;
   isVisible?: (target: ContextPadTarget, engine: any) => boolean;
   isDisabled?: (target: ContextPadTarget, engine: any) => boolean;
   isActive?: (target: ContextPadTarget, engine: any) => boolean;

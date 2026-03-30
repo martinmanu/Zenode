@@ -209,6 +209,15 @@ export interface Shapes {
         triangle?: Shape[];
         pentagon?: Shape[];
         parallelogram?: Shape[];
+        semicircle?: Shape[];
+        octagon?: Shape[];
+        star?: Shape[];
+        oval?: Shape[];
+        trapezoid?: Shape[];
+        kite?: Shape[];
+        heptagon?: Shape[];
+        nonagon?: Shape[];
+        decagon?: Shape[];
     };
     extraShapes: Shape[];
 }

@@ -30,6 +30,8 @@ export declare class ZenodeEngine {
     /** When set, a connection is being dragged from this port. */
     private connectionDragContext;
     connectionModeEnabled: boolean;
+    rotationModeEnabled: boolean;
+    resizeModeEnabled: boolean;
     private licenseManager;
     private smartRouter;
     private smartRoutingEnabled;
@@ -94,6 +96,10 @@ export declare class ZenodeEngine {
     getLicenseTier(): string;
     isSmartRoutingEnabled(): boolean;
     setConnectionModeEnabled(enabled: boolean): void;
+    isRotationModeEnabled(): boolean;
+    setRotationModeEnabled(enabled: boolean): void;
+    isResizeModeEnabled(): boolean;
+    setResizeModeEnabled(enabled: boolean): void;
     /** Sets the active connection type for newly created connections. */
     setActiveConnectionType(type: string): void;
     /** Sets selected node ids and re-renders selection rings. */
@@ -120,6 +126,18 @@ export declare class ZenodeEngine {
      * Updates a placed node's position and triggers sub-renders.
      */
     updateNodePosition(id: string, x: number, y: number): void;
+    /**
+     * Updates a node's rotation.
+     */
+    rotateNode(id: string, rotation: number): void;
+    /**
+     * Updates a node's dimensions (width/height or radius).
+     */
+    updateNodeDimensions(id: string, dimensions: {
+        width?: number;
+        height?: number;
+        radius?: number;
+    }): void;
     zoomIn(): void;
     zoomOut(): void;
     focusOnNode(id: string): void;

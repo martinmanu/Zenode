@@ -20,6 +20,8 @@ export interface RenderApi extends DragApi {
   updateConnectionDrag(currentPoint: { x: number; y: number }): void;
   endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
   isDrawingConnection(): boolean;
+  rotateNode(id: string, rotation: number): void;
+  updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }): void;
 }
 
 function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
@@ -51,7 +53,7 @@ export function renderPlacedNodes(
           .append("g")
           .attr("class", "node placed-node")
           .attr("data-id", (d) => d.id)
-          .attr("transform", (d) => `translate(${d.x},${d.y})`)
+          .attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`)
           .call(dragBehavior)
           .on("click", function (event) {
             event.stopPropagation();
@@ -77,7 +79,7 @@ export function renderPlacedNodes(
       return g;
     },
     (update) => {
-      update.attr("transform", (d) => `translate(${d.x},${d.y})`);
+      update.attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`);
       update.each(function (d) {
         const style = getShapeStyle(d, api.config);
         if (!style) return;
