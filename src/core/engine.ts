@@ -1,6 +1,6 @@
 // src/core/engine.ts
 import { drawCanvas, lockedCanvas } from "../components/canvas/canvas.js";
-import { drawGrid, toggleGrid } from "../components/canvas/grid.js";
+import { drawGrid, toggleGrid, updateGridTransform } from "../components/canvas/grid.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { EventManager } from "./eventManager.js";
 import { ZoomManager } from "./zoom&PanManager.js";
@@ -147,19 +147,10 @@ export class ZenodeEngine {
     this.config.canvas.height = height;
 
     if (this.svg) {
-        this.svg
-            .attr("width", width)
-            .attr("height", height)
-            .attr("viewBox", `0 0 ${width} ${height}`);
-        
-        // Update grid rect to match new dimensions if needed
-        if (this.grid) {
-            this.grid.selectAll("rect")
-                .attr("x", -(width * 10000))
-                .attr("y", -(height * 10000))
-                .attr("width", width * 20000)
-                .attr("height", height * 20000);
-        }
+        // Fluid infinite layout doesn't need fixed dimensions or viewBox
+        // But we re-sync the grid transform to make sure pattern offset is still happy
+        const transform = d3.zoomTransform(this.svg.node());
+        updateGridTransform(this.svg, transform);
     }
   }
 

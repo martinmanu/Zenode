@@ -27,19 +27,16 @@ export function drawCanvas(
   const backgroundColor = canvasConfig?.backgroundColor || defaultConfig.canvas.backgroundColor;
   const svg = container
     .append("svg")
-    .attr("width", width)
-    .attr("height", height)
+    .attr("width", "100%")
+    .attr("height", "100%")
     .attr("class", canvasClasses.join(" "))
     .style("background-color", backgroundColor)
-    .attr("viewBox", `0 0 ${width} ${height}`)
     .style("display", "block")
-    .style("width", "100%")
-    .style("height", "100%")
     .attr("preserveAspectRatio", "xMidYMid meet");
+  const gridLayout = svg.append("g").attr("class", "grid");
   const canvasContainerGroup = svg
     .append("g")
     .attr("class", "canvas-container");
-  const gridLayout = canvasContainerGroup.append("g").attr("class", "grid");
   const elementsGroup = canvasContainerGroup
     .append("g")
     .attr("class", "elements-group");
