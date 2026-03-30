@@ -1,24 +1,10 @@
-# Dependencies
 node_modules/
-dist/
 dist/
 zenode.cursorrules.md
 zenode_layer1_prompt.md
 # Logs
 *.log
-npm-debug.log*
-
-# Environment variables
-.env
-.env.local
-
-# IDE files
-.vscode/
-.idea/
-
-# OS files
+tsc.log
+tsc.txt
 .DS_Store
 Thumbs.db
-
-# Cache
-.cache/

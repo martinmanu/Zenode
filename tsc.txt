@@ -1,0 +1,102 @@
+﻿error TS2688: Cannot find type definition file for 'd3'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3'
+error TS2688: Cannot find type definition file for 'd3-array'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-array'
+error TS2688: Cannot find type definition file for 'd3-axis'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-axis'
+error TS2688: Cannot find type definition file for 'd3-brush'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-brush'
+error TS2688: Cannot find type definition file for 'd3-chord'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-chord'
+error TS2688: Cannot find type definition file for 'd3-color'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-color'
+error TS2688: Cannot find type definition file for 'd3-contour'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-contour'
+error TS2688: Cannot find type definition file for 'd3-delaunay'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-delaunay'
+error TS2688: Cannot find type definition file for 'd3-dispatch'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-dispatch'
+error TS2688: Cannot find type definition file for 'd3-drag'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-drag'
+error TS2688: Cannot find type definition file for 'd3-dsv'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-dsv'
+error TS2688: Cannot find type definition file for 'd3-ease'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-ease'
+error TS2688: Cannot find type definition file for 'd3-fetch'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-fetch'
+error TS2688: Cannot find type definition file for 'd3-force'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-force'
+error TS2688: Cannot find type definition file for 'd3-format'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-format'
+error TS2688: Cannot find type definition file for 'd3-geo'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-geo'
+error TS2688: Cannot find type definition file for 'd3-hierarchy'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-hierarchy'
+error TS2688: Cannot find type definition file for 'd3-interpolate'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-interpolate'
+error TS2688: Cannot find type definition file for 'd3-path'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-path'
+error TS2688: Cannot find type definition file for 'd3-polygon'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-polygon'
+error TS2688: Cannot find type definition file for 'd3-quadtree'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-quadtree'
+error TS2688: Cannot find type definition file for 'd3-random'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-random'
+error TS2688: Cannot find type definition file for 'd3-scale'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-scale'
+error TS2688: Cannot find type definition file for 'd3-scale-chromatic'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-scale-chromatic'
+error TS2688: Cannot find type definition file for 'd3-selection'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-selection'
+error TS2688: Cannot find type definition file for 'd3-shape'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-shape'
+error TS2688: Cannot find type definition file for 'd3-time'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-time'
+error TS2688: Cannot find type definition file for 'd3-time-format'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-time-format'
+error TS2688: Cannot find type definition file for 'd3-timer'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-timer'
+error TS2688: Cannot find type definition file for 'd3-transition'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-transition'
+error TS2688: Cannot find type definition file for 'd3-zoom'.
+  The file is in the program because:
+    Entry point for implicit type library 'd3-zoom'
+error TS2688: Cannot find type definition file for 'estree'.
+  The file is in the program because:
+    Entry point for implicit type library 'estree'
+error TS2688: Cannot find type definition file for 'geojson'.
+  The file is in the program because:
+    Entry point for implicit type library 'geojson'
+error TS2688: Cannot find type definition file for 'resolve'.
+  The file is in the program because:
+    Entry point for implicit type library 'resolve'
