@@ -553,8 +553,8 @@ export class ZenodeEngine {
     const node = this.placedNodes.find(n => n.id === id);
     if (node) {
       const style = this.getShapeStyle(node);
-      const width = style?.width ?? 100;
-      const height = style?.height ?? 100;
+      const width = node.width ?? style?.width ?? 100;
+      const height = node.height ?? style?.height ?? 100;
       const centerX = node.x + width / 2;
       const centerY = node.y + height / 2;
       this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY });
@@ -569,8 +569,8 @@ export class ZenodeEngine {
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
       this.placedNodes.forEach(n => {
         const style = this.getShapeStyle(n);
-        const w = style?.width ?? 100;
-        const h = style?.height ?? 100;
+        const w = n.width ?? style?.width ?? 100;
+        const h = n.height ?? style?.height ?? 100;
         minX = Math.min(minX, n.x);
         minY = Math.min(minY, n.y);
         maxX = Math.max(maxX, n.x + w);
@@ -582,18 +582,23 @@ export class ZenodeEngine {
       const centerX = (minX + maxX) / 2;
       const centerY = (minY + maxY) / 2;
 
-      // Calculate the scale to fit everything with some padding
-      const padding = 40;
-      const svgWidth = parseFloat(this.svg.attr("width") || "800");
-      const svgHeight = parseFloat(this.svg.attr("height") || "500");
-      
+      // Use the real rendered SVG size, not the SVG attribute (which is null on infinite canvas)
+      const svgEl = this.svg.node() as SVGElement;
+      const rect = svgEl.getBoundingClientRect();
+      const svgWidth = rect.width || 800;
+      const svgHeight = rect.height || 500;
+
+      // Calculate the scale to fit everything with padding
+      const padding = 60;
       const scaleX = (svgWidth - padding * 2) / diagramWidth;
       const scaleY = (svgHeight - padding * 2) / diagramHeight;
       let fitScale = Math.min(scaleX, scaleY);
-      
-      // Don't zoom in too much, keep it at most 1.0 if it's small
-      fitScale = Math.min(fitScale, 1.0);
-      // But don't go below the minimum zoom extent
+
+      // Cap at current zoom so we don't zoom IN unnecessarily
+      const currentScale = (d3 as any).zoomTransform(svgEl).k;
+      fitScale = Math.min(fitScale, Math.max(currentScale, 1.0));
+
+      // Respect the minimum zoom extent
       const minExtent = (this.zoomManager as any).config.canvasProperties.zoomExtent[0];
       fitScale = Math.max(fitScale, minExtent);
 

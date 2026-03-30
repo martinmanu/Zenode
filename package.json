@@ -18,9 +18,9 @@
     }
   },
   "scripts": {
-    "build": "npm exec rollup -- -c && node build-vercel.js",
-    "dev": "npm exec rollup -- -c -w",
-    "start": "npm run build && npx --yes http-server . -p 3000 -o playground/index.html",
+    "build": "rollup -c && node build-vercel.js",
+    "dev": "rollup -c -w",
+    "start": "npm run build && npx http-server . -p 3000 -o playground/index.html",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

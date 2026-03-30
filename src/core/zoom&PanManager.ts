@@ -60,10 +60,12 @@ export class ZoomManager {
   }
 
   public centerOn(svg: any, point: { x: number; y: number }, scale?: number, duration: number = 500): void {
-    const width = parseFloat(svg.attr("width") || window.innerWidth.toString());
-    const height = parseFloat(svg.attr("height") || window.innerHeight.toString());
+    const svgEl = svg.node() as SVGElement;
+    const rect = svgEl.getBoundingClientRect();
+    const width = rect.width || 800;
+    const height = rect.height || 500;
     
-    const targetScale = scale ?? d3.zoomTransform(svg.node()).k;
+    const targetScale = scale ?? d3.zoomTransform(svgEl).k;
     
     // Calculate transform to center the point
     const transform = d3.zoomIdentity
