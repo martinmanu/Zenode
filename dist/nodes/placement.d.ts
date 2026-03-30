@@ -24,6 +24,12 @@ export interface RenderApi extends DragApi {
     }): void;
     endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
     isDrawingConnection(): boolean;
+    rotateNode(id: string, rotation: number): void;
+    updateNodeDimensions(id: string, dimensions: {
+        width?: number;
+        height?: number;
+        radius?: number;
+    }): void;
 }
 /**
  * Renders the placed nodes layer using a D3 data join. Call after state changes.

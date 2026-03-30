@@ -8,24 +8,21 @@ function drawCanvas(containerSelector, canvasConfig) {
         throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
     let canvasClasses = (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.canvasClasses) || defaultConfig.canvas.canvasClasses;
-    const width = (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.width) || defaultConfig.canvas.width;
-    const height = (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.height) || defaultConfig.canvas.height;
+    (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.width) || defaultConfig.canvas.width;
+    (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.height) || defaultConfig.canvas.height;
     const backgroundColor = (canvasConfig === null || canvasConfig === void 0 ? void 0 : canvasConfig.backgroundColor) || defaultConfig.canvas.backgroundColor;
     const svg = container
         .append("svg")
-        .attr("width", width)
-        .attr("height", height)
+        .attr("width", "100%")
+        .attr("height", "100%")
         .attr("class", canvasClasses.join(" "))
         .style("background-color", backgroundColor)
-        .attr("viewBox", `0 0 ${width} ${height}`)
         .style("display", "block")
-        .style("width", "100%")
-        .style("height", "100%")
         .attr("preserveAspectRatio", "xMidYMid meet");
+    const gridLayout = svg.append("g").attr("class", "grid");
     const canvasContainerGroup = svg
         .append("g")
         .attr("class", "canvas-container");
-    const gridLayout = canvasContainerGroup.append("g").attr("class", "grid");
     const elementsGroup = canvasContainerGroup
         .append("g")
         .attr("class", "elements-group");

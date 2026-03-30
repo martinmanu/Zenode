@@ -8,30 +8,30 @@ export interface BoundingBox {
     height: number;
 }
 export interface PortMap {
-    top: {
+    top?: {
         x: number;
         y: number;
     };
-    bottom: {
+    bottom?: {
         x: number;
         y: number;
     };
-    left: {
+    left?: {
         x: number;
         y: number;
     };
-    right: {
+    right?: {
         x: number;
         y: number;
     };
-    center: {
+    center?: {
         x: number;
         y: number;
     };
     [key: string]: {
         x: number;
         y: number;
-    };
+    } | undefined;
 }
 /**
  * Fully resolved shape config used by renderers.
@@ -93,7 +93,7 @@ export interface ContextPadAction {
     targets?: Array<"node" | "edge">;
     appliesTo?: string[];
     order?: number;
-    handler: (target: ContextPadTarget, engine: any) => void;
+    handler: (target: ContextPadTarget, engine: any, event: MouseEvent) => void;
     isVisible?: (target: ContextPadTarget, engine: any) => boolean;
     isDisabled?: (target: ContextPadTarget, engine: any) => boolean;
     isActive?: (target: ContextPadTarget, engine: any) => boolean;

@@ -1,21 +1,22 @@
 import { Config } from "../model/configurationModel.js";
 import { defaultConfig } from "../config/defaultConfig.js";
 import * as d3 from "d3";
+import { updateGridTransform } from "../components/canvas/grid.js";
 
 export class ZoomManager {
   private zoomBehaviour: any;
   private container: any;
   private config: any;
 
+  private svg: any;
+
   constructor(container: any, svg: any, config: Config, triggerEvent: Function) {
     this.container = container;
+    this.svg = svg;
     this.config = config;
 
     this.zoomBehaviour = d3.zoom()
       .scaleExtent(this.config.canvasProperties.zoomExtent)
-      .translateExtent([
-        [-10000, -10000], [10000, 10000]
-      ])
       .filter((event: any) => {
         // When lasso tool is enabled, block drag-pan so background drag draws lasso instead.
         if (event.type === "mousedown" && svg.attr("data-lasso-enabled") === "true") return false;
@@ -28,6 +29,7 @@ export class ZoomManager {
       .on("start", (event) => triggerEvent("zoomStart", event))
       .on("zoom", (event) => {
         this.container.attr("transform", event.transform);
+        updateGridTransform(this.svg, event.transform);
         triggerEvent("zoom", event);
       })
       .on("end", (event) => triggerEvent("zoomEnd", event));

@@ -13,7 +13,13 @@ function getNodePortPos(node, portId, registry, config) {
     const resolved = buildResolvedShapeConfig(node, style);
     const ports = renderer.getPorts(resolved);
     const port = ports[portId] || ports.center || { x: 0, y: 0 };
-    return { x: node.x + port.x, y: node.y + port.y };
+    // Calculate rotated port position relative to node center
+    const rotation = (node.rotation || 0) * (Math.PI / 180);
+    const cos = Math.cos(rotation);
+    const sin = Math.sin(rotation);
+    const rotatedX = port.x * cos - port.y * sin;
+    const rotatedY = port.x * sin + port.y * cos;
+    return { x: node.x + rotatedX, y: node.y + rotatedY };
 }
 function getMarkerId(svg, type, color) {
     if (!type || type === "none")

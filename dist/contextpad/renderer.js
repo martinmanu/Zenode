@@ -115,7 +115,7 @@ class ContextPadRenderer {
                     e.stopPropagation();
                     // Emit click event
                     engine.emit("contextpad:action:click", { action, target: this.currentTarget });
-                    action.handler(this.currentTarget, engine);
+                    action.handler(this.currentTarget, engine, e);
                     // Refresh pad after action
                     this.update(engine);
                 };

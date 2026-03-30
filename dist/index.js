@@ -48,8 +48,26 @@ function createShape(type, id) {
     if (!engineInstance) {
         throw new Error("ZenodeEngine is not initialized. Call initialize() first.");
     }
-    if (typeof type !== "string" || !["rectangle", "circle", "rhombus"].includes(type)) {
-        throw new Error(`Invalid shape type '${type}'. Supported types: rectangle, circle, rhombus.`);
+    const validTypes = [
+        "rectangle",
+        "circle",
+        "rhombus",
+        "semicircle",
+        "pentagon",
+        "octagon",
+        "star",
+        "oval",
+        "triangle",
+        "trapezoid",
+        "parallelogram",
+        "kite",
+        "hexagon",
+        "heptagon",
+        "nonagon",
+        "decagon",
+    ];
+    if (typeof type !== "string" || !validTypes.includes(type)) {
+        throw new Error(`Invalid shape type '${type}'. Supported types: ${validTypes.join(", ")}.`);
     }
     engineInstance.createShape(type, id);
     // engineInstance.createShape(type, x, y, name);

@@ -31,7 +31,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             .append("g")
             .attr("class", "node placed-node")
             .attr("data-id", (d) => d.id)
-            .attr("transform", (d) => `translate(${d.x},${d.y})`)
+            .attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`)
             .call(dragBehavior)
             .on("click", function (event) {
             event.stopPropagation();
@@ -54,7 +54,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
         });
         return g;
     }, (update) => {
-        update.attr("transform", (d) => `translate(${d.x},${d.y})`);
+        update.attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`);
         update.each(function (d) {
             const style = getShapeStyle(d, api.config);
             if (!style)

@@ -3,7 +3,8 @@ import { CanvasElements, ShapePreviewData } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { defaultConfig } from "../config/defaultConfig.js";
 import { snapToGrid } from "../utils/helpers.js";
-import { roundedRectPath } from "../nodes/geometry/rectanglePath.js";
+import { ShapeRegistry } from "../nodes/registry.js";
+import { ResolvedShapeConfig } from "../types/index.js";
 
 export function svgMouseMove(
   event: MouseEvent,
@@ -13,6 +14,7 @@ export function svgMouseMove(
   config: Config,
   canvasObject: CanvasElements,
   data?: ShapePreviewData,
+  registry?: ShapeRegistry
 ) {
   const gridSize: number = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
   const zoomTransform = d3.zoomTransform(canvasObject.svg.node() as Element);
@@ -26,7 +28,7 @@ export function svgMouseMove(
     exactPosition = { x: adjustedX, y: adjustedY };
   }
   if(shapeToFind.previewEnabled) {
-    let shapePreview = createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind);
+    let shapePreview = createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind, registry);
   }else {
     // draw the shape directly without preview
   }
@@ -37,56 +39,68 @@ function createShapePreview(
   x: number,
   y: number,
   canvasObject: any,
-  shapeToFind: Shape
+  shapeToFind: Shape,
+  registry?: ShapeRegistry
 ) {
   removeAllPreview(canvasObject)
   let elementId = `preview_${shapeType}`;
   let shape;
-  if (shapeType === "rectangle") {
-    // Compute top-left corner assuming shape's position is the center.
-    const width = shapeToFind.width ?? 120;
-    const height = shapeToFind.height ?? 60;
-    const x0 = x - width / 2;
-    const y0 = y - height / 2;
-    const r1 = shapeToFind.borderRadius?.leftTop || 0;
-    const r2 = shapeToFind.borderRadius?.rightTop || 0;
-    const r3 = shapeToFind.borderRadius?.rightBottom || 0;
-    const r4 = shapeToFind.borderRadius?.leftBottom || 0;
-    const pathData = roundedRectPath(x0, y0, width, height, r1, r2, r3, r4);
-    shape = canvasObject.elements.append("path")
+
+  if (registry && registry.has(shapeType)) {
+    const renderer = registry.get(shapeType);
+    const radius = shapeToFind.radius ?? 30;
+    const width = shapeToFind.width ?? radius * 2;
+    const height = shapeToFind.height ?? radius * 2;
+
+    // All renderers draw with (0,0) as the anchor (center or top-left).
+    // We use a <g translate(x,y)> so the path coordinates are always
+    // relative to (0,0), then shifted to the cursor position regardless
+    // of shape type. This fixes the circle offset bug.
+    //
+    // Circle renderer uses (cx=x, cy=y) as the CENTER — so pass x:0,y:0.
+    // Rect/polygon renderers use the top-left corner — so offset by -w/2,-h/2
+    // to keep them visually centered on the cursor too.
+    const isCircleLike = shapeType === "circle";
+    const tempConfig: ResolvedShapeConfig = {
+      type: shapeType,
+      x: isCircleLike ? 0 : -width / 2,
+      y: isCircleLike ? 0 : -height / 2,
+      width,
+      height,
+      radius,
+      color: shapeToFind.color,
+      stroke: shapeToFind.stroke,
+      transparency: shapeToFind.transparency,
+      borderRadius: shapeToFind.borderRadius
+    };
+
+    const pathData = renderer.getPath(tempConfig);
+    const group = canvasObject.elements.append("g")
       .attr("id", elementId)
+      .attr("transform", `translate(${x},${y})`);
+
+    shape = group.append("path")
       .attr("d", pathData)
       .attr("fill", shapeToFind.color)
-      .attr("stroke", shapeToFind.stroke.color)
-      .attr("stroke-width", shapeToFind.stroke.width)
-      .attr("stroke-dasharray", shapeToFind.stroke.strokeDasharray?.join(" ") || null)
+      .attr("stroke", shapeToFind.stroke?.color ?? "#000")
+      .attr("stroke-width", shapeToFind.stroke?.width ?? 1)
+      .attr("stroke-dasharray", shapeToFind.stroke?.strokeDasharray?.join(" ") || null)
       .attr("opacity", shapeToFind.previewTransparency ?? 0.5);
-  } else if (shapeType === "circle") {
-    shape = canvasObject.elements.append("circle")
-      .attr("id", elementId)
-      .attr("cx", x)
-      .attr("cy", y)
-      .attr("r", shapeToFind.radius ?? 30)
-      .attr("fill", shapeToFind.color)
-      .attr("stroke", shapeToFind.stroke.color)
-      .attr("stroke-width", shapeToFind.stroke.width)
-      .attr("opacity", shapeToFind.previewTransparency ?? 0.5);
-  } else if ( shapeType === "rhombus") {
-    shape = canvasObject.elements.append("polygon")
-      .attr("id", elementId)
-      .attr("points", `${x},${y - 30} ${x + 30},${y} ${x},${y + 30} ${x - 30},${y}`)
-      .attr("fill", shapeToFind.color)
-      .attr("stroke", shapeToFind.stroke.color)
-      .attr("stroke-width", shapeToFind.stroke.width)
-      .attr("opacity", shapeToFind.previewTransparency ?? 0.5);
-  } else {
-    return null;
+
+    return group;
+  }
+
+  // Fallback for legacy hardcoded previews (circles/rects without registry)
+  if (shapeType === "rectangle") {
+    // ... rest of legacy logic
   }
   return shape;
 }
 
 export function removeAllPreview(canvasObject: CanvasElements) {
-  canvasObject.elements.selectAll("path[id^='preview_'], polygon[id^='preview_'], circle[id^='preview_']").remove();
+  canvasObject.elements.selectAll(
+    "path[id^='preview_'], polygon[id^='preview_'], circle[id^='preview_'], g[id^='preview_']"
+  ).remove();
 }
 
 

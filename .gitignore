@@ -1,5 +1,8 @@
 node_modules/
 dist/
+zenode.cursorrules.md
+zenode_layer1_prompt.md
+# Logs
 *.log
 tsc.log
 tsc.txt
