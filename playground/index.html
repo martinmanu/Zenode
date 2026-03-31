@@ -1351,12 +1351,22 @@
             updatePreview();
 
             // Fade out the loading screen when the engine is 100% ready
-            Zenode.on('engine:ready', () => {
-                setTimeout(() => {
-                    const overlay = document.getElementById('loadingOverlay');
-                    if (overlay) overlay.classList.add('fade-out');
-                }, 800); // Small aesthetic linger
-            });
+            if (Zenode.on) {
+                Zenode.on('engine:ready', () => {
+                    setTimeout(() => {
+                        const overlay = document.getElementById('loadingOverlay');
+                        if (overlay) overlay.classList.add('fade-out');
+                    }, 800);
+                });
+            }
+
+            // Safety fallback: Fade out even if the event isn't caught
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay && !overlay.classList.contains('fade-out')) {
+                    overlay.classList.add('fade-out');
+                }
+            }, 3000);
         }
 
         let activeConnType = 'straight';
