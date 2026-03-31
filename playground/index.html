@@ -9,6 +9,14 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="./zenode.css">
+
+    <!-- SEO & Metadata Icon -->
+    <meta name="description" content="Zenode Designer - A pro-grade, high-performance diagramming engine for complex workflows and cloud architecture.">
+    <meta property="og:title" content="Zenode Designer | Advanced Designer Environment">
+    <meta property="og:description" content="Experience the next generation of diagramming with the Zenode Engine.">
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
+
     <script type="importmap">
     {
       "imports": {
@@ -42,6 +50,58 @@
             height: 100vh;
             display: flex;
             overflow: hidden;
+        }
+
+        /* Premium Loading Screen Styles */
+        #loadingOverlay {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+        }
+
+        .splash-logo {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 50px rgba(59, 130, 246, 0.4);
+            animation: pulse 2s infinite ease-in-out;
+            margin-bottom: 24px;
+        }
+
+        .splash-logo::after {
+            content: "Z";
+            color: white;
+            font-size: 56px;
+            font-weight: 900;
+        }
+
+        .loading-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
+            50% { transform: scale(1.08); box-shadow: 0 0 60px rgba(59, 130, 246, 0.6); }
+        }
+
+        #loadingOverlay.fade-out {
+            opacity: 0;
+            visibility: hidden;
         }
 
         /* Left Panel: Toolbox */
@@ -697,6 +757,7 @@
             border-radius: 10px;
             border: 2px solid #111827;
         }
+
     </style>
 </head>
 
@@ -1269,6 +1330,12 @@
             const formRoot = document.getElementById('formContainer');
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
+
+            // Fade out the loading screen
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.classList.add('fade-out');
+            }, 500);
         }
 
         let activeConnType = 'straight';
