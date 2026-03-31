@@ -9,6 +9,7 @@ import { ShapeRegistry } from "./registry.js";
 import { renderPorts } from "./ports.js";
 import { buildResolvedShapeConfig, renderSelectionRing } from "./overlay.js";
 import { applyEffects } from "../effects/engine.js";
+import { renderNodeContent } from "./content.js";
 
 /** Minimal API for rendering and interaction */
 export interface RenderApi extends DragApi {
@@ -75,6 +76,7 @@ export function renderPlacedNodes(
 
         renderer.draw(el as any, resolvedConfig, {});
         applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
+        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig));
       });
       return g;
     },
@@ -88,10 +90,11 @@ export function renderPlacedNodes(
         const resolvedConfig = buildResolvedShapeConfig(d, style);
 
         // Ensure we don't clear ports during update
-        el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
+        el.selectAll("path, circle, rect, g.node-content").filter(":not(.port):not(.selection-ring)").remove();
 
         renderer.draw(el as any, resolvedConfig, {});
         applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
+        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig));
       });
       return update;
     },

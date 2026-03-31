@@ -49,6 +49,45 @@ export interface VisualState {
   };
 }
 
+// --- Node Content Types ---
+
+/**
+ * Controls how text/icon items are spatially composed inside a node.
+ */
+export type ContentLayout =
+  | 'text-only'       // text centered in shape (default)
+  | 'icon-only'       // only an icon, centered
+  | 'center'          // first item centered
+  | 'icon-top-text'   // icon above text, stacked vertically
+  | 'icon-left-text'; // icon left of text, side by side
+
+/**
+ * A single renderable item inside a node — text, inline SVG icon, or image URL.
+ */
+export interface NodeContentItem {
+  kind: 'text' | 'icon' | 'image';
+  value: string;          // text string | raw SVG string | image URL
+  fontSize?: number;      // px, default 12
+  fontWeight?: string;    // '400' | '600' | '700'
+  fontFamily?: string;    // default inherit
+  color?: string;          // fill/stroke color
+  opacity?: number;       // 0-1
+  offsetX?: number;       // fine offset from calculated position
+  offsetY?: number;
+  iconSize?: number;      // icon/image render size in px, default 20
+  padding?: number;       // inset from shape edge
+  maxWidth?: number;      // text wrapping max width in px
+  textAlign?: 'left' | 'center' | 'right'; // default center
+}
+
+/**
+ * Full content descriptor — stored in PlacedNode.content.
+ */
+export interface NodeContent {
+  layout: ContentLayout;
+  items: NodeContentItem[];
+}
+
 export interface ShapeRenderer {
   draw: (g: D3Selection, config: ResolvedShapeConfig, theme: ThemeConfig) => void;
   getPath: (config: ResolvedShapeConfig) => string;
@@ -61,6 +100,53 @@ export interface ShapeRenderer {
 export type ContextPadTarget =
   | { kind: "node"; id: string; data: any }
   | { kind: "edge"; id: string; data: any };
+
+// --- Public API Integration ---
+
+/**
+ * Public configuration for adding or updating a node.
+ */
+export interface NodeConfig {
+  id?: string;            // if not provided, UUID is generated
+  type: string;           // 'circle', 'rectangle', etc.
+  shapeVariantId: string; // e.g. 'circle1', 'task1'
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  radius?: number;
+  rotation?: number;
+  visualState?: VisualState;
+  content?: NodeContent;
+  meta?: Record<string, any>;
+}
+
+/**
+ * Public representation of a node on the canvas.
+ */
+export interface NodeData extends NodeConfig {
+  id: string; // Guaranteed ID
+}
+
+/**
+ * Public configuration for adding or updating a connection.
+ */
+export interface EdgeConfig {
+  id?: string;               // if not provided, UUID is generated
+  sourceNodeId: string;
+  sourcePortId: string;      // 'top', 'bottom', etc.
+  targetNodeId: string;
+  targetPortId: string;
+  type?: string;             // 'straight', 'curved', 's-shaped', 'l-bent'
+  meta?: Record<string, any>;
+}
+
+/**
+ * Public representation of a connection on the canvas.
+ */
+export interface EdgeData extends EdgeConfig {
+  id: string; // Guaranteed ID
+}
 
 export interface ContextPadAction {
   id: string;

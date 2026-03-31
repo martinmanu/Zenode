@@ -5,7 +5,7 @@ import { Config, Shape } from "../model/configurationModel.js";
 import { EventManager } from "./eventManager.js";
 import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
-import { ContextPadAction, ContextPadTarget, ShapeRenderer, BoundingBox, VisualState } from "../types/index.js";
+import { ContextPadAction, ContextPadTarget, ShapeRenderer, BoundingBox, VisualState, NodeConfig, NodeData, EdgeConfig, EdgeData } from "../types/index.js";
 import { svgMouseMove } from "../events/mouseMove.js";
 import { svgMouseClick } from "../events/mouseClick.js";
 import { renderPlacedNodes } from "../nodes/placement.js";
@@ -298,6 +298,184 @@ export class ZenodeEngine {
     this.placementContext = null;
   }
 
+  // --- PHASE 3.1: PUBLIC NODE API ---
+
+  /**
+   * Programmatically adds a node to the canvas.
+   * @param config Partial configuration for the new node.
+   * @returns The ID of the created node.
+   */
+  public addNode(config: NodeConfig): string {
+    const id = config.id || this.generateId();
+    const newNode: PlacedNode = {
+      id,
+      type: config.type,
+      shapeVariantId: config.shapeVariantId,
+      x: config.x,
+      y: config.y,
+      width: config.width,
+      height: config.height,
+      radius: config.radius,
+      rotation: config.rotation || 0,
+      visualState: config.visualState || { status: "idle" },
+      content: config.content,
+      meta: config.meta || {},
+    };
+
+    this.placedNodes.push(newNode);
+    this.refreshNodes();
+    this.emit("node:placed", { node: newNode });
+    return id;
+  }
+
+  /**
+   * Removes a node and its associated connections.
+   */
+  public removeNode(id: string): void {
+    // 1. Remove associated connections
+    this.connections = this.connections.filter(c => c.sourceNodeId !== id && c.targetNodeId !== id);
+    this.reRenderConnections();
+
+    // 2. Remove from selection
+    this.selectedNodeIds = this.selectedNodeIds.filter(sid => sid !== id);
+
+    // 3. Remove node
+    const deletedNode = this.placedNodes.find(n => n.id === id);
+    this.placedNodes = this.placedNodes.filter(n => n.id !== id);
+    
+    this.refreshNodes();
+    this.emit("node:deleted", { id, node: deletedNode });
+  }
+
+  /**
+   * Updates an existing node's properties.
+   */
+  public updateNode(id: string, patch: Partial<NodeConfig>): void {
+    const idx = this.placedNodes.findIndex(n => n.id === id);
+    if (idx === -1) return;
+
+    this.placedNodes[idx] = {
+      ...this.placedNodes[idx],
+      ...patch,
+      id // Ensure ID cannot be changed via update
+    };
+
+    this.refreshNodes();
+    this.emit("node:updated", { id, patch, node: this.placedNodes[idx] });
+  }
+
+  /**
+   * Retrieves a node's full state.
+   */
+  public getNode(id: string): NodeData | null {
+    const node = this.placedNodes.find(n => n.id === id);
+    return node ? { ...node } as NodeData : null;
+  }
+
+  /**
+   * Returns all nodes currently on the canvas.
+   */
+  public getAllNodes(): NodeData[] {
+    return this.placedNodes.map(n => ({ ...n } as NodeData));
+  }
+
+  /**
+   * Clones a node with a slight offset.
+   */
+  public duplicateNode(id: string): string {
+    const source = this.getNode(id);
+    if (!source) return "";
+
+    const offset = 20;
+    return this.addNode({
+      ...source,
+      id: undefined, // Force new ID
+      x: source.x + offset,
+      y: source.y + offset
+    });
+  }
+
+  /** Helper to trigger node layer re-render */
+  private refreshNodes(): void {
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+  }
+
+  // --- PHASE 3.2: PUBLIC EDGE/CONNECTION API ---
+
+  /**
+   * Programmatically creates a connection between two nodes.
+   * @returns The ID of the created connection.
+   */
+  public addEdge(config: EdgeConfig): string {
+    const id = config.id || this.generateId();
+    const newEdge: StoredConnection = {
+      id,
+      sourceNodeId: config.sourceNodeId,
+      sourcePortId: config.sourcePortId,
+      targetNodeId: config.targetNodeId,
+      targetPortId: config.targetPortId,
+      type: config.type || this.activeConnectionType,
+      visualState: { status: "idle" }
+    };
+
+    this.connections.push(newEdge);
+    this.reRenderConnections();
+    this.emit("edge:created", { edge: newEdge });
+    return id;
+  }
+
+  /**
+   * Removes a connection by ID.
+   */
+  public removeEdge(id: string): void {
+    const deletedEdge = this.connections.find(c => c.id === id);
+    this.connections = this.connections.filter(c => c.id !== id);
+    this.reRenderConnections();
+    this.emit("edge:deleted", { id, edge: deletedEdge });
+  }
+
+  /**
+   * Returns a specific connection's state.
+   */
+  public getEdge(id: string): EdgeData | null {
+    const edge = this.connections.find(c => c.id === id);
+    return edge ? { ...edge } as EdgeData : null;
+  }
+
+  /**
+   * Returns all connections on the canvas.
+   */
+  public getAllEdges(): EdgeData[] {
+    return this.connections.map(c => ({ ...c } as EdgeData));
+  }
+
+  /**
+   * Programmatically triggers the text editor for a node or edge.
+   */
+  public beginLabelEdit(id: string, kind: 'node' | 'edge'): void {
+    const target = kind === 'node' 
+      ? this.placedNodes.find(n => n.id === id)
+      : this.connections.find(c => c.id === id);
+    
+    if (target) {
+      this.emit("contextpad:edit-content", { 
+        kind, 
+        id, 
+        data: target 
+      });
+    }
+  }
+
+  /** Robust unique ID generator */
+  private generateId(): string {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return 'node-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
+  }
+
   /** Removes mousemove and click handlers used for placement; stops preview. */
   removePlacementListeners(): void {
     this.svg.on("mousemove", null);
@@ -511,6 +689,12 @@ export class ZenodeEngine {
         renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.reRenderConnections();
+    
+    // Update context pad position during rotation
+    if (this.contextPadRenderer && this.selectedNodeIds.includes(id)) {
+        this.contextPadRenderer.updatePosition(this);
+    }
+
     this.eventManager.trigger("node:rotated", { id, rotation });
   }
 
@@ -538,6 +722,12 @@ export class ZenodeEngine {
         renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.reRenderConnections();
+
+    // Update context pad position during resize
+    if (this.contextPadRenderer && this.selectedNodeIds.includes(id)) {
+      this.contextPadRenderer.updatePosition(this);
+    }
+
     this.eventManager.trigger("node:resized", { id, dimensions });
   }
 
@@ -774,6 +964,20 @@ export class ZenodeEngine {
 
     this.reRenderConnections();
     this.eventManager.trigger("edge:visualstate", { id, patch });
+  }
+
+  /**
+   * Updates the content (text, icon, layout) of a placed node.
+   * Immutably merges the patch and re-renders.
+   */
+  updateNodeContent(id: string, content: import("../types/index.js").NodeContent): void {
+    this.placedNodes = this.placedNodes.map((n) =>
+      n.id === id ? { ...n, content } : n
+    );
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("node:content:changed", { id, content });
   }
 
   /**
