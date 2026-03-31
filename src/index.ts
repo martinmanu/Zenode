@@ -1,13 +1,17 @@
+import * as d3 from "d3";
 import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
-import { VisualState, ContextPadAction, ContextPadTarget } from "./types/index.js";
+import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
 
 export { 
   ZenodeEngine, 
   Config, ConnectionConfig, CPConfig,
   ConnectionInstance, PlacedNode, NodeInstance,
-  VisualState, ContextPadAction, ContextPadTarget
+  VisualState, ContextPadAction, ContextPadTarget, NodeContent,
+  NodeConfig, NodeData,
+  EdgeConfig, EdgeData,
+  d3
 };
 
 let engineInstance: ZenodeEngine | null = null;
@@ -18,7 +22,7 @@ let engineInstance: ZenodeEngine | null = null;
  * @param userConfig Optional custom configuration.
  * @throws Error if container is not found.
  */
-export function initializeCanvas(containerSelector: string, userConfig: Partial<Config>) {
+function initializeCanvas(containerSelector: string, userConfig: Partial<Config>) {
   if (!engineInstance) {
     const inputConfig: Partial<Config> = { ...userConfig };
     const container = document.querySelector(containerSelector) as HTMLElement;
@@ -36,7 +40,7 @@ export function initializeCanvas(containerSelector: string, userConfig: Partial<
  * Updates the engine configuration.
  * @param userConfig New configuration object.
  */
-export function updateConfig(userConfig: Partial<Config>) {
+function updateConfig(userConfig: Partial<Config>) {
   if (!engineInstance) {
     throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
   }
@@ -46,7 +50,7 @@ export function updateConfig(userConfig: Partial<Config>) {
 /**
  * Resizes the canvas dimensions smoothly.
  */
-export function resizeCanvas(width: number, height: number) {
+function resizeCanvas(width: number, height: number) {
   if (!engineInstance) return;
   engineInstance.resizeCanvas(width, height);
 }
@@ -109,7 +113,7 @@ export function createConnection(from: string, to: string) {
 /**
  * Returns the list of placed nodes (for use with createConnection node ids).
  */
-export function getPlacedNodes() {
+function getPlacedNodes() {
   if (!engineInstance) {
     throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
   }
@@ -118,7 +122,7 @@ export function getPlacedNodes() {
 
 
 /** Enable or disable lasso selection tool interaction. */
-export function setLassoEnabled(enabled: boolean): void {
+function setLassoEnabled(enabled: boolean): void {
   if (!engineInstance) {
     throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
   }
@@ -145,8 +149,121 @@ export function updateEdgeVisualState(id: string, patch: Partial<VisualState>): 
   engineInstance.updateEdgeVisualState(id, patch);
 }
 
+/**
+ * Updates the content (text, icon, layout) of a placed node.
+ */
+function updateNodeContent(id: string, content: NodeContent): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.updateNodeContent(id, content);
+}
+
+/**
+ * Listens to engine events.
+ */
+function on(event: string, handler: (data: any) => void): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  engineInstance.on(event, handler);
+}
+
+/**
+ * Removes an event listener.
+ */
+export function off(event: string, handler: (data: any) => void): void {
+  if (!engineInstance) {
+    throw new Error("ZenodeEngine is not initialized. Call initializeCanvas first.");
+  }
+  // @ts-ignore - off might not be in engine yet, adding for completeness
+  if (engineInstance.off) engineInstance.off(event, handler);
+}
+
+const addNode = (config: NodeConfig) => {
+  return engineInstance ? engineInstance.addNode(config) : "";
+};
+
+const removeNode = (id: string) => {
+  if (engineInstance) engineInstance.removeNode(id);
+};
+
+const updateNode = (id: string, patch: Partial<NodeConfig>) => {
+  if (engineInstance) engineInstance.updateNode(id, patch);
+};
+
+const getNode = (id: string) => {
+  return engineInstance ? engineInstance.getNode(id) : null;
+};
+
+const getAllNodes = () => {
+  return engineInstance ? engineInstance.getAllNodes() : [];
+};
+
+const duplicateNode = (id: string) => {
+  return engineInstance ? engineInstance.duplicateNode(id) : "";
+};
+
+/** Triggers the text editor programmatically. */
+const beginLabelEdit = (id: string, kind: 'node' | 'edge') => {
+  if (engineInstance) engineInstance.beginLabelEdit(id, kind);
+};
+
+/** Adds a new connection programmatically. */
+const addEdge = (config: EdgeConfig) => {
+  return engineInstance ? engineInstance.addEdge(config) : "";
+};
+
+/** Removes a connection by ID. */
+const removeEdge = (id: string) => {
+  if (engineInstance) engineInstance.removeEdge(id);
+};
+
+/** Returns a connection state by ID. */
+const getEdge = (id: string) => {
+  return engineInstance ? engineInstance.getEdge(id) : null;
+};
+
+/** Returns all connections on the canvas. */
+const getAllEdges = () => {
+  return engineInstance ? engineInstance.getAllEdges() : [];
+};
+
+export {
+  initializeCanvas,
+  updateConfig,
+  updateNodeContent,
+  getPlacedNodes,
+  setActiveConnectionType,
+  setConnectionModeEnabled,
+  setLassoEnabled,
+  resizeCanvas,
+  on,
+  addNode,
+  removeNode,
+  updateNode,
+  getNode,
+  getAllNodes,
+  duplicateNode,
+  beginLabelEdit,
+  addEdge,
+  removeEdge,
+  getEdge,
+  getAllEdges,
+  setLicense,
+  setSmartRoutingEnabled,
+  setConnectionLabel,
+  getEngine,
+  getLicenseTier,
+  zoomIn,
+  zoomOut,
+  focusOnSelectedNode,
+  registerContextPadAction,
+  registerSmartConnect
+};
+
 /** Sets the license key for the engine. */
-export function setLicense(key: string): void {
+function setLicense(key: string): void {
   if (!engineInstance) {
     throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
   }
@@ -154,7 +271,7 @@ export function setLicense(key: string): void {
 }
 
 /** Enables or disables smart routing for connections. */
-export function setSmartRoutingEnabled(enabled: boolean): void {
+function setSmartRoutingEnabled(enabled: boolean): void {
   if (!engineInstance) {
     throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
   }
@@ -162,7 +279,7 @@ export function setSmartRoutingEnabled(enabled: boolean): void {
 }
 
 /** Enables or disables the connection drawing mode globally. */
-export function setConnectionModeEnabled(enabled: boolean): void {
+function setConnectionModeEnabled(enabled: boolean): void {
   if (!engineInstance) {
     throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
   }
@@ -170,7 +287,7 @@ export function setConnectionModeEnabled(enabled: boolean): void {
 }
 
 /** Sets the active connection type for newly created connections. */
-export function setActiveConnectionType(type: string): void {
+function setActiveConnectionType(type: string): void {
   if (!engineInstance) {
     throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
   }
@@ -178,7 +295,7 @@ export function setActiveConnectionType(type: string): void {
 }
 
 /** Sets the label text and enabled state for all default connection types. */
-export function setConnectionLabel(text: string, enabled: boolean): void {
+function setConnectionLabel(text: string, enabled: boolean): void {
   if (!engineInstance) {
     throw new Error('ZenodeEngine is not initialized. Call initializeCanvas first.');
   }
@@ -194,43 +311,44 @@ export function setConnectionLabel(text: string, enabled: boolean): void {
 }
 
 /** Returns the engine instance (advanced use). */
-export function getEngine() {
+function getEngine() {
   return engineInstance;
 }
 /** Returns the current license tier. */
-export function getLicenseTier(): string {
+function getLicenseTier(): string {
   if (!engineInstance) return 'free';
   return engineInstance.getLicenseTier();
 }
 
 /** Zooms the canvas in. */
-export function zoomIn(): void {
+function zoomIn(): void {
   if (!engineInstance) return;
   engineInstance.zoomIn();
 }
 
 /** Zooms the canvas out. */
-export function zoomOut(): void {
+function zoomOut(): void {
   if (!engineInstance) return;
   engineInstance.zoomOut();
 }
 
 /** Focuses (center + zoom) on the first selected node. */
-export function focusOnSelectedNode(): void {
+function focusOnSelectedNode(): void {
   if (!engineInstance) return;
   engineInstance.focusOnSelectedNode();
 }
 
 /** Registers a custom action for the context pad. */
-export function registerContextPadAction(action: any): void {
+function registerContextPadAction(action: any): void {
   if (!engineInstance) return;
   engineInstance.registerContextPadAction(action);
 }
 
 /** 
- * Demo: Registers a "Smart Connect" action that connects to the nearest port of another node.
+ * Registers a "Smart Connect" action that finds the nearest port on another node
+ * and connects using the closest matching source port.
  */
-export function registerSmartConnect(): void {
+function registerSmartConnect(): void {
   if (!engineInstance) return;
 
   engineInstance.registerContextPadAction({
@@ -245,22 +363,72 @@ export function registerSmartConnect(): void {
     },
     handler: (target, engine) => {
       if (target.kind !== 'node') return;
-      
+
       const sourceNode = target.data;
-      const sourcePos = { x: sourceNode.x + 50, y: sourceNode.y + 50 }; // approx center
-      
-      // Find closest port on ANY other node
-      const closest = engine.findClosestPort(sourcePos, 1000); // large threshold to find anything
-      
-      if (closest) {
-        engine.createConnectionFromPorts(
-          sourceNode.id, 
-          'center', // use center for source
-          closest.nodeId, 
-          closest.portId
-        );
+      const allNodes = engine.getPlacedNodes();
+      const registry = (engine as any).shapeRegistry;
+      const config = (engine as any).config;
+
+      // Collect all ports on all OTHER nodes
+      let bestDist = Infinity;
+      let bestSourcePortId = 'right';
+      let bestTargetNodeId: string | null = null;
+      let bestTargetPortId: string | null = null;
+
+      // Get source node ports
+      const srcStyle = config?.shapes?.default?.[sourceNode.type]?.find((s: any) => s.id === sourceNode.shapeVariantId);
+      if (!srcStyle) { alert('No other nodes to connect to!'); return; }
+      const srcRenderer = registry?.get(sourceNode.type);
+      if (!srcRenderer) { alert('No other nodes to connect to!'); return; }
+
+      const { buildResolvedShapeConfig } = (engine as any).__resolveHelper
+        ?? { buildResolvedShapeConfig: null };
+
+      const srcResolved = srcRenderer && srcStyle
+        ? (() => {
+            // Inline minimal resolved config
+            return { ...srcStyle, x: sourceNode.x, y: sourceNode.y, width: sourceNode.width ?? srcStyle.width, height: sourceNode.height ?? srcStyle.height, radius: sourceNode.radius ?? srcStyle.radius };
+          })()
+        : null;
+
+      const srcPorts = srcResolved ? srcRenderer.getPorts(srcResolved) : { right: { x: sourceNode.x + (sourceNode.width ?? 80), y: sourceNode.y + (sourceNode.height ?? 40) / 2 } };
+
+      for (const otherNode of allNodes) {
+        if (otherNode.id === sourceNode.id) continue; // skip self
+
+        const tgtStyle = config?.shapes?.default?.[otherNode.type]?.find((s: any) => s.id === otherNode.shapeVariantId);
+        if (!tgtStyle) continue;
+        const tgtRenderer = registry?.get(otherNode.type);
+        if (!tgtRenderer) continue;
+
+        const tgtResolved = { ...tgtStyle, x: otherNode.x, y: otherNode.y, width: otherNode.width ?? tgtStyle.width, height: otherNode.height ?? tgtStyle.height, radius: otherNode.radius ?? tgtStyle.radius };
+        const tgtPorts = tgtRenderer.getPorts(tgtResolved);
+
+        // Find the closest src→tgt port pair
+        for (const [srcPortId, srcPos] of Object.entries(srcPorts)) {
+          const sp = srcPos as { x: number; y: number };
+          const absSrcX = sourceNode.x + sp.x;
+          const absSrcY = sourceNode.y + sp.y;
+
+          for (const [tgtPortId, tgtPos] of Object.entries(tgtPorts)) {
+            const tp = tgtPos as { x: number; y: number };
+            const absTgtX = otherNode.x + tp.x;
+            const absTgtY = otherNode.y + tp.y;
+            const dist = Math.hypot(absSrcX - absTgtX, absSrcY - absTgtY);
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestSourcePortId = srcPortId;
+              bestTargetNodeId = otherNode.id;
+              bestTargetPortId = tgtPortId;
+            }
+          }
+        }
+      }
+
+      if (bestTargetNodeId && bestTargetPortId) {
+        engine.createConnectionFromPorts(sourceNode.id, bestSourcePortId, bestTargetNodeId, bestTargetPortId);
       } else {
-        alert("No other nodes found to connect to!");
+        alert('No other nodes found to connect to!');
       }
     }
   });

@@ -166,13 +166,13 @@ export class ContextPadRenderer {
         if (!node) return;
 
         const style = engine.getShapeStyle(node);
-        // Fallback for node properties, width/height is what gets rendered
-        let w = (style?.width ?? node.width ?? 100);
-        let h = (style?.height ?? node.height ?? 100);
+        // Prioritize actual node dimensions (updated during resize) over static shape variant config
+        let w = (node.width ?? style?.width ?? 100);
+        let h = (node.height ?? style?.height ?? 100);
         
         // Handle circular shapes where dimensions are defined by radius
         if (node.type === 'circle') {
-            const r = style?.radius ?? node.radius ?? 30;
+            const r = node.radius ?? style?.radius ?? 30;
             w = r * 2;
             h = r * 2;
         }
