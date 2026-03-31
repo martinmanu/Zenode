@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "build": "npx rollup -c",
+    "build": "npx rollup -c && mkdir -p public/dist && cp -r playground/* public/ && cp -r dist/* public/dist/ && node scripts/patch-paths.js",
     "dev": "npx rollup -c -w",
     "start": "npm run build && npx http-server . -p 3000 -o playground/index.html",
     "prepublishOnly": "npm run build"

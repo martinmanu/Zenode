@@ -1,12 +1,6 @@
 {
-  "outputDirectory": ".",
+  "outputDirectory": "public",
   "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/",
-      "destination": "/playground/index.html"
-    }
-  ],
   "github": {
     "silent": true
   }
