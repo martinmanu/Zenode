@@ -3,6 +3,7 @@ import { createDragBehavior } from '../events/drag.js';
 import { renderPorts } from './ports.js';
 import { buildResolvedShapeConfig, renderSelectionRing } from './overlay.js';
 import { applyEffects } from '../effects/engine.js';
+import { renderNodeContent } from './content.js';
 
 /**
  * Renders placed nodes using D3 data join. Keeps g.placed-nodes in sync with engine state.
@@ -51,6 +52,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
             renderer.draw(el, resolvedConfig, {});
             applyEffects(el, renderer.getPath(resolvedConfig), d.visualState);
+            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig));
         });
         return g;
     }, (update) => {
@@ -63,9 +65,10 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             const renderer = api.shapeRegistry.get(d.type);
             const resolvedConfig = buildResolvedShapeConfig(d, style);
             // Ensure we don't clear ports during update
-            el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
+            el.selectAll("path, circle, rect, g.node-content").filter(":not(.port):not(.selection-ring)").remove();
             renderer.draw(el, resolvedConfig, {});
             applyEffects(el, renderer.getPath(resolvedConfig), d.visualState);
+            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig));
         });
         return update;
     }, (exit) => exit.remove());

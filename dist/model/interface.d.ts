@@ -1,4 +1,4 @@
-import type { VisualState } from "../types/index.js";
+import type { VisualState, NodeContent } from "../types/index.js";
 export interface Connection {
     id: string;
     source: string;
@@ -41,6 +41,8 @@ export interface PlacedNode {
     /** User-defined data attached to the node */
     meta: Record<string, unknown>;
     visualState?: VisualState;
+    /** Content items (text, icon, image) + layout mode rendered inside the shape */
+    content?: NodeContent;
 }
 export interface ShapeConfig {
     type: string;

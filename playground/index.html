@@ -62,7 +62,9 @@
             align-items: center;
             justify-content: center;
             z-index: 10000;
-            transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.8s;
+            transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1), visibility 1.2s;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
 
         .splash-logo {
@@ -1335,7 +1337,7 @@
             setTimeout(() => {
                 const overlay = document.getElementById('loadingOverlay');
                 if (overlay) overlay.classList.add('fade-out');
-            }, 500);
+            }, 1200);
         }
 
         let activeConnType = 'straight';

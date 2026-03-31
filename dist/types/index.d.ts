@@ -70,6 +70,35 @@ export interface VisualState {
         };
     };
 }
+/**
+ * Controls how text/icon items are spatially composed inside a node.
+ */
+export type ContentLayout = 'text-only' | 'icon-only' | 'center' | 'icon-top-text' | 'icon-left-text';
+/**
+ * A single renderable item inside a node — text, inline SVG icon, or image URL.
+ */
+export interface NodeContentItem {
+    kind: 'text' | 'icon' | 'image';
+    value: string;
+    fontSize?: number;
+    fontWeight?: string;
+    fontFamily?: string;
+    color?: string;
+    opacity?: number;
+    offsetX?: number;
+    offsetY?: number;
+    iconSize?: number;
+    padding?: number;
+    maxWidth?: number;
+    textAlign?: 'left' | 'center' | 'right';
+}
+/**
+ * Full content descriptor — stored in PlacedNode.content.
+ */
+export interface NodeContent {
+    layout: ContentLayout;
+    items: NodeContentItem[];
+}
 export interface ShapeRenderer {
     draw: (g: D3Selection, config: ResolvedShapeConfig, theme: ThemeConfig) => void;
     getPath: (config: ResolvedShapeConfig) => string;
@@ -85,6 +114,47 @@ export type ContextPadTarget = {
     id: string;
     data: any;
 };
+/**
+ * Public configuration for adding or updating a node.
+ */
+export interface NodeConfig {
+    id?: string;
+    type: string;
+    shapeVariantId: string;
+    x: number;
+    y: number;
+    width?: number;
+    height?: number;
+    radius?: number;
+    rotation?: number;
+    visualState?: VisualState;
+    content?: NodeContent;
+    meta?: Record<string, any>;
+}
+/**
+ * Public representation of a node on the canvas.
+ */
+export interface NodeData extends NodeConfig {
+    id: string;
+}
+/**
+ * Public configuration for adding or updating a connection.
+ */
+export interface EdgeConfig {
+    id?: string;
+    sourceNodeId: string;
+    sourcePortId: string;
+    targetNodeId: string;
+    targetPortId: string;
+    type?: string;
+    meta?: Record<string, any>;
+}
+/**
+ * Public representation of a connection on the canvas.
+ */
+export interface EdgeData extends EdgeConfig {
+    id: string;
+}
 export interface ContextPadAction {
     id: string;
     icon: string;
