@@ -1093,8 +1093,8 @@
     </div>
 
     <script type="module">
-        import * as Zenode from "../dist/index.js";
-        import { testConfig as initialConfig } from "../dist/config/testConfig.js";
+        import * as Zenode from "./dist/index.js";
+        import { testConfig as initialConfig } from "./dist/config/testConfig.js";
 
         const d3 = Zenode.d3;
         window.Zenode = Zenode;
@@ -1333,13 +1333,11 @@
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
 
-            // Fade out the loading screen when the engine is 100% ready
-            Zenode.on('engine:ready', () => {
-                setTimeout(() => {
-                    const overlay = document.getElementById('loadingOverlay');
-                    if (overlay) overlay.classList.add('fade-out');
-                }, 800); // Small aesthetic linger
-            });
+            // Fade out the loading screen
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                if (overlay) overlay.classList.add('fade-out');
+            }, 1200);
         }
 
         let activeConnType = 'straight';
