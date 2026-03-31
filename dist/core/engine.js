@@ -81,6 +81,7 @@ class ZenodeEngine {
         this.contextPadRegistry = new ContextPadRegistry();
         this.initializeCanvas();
         this.initializeContextPad();
+        this.emit("engine:ready", { version: "1.5.0" });
     }
     initializeContextPad() {
         if (this.container) {

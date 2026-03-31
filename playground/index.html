@@ -106,6 +106,18 @@
             visibility: hidden;
         }
 
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
         /* Left Panel: Toolbox */
         .left-panel {
             width: var(--left-panel-width);
@@ -764,6 +776,10 @@
 </head>
 
 <body>
+    <div id="loadingOverlay">
+        <div class="splash-logo"></div>
+        <div class="loading-text">Initializing Engine</div>
+    </div>
     <div class="left-panel">
         <div class="toolbox-section" data-category="Basic">
             <span class="toolbox-label">Basic</span>
@@ -1037,6 +1053,7 @@
                 <div class="cp-input-row">
                     <input type="color" id="nodeTextColor" class="cp-color-picker" value="#000000"
                         oninput="applyContentUpdate()">
+                    <label for="nodeFontSize" class="visually-hidden">Font Size</label>
                     <input type="number" id="nodeFontSize" class="cp-input" value="12" min="8" max="72"
                         oninput="applyContentUpdate()">
                     <span style="font-size: 12px; color: var(--text-muted); width: 20px;">px</span>
