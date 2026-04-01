@@ -83,12 +83,22 @@ export interface Grid {
     sheetDimension?: number;
     crossLength?: number;
 }
+export interface GhostPreviewStyle {
+    enabled: boolean;
+    strokeColor: string;
+    strokeWidth: number;
+    strokeDashArray: number[];
+    fillColor: string;
+    opacity: number;
+    filter: string;
+}
 export interface CanvasProperties {
     zoomEnabled: boolean;
     zoomExtent: number[];
     zoomOnDoubleClick: boolean;
     zoomScale: number;
     zoomOnScroll: boolean;
+    zoomOnHoverScroll?: boolean;
     zoomDuration: number;
     panEnabled: boolean;
     snapToGrid: boolean;
@@ -96,6 +106,7 @@ export interface CanvasProperties {
     ports?: PortStyle;
     lassoStyle: LassoStyle;
     ghostConnection: GhostConnectionStyle;
+    ghostPreview?: GhostPreviewStyle;
     allowMultipleConnections: boolean;
     keyboardShortcuts: KeyboardShortcuts;
     contextPad?: ContextPadConfig;

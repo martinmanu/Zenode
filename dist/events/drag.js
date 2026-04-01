@@ -83,6 +83,7 @@ function createDragBehavior(api) {
             // to prevent shapes snapping back to origin during rapid chained interactions.
             const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
             initialPos.set(d.id, { x: freshNode.x, y: freshNode.y });
+            api.beginOperation(d.id, 'drag');
         }
     })
         .on("drag", function (event, d) {
@@ -164,6 +165,7 @@ function createDragBehavior(api) {
         }
         initialPointers.delete(d.id);
         initialPos.delete(d.id);
+        api.endOperation();
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
             guideRaf = null;

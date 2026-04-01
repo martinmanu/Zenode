@@ -30,6 +30,13 @@ export interface RenderApi extends DragApi {
         height?: number;
         radius?: number;
     }): void;
+    beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+    endOperation(): void;
+    getActiveOperation(): {
+        type: string;
+        nodeId: string;
+        originalData: PlacedNode;
+    } | null;
 }
 /**
  * Renders the placed nodes layer using a D3 data join. Call after state changes.

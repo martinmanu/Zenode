@@ -15,6 +15,8 @@ export interface DragApi {
   svgNode: SVGSVGElement;
   setSelectedNodeIds(ids: string[]): void;
   panBy?: (dx: number, dy: number) => void;
+  beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+  endOperation(): void;
 }
 
 interface NodeRect {
@@ -129,6 +131,7 @@ export function createDragBehavior(api: DragApi) {
         // to prevent shapes snapping back to origin during rapid chained interactions.
         const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
         initialPos.set(d.id, { x: freshNode.x, y: freshNode.y }); 
+        api.beginOperation(d.id, 'drag');
       }
     })
     .on("drag", function (event, d) {
@@ -220,6 +223,7 @@ export function createDragBehavior(api: DragApi) {
       
       initialPointers.delete(d.id);
       initialPos.delete(d.id);
+      api.endOperation();
       
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);

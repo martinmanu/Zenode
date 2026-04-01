@@ -132,7 +132,6 @@ export function renderPorts(
     .on("mousedown", function(event: MouseEvent) {
         event.stopPropagation();
         event.preventDefault();
-
         const onMouseMove = (moveEvent: MouseEvent) => {
             const currentPoint = engine.getCanvasPoint(moveEvent);
             const dx = currentPoint.x - node.x;
@@ -140,17 +139,19 @@ export function renderPorts(
             
             let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
             
-            // Apply 45-degree snapping
-            angle = Math.round(angle / 45) * 45;
+            // Apply 15-degree snapping
+            angle = Math.round(angle / 15) * 15;
             
             engine.rotateNode(node.id, angle);
         };
 
         const onMouseUp = () => {
+            engine.endOperation();
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
         };
 
+        engine.beginOperation(node.id, 'rotate');
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });
@@ -226,10 +227,12 @@ export function renderPorts(
         };
 
         const onMouseUp = () => {
+            engine.endOperation();
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
         };
 
+        engine.beginOperation(node.id, 'resize');
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });

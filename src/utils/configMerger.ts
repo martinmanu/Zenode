@@ -104,6 +104,15 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
         dashArray: userConfig.canvasProperties?.ghostConnection?.dashArray ?? defaultConfig.canvasProperties.ghostConnection.dashArray,
         opacity: userConfig.canvasProperties?.ghostConnection?.opacity ?? defaultConfig.canvasProperties.ghostConnection.opacity,
       },
+      ghostPreview: {
+        enabled: userConfig.canvasProperties?.ghostPreview?.enabled ?? defaultConfig.canvasProperties.ghostPreview?.enabled ?? true,
+        strokeColor: userConfig.canvasProperties?.ghostPreview?.strokeColor ?? defaultConfig.canvasProperties.ghostPreview?.strokeColor ?? 'var(--zenode-accent, #3b82f6)',
+        strokeWidth: userConfig.canvasProperties?.ghostPreview?.strokeWidth ?? defaultConfig.canvasProperties.ghostPreview?.strokeWidth ?? 1.5,
+        strokeDashArray: userConfig.canvasProperties?.ghostPreview?.strokeDashArray ?? defaultConfig.canvasProperties.ghostPreview?.strokeDashArray ?? [4, 4],
+        fillColor: userConfig.canvasProperties?.ghostPreview?.fillColor ?? defaultConfig.canvasProperties.ghostPreview?.fillColor ?? 'transparent',
+        opacity: userConfig.canvasProperties?.ghostPreview?.opacity ?? defaultConfig.canvasProperties.ghostPreview?.opacity ?? 0.4,
+        filter: userConfig.canvasProperties?.ghostPreview?.filter ?? defaultConfig.canvasProperties.ghostPreview?.filter ?? 'blur(1px)',
+      },
       allowMultipleConnections: userConfig.canvasProperties?.allowMultipleConnections ?? defaultConfig.canvasProperties.allowMultipleConnections,
       contextPad: {
         enabled: userConfig.canvasProperties?.contextPad?.enabled ?? defaultConfig.canvasProperties.contextPad?.enabled ?? true,

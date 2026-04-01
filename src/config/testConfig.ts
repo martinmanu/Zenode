@@ -73,6 +73,15 @@ export const testConfig: Config = {
       dashArray: [4, 4],
       opacity: 1
     },
+    ghostPreview: {
+      enabled: true,
+      strokeColor: '#ff0000ff',
+      strokeWidth: 1.5,
+      strokeDashArray: [4, 4],
+      fillColor: 'transparent',
+      opacity: 0.6,
+      filter: 'blur(1px)'
+    },
     keyboardShortcuts: {
       enabled: true,
       deleteSelection: ["Delete", "Backspace"],

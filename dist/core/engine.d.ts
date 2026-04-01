@@ -42,6 +42,7 @@ export declare class ZenodeEngine {
     private canvasContainerGroup;
     private contextPadRegistry;
     private contextPadRenderer;
+    private activeOperation;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
     /**
@@ -67,6 +68,13 @@ export declare class ZenodeEngine {
      * Manually hides the context pad.
      */
     hideContextPad(): void;
+    beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+    endOperation(): void;
+    getActiveOperation(): {
+        type: string;
+        nodeId: string;
+        originalData: PlacedNode;
+    } | null;
     emit(eventType: string, event: any): void;
     private initDrag;
     private registerBuiltInShapes;

@@ -97,6 +97,7 @@ export class ZenodeEngine {
   private canvasContainerGroup: unknown;
   private contextPadRegistry: ContextPadRegistry;
   private contextPadRenderer!: ContextPadRenderer;
+  private activeOperation: { type: string, nodeId: string, originalData: PlacedNode } | null = null;
 
   constructor(container: HTMLElement | null, config: Partial<Config>) {
     this.container = container;
@@ -215,6 +216,29 @@ export class ZenodeEngine {
     if (this.contextPadRenderer) {
         this.contextPadRenderer.hide(this);
     }
+  }
+
+  public beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void {
+    const node = this.placedNodes.find(n => n.id === nodeId);
+    if (node) {
+      this.activeOperation = {
+        type,
+        nodeId,
+        originalData: JSON.parse(JSON.stringify(node))
+      };
+      this.refreshNodes();
+    }
+  }
+
+  public endOperation(): void {
+    if (this.activeOperation) {
+      this.activeOperation = null;
+      this.refreshNodes();
+    }
+  }
+
+  public getActiveOperation(): { type: string, nodeId: string, originalData: PlacedNode } | null {
+    return this.activeOperation;
   }
 
   public emit(eventType: string, event: any): void {
@@ -678,6 +702,7 @@ export class ZenodeEngine {
         this.contextPadRenderer?.updatePosition(this);
     }
 
+    this.refreshNodes();
     this.eventManager.trigger("node:moved", { id, x, y });
   }
 

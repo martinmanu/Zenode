@@ -23,6 +23,9 @@ export interface RenderApi extends DragApi {
   isDrawingConnection(): boolean;
   rotateNode(id: string, rotation: number): void;
   updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }): void;
+  beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+  endOperation(): void;
+  getActiveOperation(): { type: string, nodeId: string, originalData: PlacedNode } | null;
 }
 
 function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
@@ -89,8 +92,44 @@ export function renderPlacedNodes(
         const renderer = api.shapeRegistry.get(d.type);
         const resolvedConfig = buildResolvedShapeConfig(d, style);
 
+        // --- Render Ghost (Original State) Preview ---
+        const activeOp = api.getActiveOperation();
+        el.selectAll(".node-ghost").remove();
+        if (activeOp && activeOp.nodeId === d.id) {
+          const ghostG = el.insert("g", ":first-child").attr("class", "node-ghost");
+          const ghostNode = activeOp.originalData;
+          const ghostStyle = getShapeStyle(ghostNode, api.config);
+          
+          if (ghostStyle) {
+            const ghostResolved = buildResolvedShapeConfig(ghostNode, ghostStyle);
+            // Counter-transform the ghost so it stays at the original logical position
+            // while the parent 'g.node' has moved to the new (d.x, d.y)
+            const dx = ghostNode.x - d.x;
+            const dy = ghostNode.y - d.y;
+            const currentRotation = d.rotation || 0;
+            const ghostRotation = ghostNode.rotation || 0;
+            
+            ghostG.attr("transform", `rotate(${-currentRotation}) translate(${dx},${dy}) rotate(${ghostRotation})`);
+            renderer.draw(ghostG as any, ghostResolved, {});
+
+            // Apply configurable styles
+            const ghostCfg = api.config.canvasProperties.ghostPreview;
+            if (ghostCfg) {
+              ghostG.style("opacity", ghostCfg.opacity)
+                    .style("filter", ghostCfg.filter)
+                    .style("pointer-events", "none");
+
+              ghostG.selectAll("path, rect, circle")
+                    .style("stroke-dasharray", ghostCfg.strokeDashArray.join(" "))
+                    .style("stroke", ghostCfg.strokeColor)
+                    .style("stroke-width", ghostCfg.strokeWidth)
+                    .style("fill", ghostCfg.fillColor);
+            }
+          }
+        }
+
         // Ensure we don't clear ports during update
-        el.selectAll("path, circle, rect, g.node-content").filter(":not(.port):not(.selection-ring)").remove();
+        el.selectAll("path, circle, rect, g.node-content").filter(":not(.port):not(.selection-ring):not(.node-ghost *)").remove();
 
         renderer.draw(el as any, resolvedConfig, {});
         applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);

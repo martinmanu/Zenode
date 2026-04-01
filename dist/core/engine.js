@@ -73,6 +73,7 @@ class ZenodeEngine {
             guides: null,
             lasso: null,
         };
+        this.activeOperation = null;
         this.container = container;
         this.config = mergeConfig(config);
         this.shapeRegistry = new ShapeRegistry();
@@ -172,6 +173,26 @@ class ZenodeEngine {
         if (this.contextPadRenderer) {
             this.contextPadRenderer.hide(this);
         }
+    }
+    beginOperation(nodeId, type) {
+        const node = this.placedNodes.find(n => n.id === nodeId);
+        if (node) {
+            this.activeOperation = {
+                type,
+                nodeId,
+                originalData: JSON.parse(JSON.stringify(node))
+            };
+            this.refreshNodes();
+        }
+    }
+    endOperation() {
+        if (this.activeOperation) {
+            this.activeOperation = null;
+            this.refreshNodes();
+        }
+    }
+    getActiveOperation() {
+        return this.activeOperation;
     }
     emit(eventType, event) {
         this.eventManager.trigger(eventType, event);
@@ -554,6 +575,7 @@ class ZenodeEngine {
         if (this.selectedNodeIds.includes(id)) {
             (_a = this.contextPadRenderer) === null || _a === void 0 ? void 0 : _a.updatePosition(this);
         }
+        this.refreshNodes();
         this.eventManager.trigger("node:moved", { id, x, y });
     }
     /**
