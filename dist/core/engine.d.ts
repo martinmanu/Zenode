@@ -1,7 +1,7 @@
 import { Config, Shape } from "../model/configurationModel.js";
 import { ZoomManager } from "./zoom&PanManager.js";
 import { CanvasElements, PlacedNode, ShapePreviewData } from "../model/interface.js";
-import { ContextPadAction, ContextPadTarget, ShapeRenderer, VisualState } from "../types/index.js";
+import { ContextPadAction, ContextPadTarget, ShapeRenderer, VisualState, NodeConfig, NodeData, EdgeConfig, EdgeData } from "../types/index.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 export declare class ZenodeEngine {
     container: HTMLElement | null;
@@ -84,6 +84,57 @@ export declare class ZenodeEngine {
     setPlacementContext(shapeType: string, shapeConfig: Shape): void;
     /** Clears placement context (e.g. after placing or cancel). */
     clearPlacementContext(): void;
+    /**
+     * Programmatically adds a node to the canvas.
+     * @param config Partial configuration for the new node.
+     * @returns The ID of the created node.
+     */
+    addNode(config: NodeConfig): string;
+    /**
+     * Removes a node and its associated connections.
+     */
+    removeNode(id: string): void;
+    /**
+     * Updates an existing node's properties.
+     */
+    updateNode(id: string, patch: Partial<NodeConfig>): void;
+    /**
+     * Retrieves a node's full state.
+     */
+    getNode(id: string): NodeData | null;
+    /**
+     * Returns all nodes currently on the canvas.
+     */
+    getAllNodes(): NodeData[];
+    /**
+     * Clones a node with a slight offset.
+     */
+    duplicateNode(id: string): string;
+    /** Helper to trigger node layer re-render */
+    private refreshNodes;
+    /**
+     * Programmatically creates a connection between two nodes.
+     * @returns The ID of the created connection.
+     */
+    addEdge(config: EdgeConfig): string;
+    /**
+     * Removes a connection by ID.
+     */
+    removeEdge(id: string): void;
+    /**
+     * Returns a specific connection's state.
+     */
+    getEdge(id: string): EdgeData | null;
+    /**
+     * Returns all connections on the canvas.
+     */
+    getAllEdges(): EdgeData[];
+    /**
+     * Programmatically triggers the text editor for a node or edge.
+     */
+    beginLabelEdit(id: string, kind: 'node' | 'edge'): void;
+    /** Robust unique ID generator */
+    private generateId;
     /** Removes mousemove and click handlers used for placement; stops preview. */
     removePlacementListeners(): void;
     /** Returns selected node ids. */
@@ -175,6 +226,11 @@ export declare class ZenodeEngine {
      * Updates an edge/connection visual state immutably and re-renders connections.
      */
     updateEdgeVisualState(id: string, patch: Partial<VisualState>): void;
+    /**
+     * Updates the content (text, icon, layout) of a placed node.
+     * Immutably merges the patch and re-renders.
+     */
+    updateNodeContent(id: string, content: import("../types/index.js").NodeContent): void;
     /**
      * Starts a connection drag from a specific port.
      */

@@ -81,6 +81,7 @@ class ZenodeEngine {
         this.contextPadRegistry = new ContextPadRegistry();
         this.initializeCanvas();
         this.initializeContextPad();
+        this.emit("engine:ready", { version: "1.5.0" });
     }
     initializeContextPad() {
         if (this.container) {
@@ -234,6 +235,154 @@ class ZenodeEngine {
     /** Clears placement context (e.g. after placing or cancel). */
     clearPlacementContext() {
         this.placementContext = null;
+    }
+    // --- PHASE 3.1: PUBLIC NODE API ---
+    /**
+     * Programmatically adds a node to the canvas.
+     * @param config Partial configuration for the new node.
+     * @returns The ID of the created node.
+     */
+    addNode(config) {
+        const id = config.id || this.generateId();
+        const newNode = {
+            id,
+            type: config.type,
+            shapeVariantId: config.shapeVariantId,
+            x: config.x,
+            y: config.y,
+            width: config.width,
+            height: config.height,
+            radius: config.radius,
+            rotation: config.rotation || 0,
+            visualState: config.visualState || { status: "idle" },
+            content: config.content,
+            meta: config.meta || {},
+        };
+        this.placedNodes.push(newNode);
+        this.refreshNodes();
+        this.emit("node:placed", { node: newNode });
+        return id;
+    }
+    /**
+     * Removes a node and its associated connections.
+     */
+    removeNode(id) {
+        // 1. Remove associated connections
+        this.connections = this.connections.filter(c => c.sourceNodeId !== id && c.targetNodeId !== id);
+        this.reRenderConnections();
+        // 2. Remove from selection
+        this.selectedNodeIds = this.selectedNodeIds.filter(sid => sid !== id);
+        // 3. Remove node
+        const deletedNode = this.placedNodes.find(n => n.id === id);
+        this.placedNodes = this.placedNodes.filter(n => n.id !== id);
+        this.refreshNodes();
+        this.emit("node:deleted", { id, node: deletedNode });
+    }
+    /**
+     * Updates an existing node's properties.
+     */
+    updateNode(id, patch) {
+        const idx = this.placedNodes.findIndex(n => n.id === id);
+        if (idx === -1)
+            return;
+        this.placedNodes[idx] = Object.assign(Object.assign(Object.assign({}, this.placedNodes[idx]), patch), { id // Ensure ID cannot be changed via update
+         });
+        this.refreshNodes();
+        this.emit("node:updated", { id, patch, node: this.placedNodes[idx] });
+    }
+    /**
+     * Retrieves a node's full state.
+     */
+    getNode(id) {
+        const node = this.placedNodes.find(n => n.id === id);
+        return node ? Object.assign({}, node) : null;
+    }
+    /**
+     * Returns all nodes currently on the canvas.
+     */
+    getAllNodes() {
+        return this.placedNodes.map(n => (Object.assign({}, n)));
+    }
+    /**
+     * Clones a node with a slight offset.
+     */
+    duplicateNode(id) {
+        const source = this.getNode(id);
+        if (!source)
+            return "";
+        const offset = 20;
+        return this.addNode(Object.assign(Object.assign({}, source), { id: undefined, x: source.x + offset, y: source.y + offset }));
+    }
+    /** Helper to trigger node layer re-render */
+    refreshNodes() {
+        if (this.canvasObject.placedNodes) {
+            renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+        }
+    }
+    // --- PHASE 3.2: PUBLIC EDGE/CONNECTION API ---
+    /**
+     * Programmatically creates a connection between two nodes.
+     * @returns The ID of the created connection.
+     */
+    addEdge(config) {
+        const id = config.id || this.generateId();
+        const newEdge = {
+            id,
+            sourceNodeId: config.sourceNodeId,
+            sourcePortId: config.sourcePortId,
+            targetNodeId: config.targetNodeId,
+            targetPortId: config.targetPortId,
+            type: config.type || this.activeConnectionType,
+            visualState: { status: "idle" }
+        };
+        this.connections.push(newEdge);
+        this.reRenderConnections();
+        this.emit("edge:created", { edge: newEdge });
+        return id;
+    }
+    /**
+     * Removes a connection by ID.
+     */
+    removeEdge(id) {
+        const deletedEdge = this.connections.find(c => c.id === id);
+        this.connections = this.connections.filter(c => c.id !== id);
+        this.reRenderConnections();
+        this.emit("edge:deleted", { id, edge: deletedEdge });
+    }
+    /**
+     * Returns a specific connection's state.
+     */
+    getEdge(id) {
+        const edge = this.connections.find(c => c.id === id);
+        return edge ? Object.assign({}, edge) : null;
+    }
+    /**
+     * Returns all connections on the canvas.
+     */
+    getAllEdges() {
+        return this.connections.map(c => (Object.assign({}, c)));
+    }
+    /**
+     * Programmatically triggers the text editor for a node or edge.
+     */
+    beginLabelEdit(id, kind) {
+        const target = kind === 'node'
+            ? this.placedNodes.find(n => n.id === id)
+            : this.connections.find(c => c.id === id);
+        if (target) {
+            this.emit("contextpad:edit-content", {
+                kind,
+                id,
+                data: target
+            });
+        }
+    }
+    /** Robust unique ID generator */
+    generateId() {
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            return crypto.randomUUID();
+        }
+        return 'node-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now();
     }
     /** Removes mousemove and click handlers used for placement; stops preview. */
     removePlacementListeners() {
@@ -416,6 +565,10 @@ class ZenodeEngine {
             renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
         }
         this.reRenderConnections();
+        // Update context pad position during rotation
+        if (this.contextPadRenderer && this.selectedNodeIds.includes(id)) {
+            this.contextPadRenderer.updatePosition(this);
+        }
         this.eventManager.trigger("node:rotated", { id, rotation });
     }
     /**
@@ -438,6 +591,10 @@ class ZenodeEngine {
             renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
         }
         this.reRenderConnections();
+        // Update context pad position during resize
+        if (this.contextPadRenderer && this.selectedNodeIds.includes(id)) {
+            this.contextPadRenderer.updatePosition(this);
+        }
         this.eventManager.trigger("node:resized", { id, dimensions });
     }
     zoomIn() {
@@ -447,12 +604,12 @@ class ZenodeEngine {
         this.zoomManager.zoomBy(this.svg, 0.8);
     }
     focusOnNode(id) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         const node = this.placedNodes.find(n => n.id === id);
         if (node) {
             const style = this.getShapeStyle(node);
-            const width = (_a = style === null || style === void 0 ? void 0 : style.width) !== null && _a !== void 0 ? _a : 100;
-            const height = (_b = style === null || style === void 0 ? void 0 : style.height) !== null && _b !== void 0 ? _b : 100;
+            const width = (_b = (_a = node.width) !== null && _a !== void 0 ? _a : style === null || style === void 0 ? void 0 : style.width) !== null && _b !== void 0 ? _b : 100;
+            const height = (_d = (_c = node.height) !== null && _c !== void 0 ? _c : style === null || style === void 0 ? void 0 : style.height) !== null && _d !== void 0 ? _d : 100;
             const centerX = node.x + width / 2;
             const centerY = node.y + height / 2;
             this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY });
@@ -466,10 +623,10 @@ class ZenodeEngine {
             // Focus on the center of all nodes AND zoom to fit if needed
             let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
             this.placedNodes.forEach(n => {
-                var _a, _b;
+                var _a, _b, _c, _d;
                 const style = this.getShapeStyle(n);
-                const w = (_a = style === null || style === void 0 ? void 0 : style.width) !== null && _a !== void 0 ? _a : 100;
-                const h = (_b = style === null || style === void 0 ? void 0 : style.height) !== null && _b !== void 0 ? _b : 100;
+                const w = (_b = (_a = n.width) !== null && _a !== void 0 ? _a : style === null || style === void 0 ? void 0 : style.width) !== null && _b !== void 0 ? _b : 100;
+                const h = (_d = (_c = n.height) !== null && _c !== void 0 ? _c : style === null || style === void 0 ? void 0 : style.height) !== null && _d !== void 0 ? _d : 100;
                 minX = Math.min(minX, n.x);
                 minY = Math.min(minY, n.y);
                 maxX = Math.max(maxX, n.x + w);
@@ -479,16 +636,20 @@ class ZenodeEngine {
             const diagramHeight = maxY - minY;
             const centerX = (minX + maxX) / 2;
             const centerY = (minY + maxY) / 2;
-            // Calculate the scale to fit everything with some padding
-            const padding = 40;
-            const svgWidth = parseFloat(this.svg.attr("width") || "800");
-            const svgHeight = parseFloat(this.svg.attr("height") || "500");
+            // Use the real rendered SVG size, not the SVG attribute (which is null on infinite canvas)
+            const svgEl = this.svg.node();
+            const rect = svgEl.getBoundingClientRect();
+            const svgWidth = rect.width || 800;
+            const svgHeight = rect.height || 500;
+            // Calculate the scale to fit everything with padding
+            const padding = 60;
             const scaleX = (svgWidth - padding * 2) / diagramWidth;
             const scaleY = (svgHeight - padding * 2) / diagramHeight;
             let fitScale = Math.min(scaleX, scaleY);
-            // Don't zoom in too much, keep it at most 1.0 if it's small
-            fitScale = Math.min(fitScale, 1.0);
-            // But don't go below the minimum zoom extent
+            // Cap at current zoom so we don't zoom IN unnecessarily
+            const currentScale = d3.zoomTransform(svgEl).k;
+            fitScale = Math.min(fitScale, Math.max(currentScale, 1.0));
+            // Respect the minimum zoom extent
             const minExtent = this.zoomManager.config.canvasProperties.zoomExtent[0];
             fitScale = Math.max(fitScale, minExtent);
             this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY }, fitScale);
@@ -627,6 +788,17 @@ class ZenodeEngine {
         });
         this.reRenderConnections();
         this.eventManager.trigger("edge:visualstate", { id, patch });
+    }
+    /**
+     * Updates the content (text, icon, layout) of a placed node.
+     * Immutably merges the patch and re-renders.
+     */
+    updateNodeContent(id, content) {
+        this.placedNodes = this.placedNodes.map((n) => n.id === id ? Object.assign(Object.assign({}, n), { content }) : n);
+        if (this.canvasObject.placedNodes) {
+            renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this);
+        }
+        this.eventManager.trigger("node:content:changed", { id, content });
     }
     /**
      * Starts a connection drag from a specific port.

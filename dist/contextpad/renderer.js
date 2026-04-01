@@ -155,12 +155,12 @@ class ContextPadRenderer {
             if (!node)
                 return;
             const style = engine.getShapeStyle(node);
-            // Fallback for node properties, width/height is what gets rendered
-            let w = ((_b = (_a = style === null || style === void 0 ? void 0 : style.width) !== null && _a !== void 0 ? _a : node.width) !== null && _b !== void 0 ? _b : 100);
-            let h = ((_d = (_c = style === null || style === void 0 ? void 0 : style.height) !== null && _c !== void 0 ? _c : node.height) !== null && _d !== void 0 ? _d : 100);
+            // Prioritize actual node dimensions (updated during resize) over static shape variant config
+            let w = ((_b = (_a = node.width) !== null && _a !== void 0 ? _a : style === null || style === void 0 ? void 0 : style.width) !== null && _b !== void 0 ? _b : 100);
+            let h = ((_d = (_c = node.height) !== null && _c !== void 0 ? _c : style === null || style === void 0 ? void 0 : style.height) !== null && _d !== void 0 ? _d : 100);
             // Handle circular shapes where dimensions are defined by radius
             if (node.type === 'circle') {
-                const r = (_f = (_e = style === null || style === void 0 ? void 0 : style.radius) !== null && _e !== void 0 ? _e : node.radius) !== null && _f !== void 0 ? _f : 30;
+                const r = (_f = (_e = node.radius) !== null && _e !== void 0 ? _e : style === null || style === void 0 ? void 0 : style.radius) !== null && _f !== void 0 ? _f : 30;
                 w = r * 2;
                 h = r * 2;
             }

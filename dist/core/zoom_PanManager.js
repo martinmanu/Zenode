@@ -52,9 +52,11 @@ class ZoomManager {
             .call(this.zoomBehaviour.scaleTo, scale);
     }
     centerOn(svg, point, scale, duration = 500) {
-        const width = parseFloat(svg.attr("width") || window.innerWidth.toString());
-        const height = parseFloat(svg.attr("height") || window.innerHeight.toString());
-        const targetScale = scale !== null && scale !== void 0 ? scale : d3.zoomTransform(svg.node()).k;
+        const svgEl = svg.node();
+        const rect = svgEl.getBoundingClientRect();
+        const width = rect.width || 800;
+        const height = rect.height || 500;
+        const targetScale = scale !== null && scale !== void 0 ? scale : d3.zoomTransform(svgEl).k;
         // Calculate transform to center the point
         const transform = d3.zoomIdentity
             .translate(width / 2, height / 2)
