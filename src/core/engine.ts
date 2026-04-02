@@ -151,6 +151,15 @@ export class ZenodeEngine {
       this.emit("history:undo", this.undoManager.getHistory());
   }
 
+  public clear(): void {
+      this.placedNodes = [];
+      this.connections = [];
+      this.selectedNodeIds = [];
+      this.refreshNodes();
+      this.reRenderConnections();
+      this.emit("workflow:clear", {});
+  }
+
   public redo(): void {
       this.undoManager.redo();
       this.emit("history:redo", this.undoManager.getHistory());
@@ -510,13 +519,16 @@ export class ZenodeEngine {
   }
 
   /**
-   * Centers the viewport on a specific node.
+   * Centers the viewport on a specific node with optional zoom and transition settings.
    */
-  public focusNode(id: string): void {
+  public focusNode(id: string, options: { zoom?: number, duration?: number, offset?: { x: number, y: number } } = {}): void {
     const node = this.placedNodes.find(n => n.id === id);
+    const focusDefaults = this.config.canvasProperties.visualEffects.focus;
+    
+    // Zoom behavior reset if no node
     if (!node && this.svg && this.zoomManager) {
       const transform = d3.zoomIdentity;
-      this.svg.transition().duration(750)
+      this.svg.transition().duration(options.duration || focusDefaults.duration)
         .call(this.zoomManager.getZoomBehaviour().transform, transform);
       return;
     }
@@ -524,33 +536,40 @@ export class ZenodeEngine {
     if (node && this.svg && this.zoomManager) {
       const width = this.config.canvas.width;
       const height = this.config.canvas.height;
+      const zoomLevel = options.zoom !== undefined ? options.zoom : focusDefaults.defaultZoom;
+      const offsetX = options.offset?.x || 0;
+      const offsetY = options.offset?.y || 0;
+
       const transform = d3.zoomIdentity
-        .translate(width / 2 - node.x, height / 2 - node.y)
-        .scale(1);
+        .translate(width / 2 - node.x + offsetX, height / 2 - node.y + offsetY)
+        .scale(zoomLevel);
 
       this.svg.transition()
-        .duration(750)
+        .duration(options.duration || focusDefaults.duration)
         .ease(d3.easeCubicInOut)
         .call(this.zoomManager.getZoomBehaviour().transform, transform);
     }
   }
 
   /**
-   * Temporarily highlights a node for visual emphasis.
+   * Temporarily highlights a node for visual emphasis using configurable effects.
    */
-  public highlight(id: string, durationMs: number = 2000): void {
+  public highlight(id: string, options: { color?: string, duration?: number, intensity?: number } = {}): void {
     const node = this.placedNodes.find(n => n.id === id);
     if (!node) return;
 
-    const originalStatus = node.visualState?.status || "idle";
+    const highlightDefaults = this.config.canvasProperties.visualEffects.highlight;
     const originalGlow = node.visualState?.effects?.glow;
 
-    // Apply high-intensity glow
+    // Apply high-intensity glow from config or override
     node.visualState = {
       ...node.visualState,
       effects: {
         ...node.visualState?.effects,
-        glow: { color: "var(--zenode-accent, #3b82f6)", intensity: 2 }
+        glow: { 
+          color: options.color || highlightDefaults.color, 
+          intensity: options.intensity || highlightDefaults.intensity 
+        }
       }
     };
     this.refreshNodes();
@@ -567,7 +586,7 @@ export class ZenodeEngine {
         };
         this.refreshNodes();
       }
-    }, durationMs);
+    }, options.duration || highlightDefaults.duration);
   }
 
   /**
@@ -668,6 +687,23 @@ export class ZenodeEngine {
     return this.connections.map(c => ({ ...c } as EdgeData));
   }
 
+  /**
+   * Returns a unified snapshot of the current diagram state.
+   * Useful for persistence, syncing, or debugging.
+   */
+  public getDiagramState() {
+    const transform = d3.zoomTransform(this.svg?.node() as any);
+    return {
+      nodes: this.getAllNodes(),
+      edges: this.getAllEdges(),
+      viewport: {
+        x: transform.x,
+        y: transform.y,
+        zoom: transform.k
+      }
+    };
+  }
+
   // --- PHASE 3.3-3.6: EXTENDED API ---
 
   public validate(): import("./validation.js").ValidationResult {
@@ -677,6 +713,21 @@ export class ZenodeEngine {
   public toXML(): string { return this.serializationEngine?.toXML(this.getAllNodes(), this.getAllEdges()) || ""; }
   public toMermaid(): string { return this.serializationEngine?.toMermaid(this.getAllNodes(), this.getAllEdges()) || ""; }
   public toDOT(): string { return this.serializationEngine?.toDOT(this.getAllNodes(), this.getAllEdges()) || ""; }
+
+  /**
+   * Clears the current canvas and loads state from a Zenode XML string.
+   */
+  public fromXML(xml: string): void {
+      if (!this.serializationEngine) return;
+      const { nodes, edges } = this.serializationEngine.fromXML(xml);
+      
+      this.placedNodes = nodes as any; // Cast since types align mostly
+      this.connections = edges as any;
+      
+      this.refreshNodes();
+      this.reRenderConnections();
+      this.emit("workflow:load", { nodes, edges });
+  }
 
   /**
    * Aligns selected nodes in a specific direction.

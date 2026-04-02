@@ -146,6 +146,19 @@ const testConfig = {
                 buttonHoverColor: "rgba(198, 255, 196, 1)",
                 buttonActiveColor: "rgba(124, 172, 255, 1)"
             }
+        },
+        visualEffects: {
+            highlight: {
+                color: '#ffdd00',
+                duration: 3000,
+                scale: 1.2,
+                intensity: 2.5
+            },
+            focus: {
+                padding: 60,
+                duration: 1000,
+                defaultZoom: 1.2
+            }
         }
         // dragType: "smooth"
     },

@@ -107,6 +107,14 @@ class ZenodeEngine {
         this.undoManager.undo();
         this.emit("history:undo", this.undoManager.getHistory());
     }
+    clear() {
+        this.placedNodes = [];
+        this.connections = [];
+        this.selectedNodeIds = [];
+        this.refreshNodes();
+        this.reRenderConnections();
+        this.emit("workflow:clear", {});
+    }
     redo() {
         this.undoManager.redo();
         this.emit("history:redo", this.undoManager.getHistory());
@@ -395,40 +403,49 @@ class ZenodeEngine {
         this.emit("node:status:change", { id, status, node: Object.assign({}, node) });
     }
     /**
-     * Centers the viewport on a specific node.
+     * Centers the viewport on a specific node with optional zoom and transition settings.
      */
-    focusNode(id) {
+    focusNode(id, options = {}) {
+        var _a, _b;
         const node = this.placedNodes.find(n => n.id === id);
+        const focusDefaults = this.config.canvasProperties.visualEffects.focus;
+        // Zoom behavior reset if no node
         if (!node && this.svg && this.zoomManager) {
             const transform = d3.zoomIdentity;
-            this.svg.transition().duration(750)
+            this.svg.transition().duration(options.duration || focusDefaults.duration)
                 .call(this.zoomManager.getZoomBehaviour().transform, transform);
             return;
         }
         if (node && this.svg && this.zoomManager) {
             const width = this.config.canvas.width;
             const height = this.config.canvas.height;
+            const zoomLevel = options.zoom !== undefined ? options.zoom : focusDefaults.defaultZoom;
+            const offsetX = ((_a = options.offset) === null || _a === void 0 ? void 0 : _a.x) || 0;
+            const offsetY = ((_b = options.offset) === null || _b === void 0 ? void 0 : _b.y) || 0;
             const transform = d3.zoomIdentity
-                .translate(width / 2 - node.x, height / 2 - node.y)
-                .scale(1);
+                .translate(width / 2 - node.x + offsetX, height / 2 - node.y + offsetY)
+                .scale(zoomLevel);
             this.svg.transition()
-                .duration(750)
+                .duration(options.duration || focusDefaults.duration)
                 .ease(d3.easeCubicInOut)
                 .call(this.zoomManager.getZoomBehaviour().transform, transform);
         }
     }
     /**
-     * Temporarily highlights a node for visual emphasis.
+     * Temporarily highlights a node for visual emphasis using configurable effects.
      */
-    highlight(id, durationMs = 2000) {
-        var _a, _b, _c, _d;
+    highlight(id, options = {}) {
+        var _a, _b, _c;
         const node = this.placedNodes.find(n => n.id === id);
         if (!node)
             return;
-        ((_a = node.visualState) === null || _a === void 0 ? void 0 : _a.status) || "idle";
-        const originalGlow = (_c = (_b = node.visualState) === null || _b === void 0 ? void 0 : _b.effects) === null || _c === void 0 ? void 0 : _c.glow;
-        // Apply high-intensity glow
-        node.visualState = Object.assign(Object.assign({}, node.visualState), { effects: Object.assign(Object.assign({}, (_d = node.visualState) === null || _d === void 0 ? void 0 : _d.effects), { glow: { color: "var(--zenode-accent, #3b82f6)", intensity: 2 } }) });
+        const highlightDefaults = this.config.canvasProperties.visualEffects.highlight;
+        const originalGlow = (_b = (_a = node.visualState) === null || _a === void 0 ? void 0 : _a.effects) === null || _b === void 0 ? void 0 : _b.glow;
+        // Apply high-intensity glow from config or override
+        node.visualState = Object.assign(Object.assign({}, node.visualState), { effects: Object.assign(Object.assign({}, (_c = node.visualState) === null || _c === void 0 ? void 0 : _c.effects), { glow: {
+                    color: options.color || highlightDefaults.color,
+                    intensity: options.intensity || highlightDefaults.intensity
+                } }) });
         this.refreshNodes();
         setTimeout(() => {
             var _a;
@@ -437,7 +454,7 @@ class ZenodeEngine {
                 currentNode.visualState = Object.assign(Object.assign({}, currentNode.visualState), { effects: Object.assign(Object.assign({}, (_a = currentNode.visualState) === null || _a === void 0 ? void 0 : _a.effects), { glow: originalGlow }) });
                 this.refreshNodes();
             }
-        }, durationMs);
+        }, options.duration || highlightDefaults.duration);
     }
     /**
      * Retrieves a node's full state.
@@ -519,6 +536,23 @@ class ZenodeEngine {
     getAllEdges() {
         return this.connections.map(c => (Object.assign({}, c)));
     }
+    /**
+     * Returns a unified snapshot of the current diagram state.
+     * Useful for persistence, syncing, or debugging.
+     */
+    getDiagramState() {
+        var _a;
+        const transform = d3.zoomTransform((_a = this.svg) === null || _a === void 0 ? void 0 : _a.node());
+        return {
+            nodes: this.getAllNodes(),
+            edges: this.getAllEdges(),
+            viewport: {
+                x: transform.x,
+                y: transform.y,
+                zoom: transform.k
+            }
+        };
+    }
     // --- PHASE 3.3-3.6: EXTENDED API ---
     validate() {
         var _a;
@@ -527,6 +561,19 @@ class ZenodeEngine {
     toXML() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toXML(this.getAllNodes(), this.getAllEdges())) || ""; }
     toMermaid() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toMermaid(this.getAllNodes(), this.getAllEdges())) || ""; }
     toDOT() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toDOT(this.getAllNodes(), this.getAllEdges())) || ""; }
+    /**
+     * Clears the current canvas and loads state from a Zenode XML string.
+     */
+    fromXML(xml) {
+        if (!this.serializationEngine)
+            return;
+        const { nodes, edges } = this.serializationEngine.fromXML(xml);
+        this.placedNodes = nodes; // Cast since types align mostly
+        this.connections = edges;
+        this.refreshNodes();
+        this.reRenderConnections();
+        this.emit("workflow:load", { nodes, edges });
+    }
     /**
      * Aligns selected nodes in a specific direction.
      */

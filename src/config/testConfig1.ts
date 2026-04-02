@@ -87,6 +87,19 @@ export const testConfig: Config = {
       opacity: 1,
       showOnHoverOnly: true,
       cursor: 'crosshair'
+    },
+    visualEffects: {
+      highlight: {
+        color: '#FF6347',
+        duration: 1500,
+        scale: 1.15,
+        intensity: 3
+      },
+      focus: {
+        padding: 80,
+        duration: 600,
+        defaultZoom: 1.1
+      }
     }
     // dragType: "smooth", // Keep drag smooth
   },

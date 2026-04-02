@@ -21,12 +21,9 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 
 ## Demo
 
-<div align="center">
-  <video width="100%" autoplay loop muted playsinline style="border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.3);">
-    <source src="./assets/demo.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-  </video>
-</div>
+<p align="center">
+  <video src="./assets/demo.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);"></video>
+</p>
 
 ---
 
@@ -123,7 +120,8 @@ Layers are strictly ordered to ensure predictable depth management and event bub
 | **History System** | ✅ | Full Undo/Redo command pattern |
 | **Context Pad** | ✅ | Floating actions & Plugin API |
 | **BPMN Parity** | 🔨 | Resize handles & lane support in progress |
-| **Serialization** | ⬜ | BPMN 2.0 & Mermaid export (Layer 2) |
+| **Serialization** | ✅ | Mermaid, XML, DOT & JSON support |
+| **Properties** | 🔨 | Schema-driven node panels (Layer 1) |
 
 ---
 
@@ -137,18 +135,64 @@ Layers are strictly ordered to ensure predictable depth management and event bub
 | **Execution** | ❌ | ❌ | ✅ (via Layer 3) |
 | **Plugin-first** | ⚠️ | ❌ | ✅ |
 
+## 🛠 API Reference
+
+<details>
+<summary><b>View Complete Engine API (Expand)</b></summary>
+<br>
+
+The Zenode Engine is a high-performance, D3.js-powered diagramming library. This reference documented the Layer 1 (Core) APIs available for node management, viewport control, and data serialization.
+
+### 1. Core Lifecycle & Configuration
+| API | Description | Usage Example |
+|---|---|---|
+| `initializeCanvas(selector, config)` | Starts the engine in the target DOM element. | `Zenode.initializeCanvas('#canvas', { ... })` |
+| `updateConfig(config)` | Dynamically updates engine settings. | `Zenode.updateConfig({ grid: { visible: false } })` |
+| `getDiagramState()` | Returns a JSON snapshot of nodes, edges, and viewport. | `const state = Zenode.getDiagramState()` |
+| `clear()` | Wipes all nodes and edges from the workspace. | `Zenode.clear()` |
+
+### 2. Node & Edge Management
+| API | Description | Usage Example |
+|---|---|---|
+| `addNode(config)` | Adds a node. Returns the generated or provided ID. | `const id = Zenode.addNode({ type: 'rectangle', ... })` |
+| `removeNode(id)` | Deletes a node and its connections. | `Zenode.removeNode('n1')` |
+| `updateNode(id, patch)` | Updates node data (position, meta). | `Zenode.updateNode('n1', { x: 200 })` |
+| `addEdge(config)` | Creates a connection. Supports `type` override. | `Zenode.addEdge({ ..., type: 's-shaped' })` |
+| `duplicateNode(id)` | Clones a node and its content. | `const newId = Zenode.duplicateNode('n1')` |
+| `focusNode(id, opts?)` | Animates the viewport to focus on a node. | `Zenode.focusNode('n1', { zoom: 1.5 })` |
+
+### 3. Data Serialization & Export
+| API | Description | Usage Example |
+|---|---|---|
+| `toXML()` | Exports current state as a Zenode XML string. | `const xml = Zenode.toXML()` |
+| `fromXML(xmlString)` | Restores the canvas from a Zenode XML string. | `Zenode.fromXML(myXml)` |
+| `toMermaid()` | Generates a Mermaid.js flowchart script. | `console.log(Zenode.toMermaid())` |
+| `toDOT()` | Generates a Graphviz/DOT language script. | `const dot = Zenode.toDOT()` |
+| `validate()` | Runs structural validation (cycles, orphans). | `const result = Zenode.validate()` |
+
+### 4. Visual Feedback & Status
+| API | Description | Usage Example |
+|---|---|---|
+| `setNodeStatus(id, type)` | Triggers visual cues (`running`, `success`, `error`). | `engine.setNodeStatus('n1', 'error')` |
+| `updateNodeContent(id, cnt)` | Sets text, icons, and layout for a node. | `Zenode.updateNodeContent('n1', { items: [...] })` |
+| `highlight(id, opts?)` | Pulses a node with target behavior/color. | `engine.highlight('n1', { color: '#ff0000', duration: 3000 })` |
+
+> [!TIP]
+> **Deterministic IDs**: If you provide an `id` in `addNode(config)`, the engine will use it strictly. If not, it will return a UUID which you should captured for future calls.
+
+</details>
+
 ---
 
-## Community
+## 🌟 Support Zenode
 
-If you find Zenode useful for your projects, **please consider leaving a GitHub star! ⭐** It helps the project grow and motivates further development of the execution runtime.
+If you find this project useful, **please consider [leaving a Star](https://github.com/martinmanu/Zenode/stargazers) on  [<u>GitHub!</u>](https://github.com/martinmanu/Zenode) ⭐** It helps the project grow and motivates further development of the execution runtime.
 
 ---
 
 <div align="center">
 
-**Built with D3.js · TypeScript · Premium Aesthetics**
-
-[NPM](https://npmjs.com/package/@zenode/designer) · [GitHub](https://github.com/martinmanu/Zenode) · [Discord](https://discord.gg/zenode)
+**Built with D3.js · TypeScript .**
+ [<u>GitHub</u>](https://github.com/martinmanu/Zenode)
 
 </div>
