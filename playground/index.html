@@ -1606,8 +1606,18 @@
                 const text = await response.text();
 
                 let html = marked.parse(text);
+                
+                // Smart Pathing & Video Transformer
                 if (tab === 'overview') {
+                    // 1. Fix standard asset pathing for subfolder playground
                     html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
+                    html = html.replace(/src="assets\//g, 'src="../assets/');
+                    
+                    // 2. Transform Markdown Video links (which "marked" turns to <img>) into <video>
+                    // Works for both ![alt](path.mp4) and <img src="path.mp4">
+                    html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
+                        return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
+                    });
                 }
 
                 docsCache[tab] = html;
