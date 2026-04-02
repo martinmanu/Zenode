@@ -258,6 +258,8 @@ export {
   zoomIn,
   zoomOut,
   focusOnSelectedNode,
+  undo,
+  redo,
   registerContextPadAction,
   registerSmartConnect
 };
@@ -336,6 +338,18 @@ function zoomOut(): void {
 function focusOnSelectedNode(): void {
   if (!engineInstance) return;
   engineInstance.focusOnSelectedNode();
+}
+
+/** Undoes the last action. */
+function undo(): void {
+  if (!engineInstance) return;
+  engineInstance.undo();
+}
+
+/** Redoes the last undone action. */
+function redo(): void {
+  if (!engineInstance) return;
+  engineInstance.redo();
 }
 
 /** Registers a custom action for the context pad. */

@@ -22,6 +22,7 @@ function svgMouseClick(event, api) {
         width: shapeConfig.width,
         height: shapeConfig.height,
         radius: shapeConfig.radius,
+        rotation: 0,
         meta: {},
         visualState: { status: "idle" },
     };

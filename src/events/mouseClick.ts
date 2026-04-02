@@ -35,6 +35,7 @@ export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
     width: shapeConfig.width,
     height: shapeConfig.height,
     radius: shapeConfig.radius,
+    rotation: 0,
     meta: {},
     visualState: { status: "idle" },
   };

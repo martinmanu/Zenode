@@ -34,6 +34,17 @@ export class ContextPadRenderer {
     this.updatePosition(engine);
     this.applyStyles(engine);
 
+    // Initialize Lucide icons if the library is available globally
+    if (typeof (window as any).lucide !== 'undefined') {
+        (window as any).lucide.createIcons({
+            nameAttr: 'data-lucide',
+            attrs: {
+                width: '16px',
+                height: '16px'
+            }
+        });
+    }
+
     // Emit framework event
     engine.emit("contextpad:open", { target: this.currentTarget, actions: this.currentActions });
   }
@@ -138,6 +149,17 @@ export class ContextPadRenderer {
   update(engine: any): void {
     if (!this.padElement || !this.currentTarget) return;
     this.renderButtons(engine);
+    
+    // Initialize Lucide icons if the library is available globally
+    if (typeof (window as any).lucide !== 'undefined') {
+        (window as any).lucide.createIcons({
+            nameAttr: 'data-lucide',
+            attrs: {
+                width: '16px',
+                height: '16px'
+            }
+        });
+    }
   }
 
   /**

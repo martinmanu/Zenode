@@ -6,7 +6,7 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 
 export interface DragApi {
-  updateNodePosition(id: string, x: number, y: number): void;
+  updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
   getPlacedNodes(): PlacedNode[];
   config: Config;
   shapeRegistry: ShapeRegistry;
@@ -15,6 +15,8 @@ export interface DragApi {
   svgNode: SVGSVGElement;
   setSelectedNodeIds(ids: string[]): void;
   panBy?: (dx: number, dy: number) => void;
+  beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+  endOperation(): void;
 }
 
 interface NodeRect {
@@ -129,6 +131,7 @@ export function createDragBehavior(api: DragApi) {
         // to prevent shapes snapping back to origin during rapid chained interactions.
         const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
         initialPos.set(d.id, { x: freshNode.x, y: freshNode.y }); 
+        api.beginOperation(d.id, 'drag');
       }
     })
     .on("drag", function (event, d) {
@@ -176,7 +179,7 @@ export function createDragBehavior(api: DragApi) {
       d3.select(this).attr("transform", `translate(${newX},${newY}) rotate(${d.rotation || 0})`);
       
       // Real-time update for connections
-      api.updateNodePosition(d.id, newX, newY);
+      api.updateNodePosition(d.id, newX, newY, false);
 
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
@@ -215,11 +218,12 @@ export function createDragBehavior(api: DragApi) {
           finalY = snapped.y;
         }
         
-        api.updateNodePosition(d.id, finalX, finalY);
+        api.updateNodePosition(d.id, finalX, finalY, false);
       }
       
       initialPointers.delete(d.id);
       initialPos.delete(d.id);
+      api.endOperation();
       
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);

@@ -107,14 +107,16 @@ function renderPorts(nodeGroup, node, config, registry, engine) {
             const dx = currentPoint.x - node.x;
             const dy = currentPoint.y - node.y;
             let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-            // Apply 45-degree snapping
-            angle = Math.round(angle / 45) * 45;
-            engine.rotateNode(node.id, angle);
+            // Apply 15-degree snapping
+            angle = Math.round(angle / 15) * 15;
+            engine.rotateNode(node.id, angle, false);
         };
         const onMouseUp = () => {
+            engine.endOperation();
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
         };
+        engine.beginOperation(node.id, 'rotate');
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });
@@ -166,23 +168,25 @@ function renderPorts(nodeGroup, node, config, registry, engine) {
             if (node.type === "circle") {
                 const delta = d.axis === "w" ? dx : dy;
                 const newR = Math.max(minR, Math.min(maxR, startR + delta));
-                engine.updateNodeDimensions(node.id, { radius: newR });
+                engine.updateNodeDimensions(node.id, { radius: newR }, false);
             }
             else if (d.axis === "w") {
                 const dir = d.id === "resize-e" ? 1 : -1;
                 const newW = Math.max(minW, Math.min(maxW, startW + dir * dx * 2));
-                engine.updateNodeDimensions(node.id, { width: newW });
+                engine.updateNodeDimensions(node.id, { width: newW }, false);
             }
             else {
                 const dir = d.id === "resize-s" ? 1 : -1;
                 const newH = Math.max(minH, Math.min(maxH, startH + dir * dy * 2));
-                engine.updateNodeDimensions(node.id, { height: newH });
+                engine.updateNodeDimensions(node.id, { height: newH }, false);
             }
         };
         const onMouseUp = () => {
+            engine.endOperation();
             window.removeEventListener("mousemove", onMouseMove);
             window.removeEventListener("mouseup", onMouseUp);
         };
+        engine.beginOperation(node.id, 'resize');
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });

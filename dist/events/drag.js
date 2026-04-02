@@ -83,6 +83,7 @@ function createDragBehavior(api) {
             // to prevent shapes snapping back to origin during rapid chained interactions.
             const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
             initialPos.set(d.id, { x: freshNode.x, y: freshNode.y });
+            api.beginOperation(d.id, 'drag');
         }
     })
         .on("drag", function (event, d) {
@@ -128,7 +129,7 @@ function createDragBehavior(api) {
         }
         d3.select(this).attr("transform", `translate(${newX},${newY}) rotate(${d.rotation || 0})`);
         // Real-time update for connections
-        api.updateNodePosition(d.id, newX, newY);
+        api.updateNodePosition(d.id, newX, newY, false);
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
         }
@@ -160,10 +161,11 @@ function createDragBehavior(api) {
                 finalX = snapped.x;
                 finalY = snapped.y;
             }
-            api.updateNodePosition(d.id, finalX, finalY);
+            api.updateNodePosition(d.id, finalX, finalY, false);
         }
         initialPointers.delete(d.id);
         initialPos.delete(d.id);
+        api.endOperation();
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
             guideRaf = null;

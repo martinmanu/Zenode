@@ -11,11 +11,16 @@
     <link rel="stylesheet" href="./zenode.css">
 
     <!-- SEO & Metadata Icon -->
-    <meta name="description" content="Zenode Designer - A pro-grade, high-performance diagramming engine for complex workflows and cloud architecture.">
+    <meta name="description"
+        content="Zenode Designer - A pro-grade, high-performance diagramming engine for complex workflows and cloud architecture.">
     <meta property="og:title" content="Zenode Designer | Advanced Designer Environment">
     <meta property="og:description" content="Experience the next generation of diagramming with the Zenode Engine.">
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 
     <script type="importmap">
     {
@@ -97,8 +102,17 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 30px rgba(59, 130, 246, 0.3); }
-            50% { transform: scale(1.08); box-shadow: 0 0 60px rgba(59, 130, 246, 0.6); }
+
+            0%,
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+            }
+
+            50% {
+                transform: scale(1.08);
+                box-shadow: 0 0 60px rgba(59, 130, 246, 0.6);
+            }
         }
 
         #loadingOverlay.fade-out {
@@ -772,6 +786,232 @@
             border: 2px solid #111827;
         }
 
+        /* Shortcuts Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            opacity: 1;
+        }
+
+        .shortcuts-modal {
+            background: rgba(30, 41, 59, 0.82);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            width: 420px;
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.6);
+            padding: 32px;
+            transform: translateY(30px);
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #f8fafc;
+        }
+
+        .modal-overlay.active .shortcuts-modal {
+            transform: translateY(0);
+        }
+
+        .shortcuts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .shortcuts-header h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0;
+        }
+
+        .shortcut-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .shortcut-item:last-child {
+            border-bottom: none;
+        }
+
+        .shortcut-label {
+            font-size: 14px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .shortcut-keys {
+            display: flex;
+            gap: 4px;
+        }
+
+        .key-tag {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-family: 'Fira Code', monospace;
+            font-weight: 700;
+            color: #f1f5f9;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Docs Modal */
+        .docs-modal {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(30px) saturate(200%);
+            -webkit-backdrop-filter: blur(30px) saturate(200%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            width: 900px;
+            max-width: 92vw;
+            height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.8);
+            color: #f8fafc;
+            overflow: hidden;
+            transform: scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.1);
+        }
+
+        .modal-overlay.active .docs-modal {
+            transform: scale(1);
+        }
+
+        .docs-header {
+            padding: 24px 32px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .docs-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            scroll-behavior: smooth;
+        }
+
+        .docs-content {
+            line-height: 1.7;
+            color: #cbd5e1;
+            font-size: 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .docs-content h1,
+        .docs-content h2,
+        .docs-content h3 {
+            color: #f8fafc;
+            margin-top: 32px;
+            margin-bottom: 16px;
+            font-weight: 800;
+        }
+
+        .docs-content a {
+            color: var(--zenode-accent);
+            text-decoration: none;
+        }
+
+        .docs-content code {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 2px 6px;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        .docs-content pre {
+            background: #0f172a;
+            padding: 24px;
+            border-radius: 16px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            margin: 20px 0;
+        }
+
+        .docs-content pre code {
+            background: transparent;
+            padding: 0;
+            color: #e2e8f0;
+        }
+
+        .docs-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 24px 0;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .docs-content th,
+        .docs-content td {
+            padding: 14px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            text-align: left;
+        }
+
+        .docs-content th {
+            background: rgba(255, 255, 255, 0.04);
+            font-weight: 700;
+            color: #f1f5f9;
+        }
+
+        .docs-content blockquote {
+            border-left: 4px solid var(--zenode-accent);
+            background: rgba(59, 130, 246, 0.05);
+            padding: 16px 24px;
+            margin: 24px 0;
+            border-radius: 0 12px 12px 0;
+            font-style: italic;
+        }
+
+        .docs-content img {
+            max-width: 100%;
+            border-radius: 12px;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .loading-spinner {
+            width: 36px;
+            height: 36px;
+            border: 3px solid rgba(59, 130, 246, 0.1);
+            border-top: 3px solid var(--zenode-accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -784,29 +1024,19 @@
         <div class="toolbox-section" data-category="Basic">
             <span class="toolbox-label">Basic</span>
             <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'task0')" title="Rectangle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                </svg>
+                <i data-lucide="square"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('circle', 'circle1')" title="Circle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10" />
-                </svg>
+                <i data-lucide="circle"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('rhombus', 'rhombus1')" title="Rhombus">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L22 12L12 22L2 12Z" />
-                </svg>
+                <i data-lucide="diamond"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('oval', 'oval1')" title="Oval">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <ellipse cx="12" cy="12" rx="10" ry="7" />
-                </svg>
+                <i data-lucide="circle"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('triangle', 'triangle1')" title="Triangle">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 3L22 21H2L12 3Z" />
-                </svg>
+                <i data-lucide="triangle"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('trapezoid', 'trapezoid1')" title="Trapezoid">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -834,14 +1064,10 @@
                 </svg>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('pentagon', 'pentagon1')" title="Pentagon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L21 9L18 20H6L3 9L12 2Z" />
-                </svg>
+                <i data-lucide="pentagon"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('octagon', 'octagon1')" title="Octagon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M8 2H16L22 8V16L16 22H8L2 16V8L8 2Z" />
-                </svg>
+                <i data-lucide="octagon"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('star', 'star1')" title="Star">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -855,9 +1081,7 @@
                 </svg>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('hexagon', 'hexagon1')" title="Hexagon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 2L21 7V17L12 22L3 17V7L12 2Z" />
-                </svg>
+                <i data-lucide="hexagon"></i>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('heptagon', 'heptagon1')" title="Heptagon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -876,32 +1100,9 @@
             </button>
         </div>
 
-        <div class="toolbox-section" data-category="Select">
-            <span class="toolbox-label">Selection</span>
-            <button id="lassoBtn" class="tool-btn" onclick="toggleLasso()" title="Lasso Selection">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <rect x="4" y="4" width="16" height="16" rx="2" stroke-dasharray="4 4" />
-                    <path d="M15 15l5 5" stroke-linecap="round" />
-                </svg>
-            </button>
-        </div>
-
-        <div style="flex: 1;"></div>
-
         <!-- Connections Section: inline in left panel -->
         <div class="toolbox-section" data-category="Connections" style="grid-template-columns: 1fr;">
             <span class="toolbox-label" style="grid-column: span 1;">Connections</span>
-
-            <!-- Connect mode toggle button -->
-            <button id="connBtn" class="tool-btn" onclick="toggleConnection()" title="Connection Mode"
-                style="width: 100%; gap: 8px; padding: 10px; justify-content: flex-start; font-size: 11px; font-weight: 700; color: var(--text-muted);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-                    style="width:18px;height:18px;flex-shrink:0;">
-                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-                Connect
-            </button>
 
             <!-- Inline connection properties -->
             <div class="conn-panel">
@@ -914,21 +1115,13 @@
                     <!-- Straight: horizontal arrow, arrowhead points right -->
                     <button id="connType-straight" class="conn-type-btn active" onclick="setConnType('straight')"
                         title="Straight">
-                        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="4" y1="16" x2="25" y2="16" />
-                            <polyline points="20,11 25,16 20,21" />
-                        </svg>
+                        <i data-lucide="arrow-right"></i>
                     </button>
                     <!-- Bezier: CP1(5,8) CP2(14,6) end(27,6) → exit tangent = (14,6)→(27,6) = rightward → arrowhead points right -->
                     <!-- Bezier: Quadratic curve with tangent right arrowhead -->
                     <button id="connType-curved" class="conn-type-btn" onclick="setConnType('curved')"
                         title="Bezier Curve">
-                        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M6 26 Q 6 6, 26 6" />
-                            <polyline points="21,2 26,6 21,10" />
-                        </svg>
+                        <i data-lucide="spline"></i>
                     </button>
                     <!--
                         S-Shape: Classic horizontal S-curve.
@@ -936,19 +1129,11 @@
                     -->
                     <button id="connType-s-shaped" class="conn-type-btn" onclick="setConnType('s-shaped')"
                         title="S-Shape">
-                        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M8 24 C 28 24, 4 8, 24 8" />
-                            <polyline points="19,4 24,8 19,12" />
-                        </svg>
+                        <i data-lucide="line-squiggle"></i>
                     </button>
                     <!-- L-bent: vertical drop + right turn, arrowhead points right -->
                     <button id="connType-l-bent" class="conn-type-btn" onclick="setConnType('l-bent')" title="L-Bent">
-                        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2"
-                            stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="5,26 5,8 28,8" />
-                            <polyline points="23,4 28,8 23,12" />
-                        </svg>
+                        <i data-lucide="corner-down-right"></i>
                     </button>
                 </div>
 
@@ -982,7 +1167,10 @@
                 <h1 style="font-size: 19px; font-weight: 800; line-height: 1.1;">Zenode Designer</h1>
                 <div
                     style="margin-top: 4px; font-size: 10px; color: var(--text-muted); font-weight: 600; letter-spacing: 0.5px;">
-                    Engine v1.5</div>
+                    Engine v3.3 · <a href="#" onclick="toggleDocs(event)"
+                        style="color: var(--zenode-accent, #3b82f6); text-decoration: none; border-bottom: 1px solid rgba(59, 130, 246, 0.3);">KNOW
+                        MORE</a>
+                </div>
             </div>
         </div>
 
@@ -991,29 +1179,35 @@
         <div class="toolbar">
             <button id="inspectorToggleBtn" class="tool-btn icon-only" onclick="toggleInspector()"
                 title="Live System State">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="16 18 22 12 16 6" />
-                    <polyline points="8 6 2 12 8 18" />
-                </svg>
+                <i data-lucide="terminal"></i>
             </button>
             <button id="settingsToggleBtn" class="tool-btn icon-only" onclick="toggleSettings()"
                 title="Global Canvas Settings">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                </svg>
+                <i data-lucide="settings"></i>
             </button>
         </div>
 
         <div class="nav-controls">
-            <button class="tool-btn icon-only" onclick="Zenode.zoomIn()" title="Zoom In"><b>+</b></button>
-            <button class="tool-btn icon-only" onclick="Zenode.zoomOut()" title="Zoom Out"><b>-</b></button>
+            <button class="tool-btn icon-only" onclick="Zenode.undo()" title="Undo (Ctrl+Z)">
+                <i data-lucide="undo-2"></i>
+            </button>
+            <button class="tool-btn icon-only" onclick="Zenode.redo()" title="Redo (Ctrl+Shift+Z / Ctrl+Y)">
+                <i data-lucide="redo-2"></i>
+            </button>
+            <button class="tool-btn icon-only" onclick="toggleShortcuts()" title="Keyboard Shortcuts">
+                <i data-lucide="keyboard"></i>
+            </button>
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 4px 8px; opacity: 0.5;">
+            <button id="lassoBtn" class="tool-btn icon-only" onclick="toggleLasso()" title="Lasso Selection">
+                <i data-lucide="lasso"></i>
+            </button>
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 4px 8px; opacity: 0.5;">
+            <button class="tool-btn icon-only" onclick="Zenode.zoomIn()" title="Zoom In"><i
+                    data-lucide="zoom-in"></i></button>
+            <button class="tool-btn icon-only" onclick="Zenode.zoomOut()" title="Zoom Out"><i
+                    data-lucide="zoom-out"></i></button>
             <button class="tool-btn icon-only" onclick="Zenode.focusOnSelectedNode()" title="Focus on Content">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3" />
-                    <path d="M19 12c0 3.866-3.134 7-7 7s-7-3.134-7-7 3.134-7 7-7 7 3.134 7 7z" />
-                </svg>
+                <i data-lucide="target"></i>
             </button>
         </div>
     </div>
@@ -1023,7 +1217,8 @@
         <div class="content-panel-header">
             <span style="font-weight: 800; font-size: 14px;">Edit Node Content</span>
             <button class="tool-btn icon-only" onclick="toggleContentPanel()"
-                style="border:none; background:transparent; width:30px; height:30px; color: var(--text-muted);">✕</button>
+                style="border:none; background:transparent; width:30px; height:30px; color: var(--text-muted);"><i
+                    data-lucide="x"></i></button>
         </div>
         <div class="content-panel-body">
             <div class="content-panel-section">
@@ -1075,16 +1270,11 @@
             <div style="display: flex; gap: 10px;">
                 <button class="tool-btn icon-only" onclick="resetConfig()" title="Reset to Defaults"
                     style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                        stroke-width="2.5">
-                        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
-                        <path d="M21 3v5h-5" />
-                        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
-                        <path d="M3 21v-5h5" />
-                    </svg>
+                    <i data-lucide="rotate-ccw" style="width:18px; height:18px;"></i>
                 </button>
                 <button class="tool-btn icon-only" onclick="toggleSettings()"
-                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">✕</button>
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);"><i
+                        data-lucide="x"></i></button>
             </div>
         </div>
         <div id="formContainer" class="form-container"></div>
@@ -1099,9 +1289,11 @@
             <span style="color: #7ee787;">System State Inspector</span>
             <div style="display: flex; gap: 10px;">
                 <button class="tool-btn" onclick="copyConfig()"
-                    style="font-size: 11px; padding: 4px 12px; height: 32px;">COPY JSON</button>
+                    style="font-size: 11px; padding: 4px 12px; height: 32px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="copy" style="width:14px; height:14px;"></i> COPY JSON</button>
                 <button class="tool-btn icon-only" onclick="toggleInspector()"
-                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);">✕</button>
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);"><i
+                        data-lucide="x"></i></button>
             </div>
         </div>
         <div class="json-container">
@@ -1229,11 +1421,11 @@
             const svg = container.querySelector('svg');
             const transform = d3.zoomTransform(svg);
             const rect = container.getBoundingClientRect();
-            
+
             // Node center in canvas space (engine uses centered coordinates)
             const cx = node.x;
             const cy = node.y;
-            
+
             // Screen space (account for container position on screen)
             const sx = rect.left + transform.x + cx * transform.k;
             const sy = rect.top + transform.y + cy * transform.k;
@@ -1245,16 +1437,16 @@
             editor.className = 'in-place-editor';
             const textItem = (node.content?.items || []).find(i => i.kind === 'text');
             editor.innerText = textItem ? textItem.value : "";
-            
+
             // Get text color from node config or fallback to item color
             let color = textItem?.color;
             if (!color) {
                 const shapeVariant = currentConfig.shapes.default[node.type]?.find(s => s.id === node.shapeVariantId);
                 color = shapeVariant?.textColor || "#000000";
             }
-            
+
             const fontSize = (textItem?.fontSize || 13) * k;
-            
+
             editor.style.cssText = `
                 position: fixed;
                 left: ${sx}px;
@@ -1281,7 +1473,7 @@
             `;
 
             document.body.appendChild(editor);
-            
+
             // Focus and move cursor to end
             editor.focus();
             const range = document.createRange();
@@ -1293,23 +1485,23 @@
 
             const commit = () => {
                 if (!document.body.contains(editor)) return;
-                
+
                 const newVal = editor.innerText.trim();
                 const currentContent = node.content || { layout: 'text-only', items: [] };
                 const currentTextItem = currentContent.items.find(i => i.kind === 'text') || { kind: 'text', value: "" };
-                
+
                 // Update items
                 const otherItems = currentContent.items.filter(i => i.kind !== 'text');
                 const updatedItems = [...otherItems];
                 if (newVal) {
                     updatedItems.push({ ...currentTextItem, value: newVal });
                 }
-                
+
                 Zenode.updateNodeContent(node.id, {
                     layout: currentContent.layout || 'text-only',
                     items: updatedItems
                 });
-                
+
                 document.body.removeChild(editor);
                 updatePreview();
             };
@@ -1327,7 +1519,63 @@
             };
         }
 
-        function init() {
+        window.toggleShortcuts = (e) => {
+            const modal = document.getElementById('shortcutsModal');
+            if (e && e.target === modal) {
+                modal.classList.remove('active');
+                return;
+            }
+            modal.classList.toggle('active');
+            if (modal.classList.contains('active')) {
+                lucide.createIcons();
+            }
+        };
+
+        window.toggleDocs = async (e) => {
+            const modal = document.getElementById('docsModal');
+            if (e && (e.target === modal || e.target.closest('.close-docs'))) {
+                modal.classList.remove('active');
+                return;
+            }
+            if (e && e.preventDefault) e.preventDefault();
+
+            modal.classList.toggle('active');
+            if (modal.classList.contains('active')) {
+                const content = document.getElementById('docsContent');
+                content.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; min-height: 200px;"><div class="loading-spinner"></div><span style="font-size:12px; color:var(--text-muted); font-weight:600;">LOADING README...</span></div>';
+                try {
+                    // Fetch from project root
+                    const response = await fetch('../README.md');
+                    if (!response.ok) throw new Error("Not found");
+                    const text = await response.text();
+                    
+                    // Parse markdown and rewrite local asset paths to point to project root
+                    let html = marked.parse(text);
+                    html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
+                    
+                    content.innerHTML = html;
+                    lucide.createIcons();
+                } catch (err) {
+                    content.innerHTML = `
+                        <div style="text-align:center; padding: 60px 20px;">
+                            <i data-lucide="alert-circle" style="width:48px; height:48px; color:var(--status-error); margin-bottom:16px;"></i>
+                            <h3 style="margin-bottom:8px;">Documentation Offline</h3>
+                            <p style="color:var(--text-muted); font-size:14px; max-width:400px; margin:0 auto;">
+                                We couldn't fetch the README.md file directly. 
+                                <br><br>
+                                <a href="https://github.com/zenode/designer#readme" target="_blank" style="color:var(--zenode-accent); text-decoration:none;">
+                                    View on GitHub instead →
+                                </a>
+                            </p>
+                        </div>
+                    `;
+                    lucide.createIcons();
+                }
+            }
+        };
+
+        async function init() {
+            lucide.createIcons();
             const container = document.getElementById('canvasContainer');
             if (!container) return;
             container.innerHTML = "";
@@ -1342,7 +1590,7 @@
             Zenode.on("contextpad:edit-content", ({ target }) => {
                 openInPlaceEditor(target.id);
             });
-            
+
             // Optionally still open sidebar for advanced props?
             // Actually let's just make it focus the textarea.
 
@@ -1366,7 +1614,7 @@
                 if (overlay && !overlay.classList.contains('fade-out')) {
                     overlay.classList.add('fade-out');
                 }
-            }, 3000);
+            }, 1500);
         }
 
         let activeConnType = 'straight';
@@ -1602,6 +1850,75 @@
 
         document.addEventListener("DOMContentLoaded", init);
     </script>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="shortcutsModal" class="modal-overlay" onclick="toggleShortcuts(event)">
+        <div class="shortcuts-modal" onclick="event.stopPropagation()">
+            <div class="shortcuts-header">
+                <h2>Keyboard Shortcuts</h2>
+                <button class="tool-btn icon-only" onclick="toggleShortcuts()" style="border:none;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Undo</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">Z</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Redo</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">Shift</span><span
+                        class="key-tag">Z</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Delete Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Del</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Clear Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Esc</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Lasso Select</span>
+                <div class="shortcut-keys"><span class="key-tag">Click + Drag</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Pan Canvas</span>
+                <div class="shortcut-keys"><span class="key-tag">Right Click + Drag</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Zoom</span>
+                <div class="shortcut-keys"><span class="key-tag">Wheel</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Documentation Modal -->
+    <div id="docsModal" class="modal-overlay" onclick="toggleDocs(event)">
+        <div class="docs-modal" onclick="event.stopPropagation()">
+            <div class="docs-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div
+                        style="width:36px; height:36px; background:var(--zenode-accent); border-radius:10px; display:flex; align-items:center; justify-content:center; color:#fff; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);">
+                        <i data-lucide="book-open" style="width:20px; height:20px;"></i>
+                    </div>
+                    <div>
+                        <h2 style="font-size:16px; font-weight:800; margin:0;">Zenode Designer Guide</h2>
+                        <div style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing: 0.5px;">
+                            SYSTEM README.MD</div>
+                    </div>
+                </div>
+                <button class="tool-btn icon-only close-docs" onclick="toggleDocs(event)"
+                    style="border:none; width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,0.05); color:#fff; cursor: pointer;">
+                    <i data-lucide="x" style="width:20px; height:20px;"></i>
+                </button>
+            </div>
+            <div class="docs-body">
+                <div id="docsContent" class="docs-content">
+                    <!-- Markdown content rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

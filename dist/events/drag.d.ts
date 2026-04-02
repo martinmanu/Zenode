@@ -3,7 +3,7 @@ import { PlacedNode, CanvasElements } from "../model/interface.js";
 import { Config } from "../model/configurationModel.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 export interface DragApi {
-    updateNodePosition(id: string, x: number, y: number): void;
+    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
     getPlacedNodes(): PlacedNode[];
     config: Config;
     shapeRegistry: ShapeRegistry;
@@ -12,5 +12,7 @@ export interface DragApi {
     svgNode: SVGSVGElement;
     setSelectedNodeIds(ids: string[]): void;
     panBy?: (dx: number, dy: number) => void;
+    beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
+    endOperation(): void;
 }
 export declare function createDragBehavior(api: DragApi): d3.DragBehavior<SVGGElement, PlacedNode, PlacedNode | d3.SubjectPosition>;

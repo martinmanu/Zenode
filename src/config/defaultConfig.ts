@@ -80,6 +80,15 @@ export const defaultConfig: Config = {
       dashArray: [4, 4],
       opacity: 1
     },
+    ghostPreview: {
+        enabled: true,
+        strokeColor: 'var(--zenode-accent, #3b82f6)',
+        strokeWidth: 1.5,
+        strokeDashArray: [4, 4],
+        fillColor: 'transparent',
+        opacity: 0.4,
+        filter: 'blur(1px)'
+    },
     allowMultipleConnections: true,
     keyboardShortcuts: {
       enabled: true,

@@ -25,6 +25,16 @@ class ContextPadRenderer {
         this.container.appendChild(this.padElement);
         this.updatePosition(engine);
         this.applyStyles(engine);
+        // Initialize Lucide icons if the library is available globally
+        if (typeof window.lucide !== 'undefined') {
+            window.lucide.createIcons({
+                nameAttr: 'data-lucide',
+                attrs: {
+                    width: '16px',
+                    height: '16px'
+                }
+            });
+        }
         // Emit framework event
         engine.emit("contextpad:open", { target: this.currentTarget, actions: this.currentActions });
     }
@@ -133,6 +143,16 @@ class ContextPadRenderer {
         if (!this.padElement || !this.currentTarget)
             return;
         this.renderButtons(engine);
+        // Initialize Lucide icons if the library is available globally
+        if (typeof window.lucide !== 'undefined') {
+            window.lucide.createIcons({
+                nameAttr: 'data-lucide',
+                attrs: {
+                    width: '16px',
+                    height: '16px'
+                }
+            });
+        }
     }
     /**
      * Updates the pad position based on the current zoom transform.
