@@ -33,9 +33,11 @@ try {
     fs.mkdirSync(path.join(publicDir, 'dist'), { recursive: true });
 
     // 3. Copy Assets
-    console.log('📂 Syncing Playground and Dist components...');
+    console.log('📂 Syncing Playground, Dist, README, and Assets...');
     copyRecursiveSync('playground', publicDir);
     copyRecursiveSync('dist', path.join(publicDir, 'dist'));
+    copyRecursiveSync('assets', path.join(publicDir, 'assets'));
+    fs.copyFileSync('README.md', path.join(publicDir, 'README.md'));
 
     // 4. Patch Pathing for Production Folder Structure
     const indexPath = path.join(publicDir, 'index.html');
@@ -44,6 +46,10 @@ try {
         // Translate development paths to production paths
         content = content.replace(/\"\.\.\/dist\//g, '"./dist/');
         content = content.replace(/from \"\.\.\/dist\//g, 'from "./dist/');
+        // Fix README fetch path for production
+        content = content.replace(/fetch\(\'\.\.\/README\.md\'\)/g, "fetch('./README.md')");
+        // Fix GitHub links
+        content = content.replace(/github\.com\/zenode\/designer/g, "github.com/martinmanu/Zenode");
         fs.writeFileSync(indexPath, content);
     }
 

@@ -19,7 +19,18 @@ function ensureEffectsStyle() {
 @keyframes ${FLOW_KEYFRAME} {
   from { stroke-dashoffset: 0; }
   to   { stroke-dashoffset: -16; }
-}`;
+}
+@keyframes zenode-pulse {
+  0%   { opacity: 0.4; stroke-width: 2px; }
+  50%  { opacity: 1.0; stroke-width: 4px; }
+  100% { opacity: 0.4; stroke-width: 2px; }
+}
+@keyframes zenode-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-2px); }
+  75%      { transform: translateX(2px); }
+}
+`;
     document.head.appendChild(style);
 }
 function ensureDefs(svg) {
@@ -123,6 +134,47 @@ function applyEffects(g, path, visualState) {
     }
     if (!hasAnyEffect) {
         overlay.remove();
+    }
+    // --- NODE STATUS EFFECTS ---
+    if ((visualState === null || visualState === void 0 ? void 0 : visualState.status) && visualState.status !== "idle") {
+        const status = visualState.status;
+        let statusColor = "var(--zenode-selection-color)";
+        let shouldPulse = false;
+        let shouldShake = false;
+        switch (status) {
+            case "running":
+                statusColor = "var(--zenode-status-running, #3b82f6)";
+                shouldPulse = true;
+                break;
+            case "success":
+                statusColor = "var(--zenode-status-success, #10b981)";
+                break;
+            case "error":
+                statusColor = "var(--zenode-status-error, #ef4444)";
+                shouldShake = true;
+                break;
+            case "warning":
+                statusColor = "var(--zenode-status-warning, #f59e0b)";
+                break;
+        }
+        const statusOverlay = g.append("path")
+            .attr("class", "effect-overlay status-overlay")
+            .attr("d", path)
+            .attr("fill", "none")
+            .attr("stroke", statusColor)
+            .attr("stroke-width", 3)
+            .style("pointer-events", "none");
+        if (shouldPulse) {
+            statusOverlay.style("animation", "zenode-pulse 1.5s ease-in-out infinite");
+        }
+        if (shouldShake) {
+            g.style("animation", "zenode-shake 0.15s ease-in-out 3");
+            // remove shake animation class after it runs?
+            // Since we re-draw the layer frequently, it's better to just fire it on entry if needed.
+            // But for now, a short persistent shake is probably fine if status is error.
+        }
+        const filterId = ensureGlowFilter(defs, statusColor, 0.8);
+        statusOverlay.attr("filter", `url(#${filterId})`);
     }
 }
 

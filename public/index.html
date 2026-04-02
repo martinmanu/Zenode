@@ -1545,10 +1545,15 @@
                 content.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; min-height: 200px;"><div class="loading-spinner"></div><span style="font-size:12px; color:var(--text-muted); font-weight:600;">LOADING README...</span></div>';
                 try {
                     // Fetch from project root
-                    const response = await fetch('../README.md');
+                    const response = await fetch('./README.md');
                     if (!response.ok) throw new Error("Not found");
                     const text = await response.text();
-                    content.innerHTML = marked.parse(text);
+                    
+                    // Parse markdown and rewrite local asset paths to point to project root
+                    let html = marked.parse(text);
+                    html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
+                    
+                    content.innerHTML = html;
                     lucide.createIcons();
                 } catch (err) {
                     content.innerHTML = `
@@ -1558,7 +1563,7 @@
                             <p style="color:var(--text-muted); font-size:14px; max-width:400px; margin:0 auto;">
                                 We couldn't fetch the README.md file directly. 
                                 <br><br>
-                                <a href="https://github.com/zenode/designer#readme" target="_blank" style="color:var(--zenode-accent); text-decoration:none;">
+                                <a href="https://github.com/martinmanu/Zenode#readme" target="_blank" style="color:var(--zenode-accent); text-decoration:none;">
                                     View on GitHub instead →
                                 </a>
                             </p>

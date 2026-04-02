@@ -26,6 +26,8 @@ import { DecagonRenderer } from '../nodes/shapes/decagon.js';
 import { LicenseManager } from './license.js';
 import { SmartRouter } from '../connections/routing/smartRouter.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
+import { ValidationEngine } from './validation.js';
+import { SerializationEngine } from './serialization.js';
 import { mergeConfig } from '../utils/configMerger.js';
 import * as d3 from 'd3';
 import { snapToGrid } from '../utils/helpers.js';
@@ -82,10 +84,12 @@ class ZenodeEngine {
         this.eventManager = new EventManager();
         this.contextPadRegistry = new ContextPadRegistry();
         this.undoManager = new UndoManager(this.config.historyLimit || 20);
+        this.validationEngine = new ValidationEngine();
+        this.serializationEngine = new SerializationEngine();
         this.initializeCanvas();
         this.initializeContextPad();
         this.setupKeyboardShortcuts();
-        this.emit("engine:ready", { version: "1.5.0" });
+        this.emit("engine:ready", { version: "3.3.0" });
     }
     initializeContextPad() {
         if (this.container) {
@@ -378,6 +382,64 @@ class ZenodeEngine {
         this.emit("node:updated", { id, patch, node: this.placedNodes[idx] });
     }
     /**
+     * Sets the status of a node for live execution feedback.
+     * @param id Node ID
+     * @param status 'idle' | 'running' | 'success' | 'error' | 'warning'
+     */
+    setNodeStatus(id, status) {
+        const node = this.placedNodes.find(n => n.id === id);
+        if (!node)
+            return;
+        node.visualState = Object.assign(Object.assign({}, node.visualState), { status });
+        this.refreshNodes();
+        this.emit("node:status:change", { id, status, node: Object.assign({}, node) });
+    }
+    /**
+     * Centers the viewport on a specific node.
+     */
+    focusNode(id) {
+        const node = this.placedNodes.find(n => n.id === id);
+        if (!node && this.svg && this.zoomManager) {
+            const transform = d3.zoomIdentity;
+            this.svg.transition().duration(750)
+                .call(this.zoomManager.getZoomBehaviour().transform, transform);
+            return;
+        }
+        if (node && this.svg && this.zoomManager) {
+            const width = this.config.canvas.width;
+            const height = this.config.canvas.height;
+            const transform = d3.zoomIdentity
+                .translate(width / 2 - node.x, height / 2 - node.y)
+                .scale(1);
+            this.svg.transition()
+                .duration(750)
+                .ease(d3.easeCubicInOut)
+                .call(this.zoomManager.getZoomBehaviour().transform, transform);
+        }
+    }
+    /**
+     * Temporarily highlights a node for visual emphasis.
+     */
+    highlight(id, durationMs = 2000) {
+        var _a, _b, _c, _d;
+        const node = this.placedNodes.find(n => n.id === id);
+        if (!node)
+            return;
+        ((_a = node.visualState) === null || _a === void 0 ? void 0 : _a.status) || "idle";
+        const originalGlow = (_c = (_b = node.visualState) === null || _b === void 0 ? void 0 : _b.effects) === null || _c === void 0 ? void 0 : _c.glow;
+        // Apply high-intensity glow
+        node.visualState = Object.assign(Object.assign({}, node.visualState), { effects: Object.assign(Object.assign({}, (_d = node.visualState) === null || _d === void 0 ? void 0 : _d.effects), { glow: { color: "var(--zenode-accent, #3b82f6)", intensity: 2 } }) });
+        this.refreshNodes();
+        setTimeout(() => {
+            var _a;
+            const currentNode = this.placedNodes.find(n => n.id === id);
+            if (currentNode) {
+                currentNode.visualState = Object.assign(Object.assign({}, currentNode.visualState), { effects: Object.assign(Object.assign({}, (_a = currentNode.visualState) === null || _a === void 0 ? void 0 : _a.effects), { glow: originalGlow }) });
+                this.refreshNodes();
+            }
+        }, durationMs);
+    }
+    /**
      * Retrieves a node's full state.
      */
     getNode(id) {
@@ -456,6 +518,66 @@ class ZenodeEngine {
      */
     getAllEdges() {
         return this.connections.map(c => (Object.assign({}, c)));
+    }
+    // --- PHASE 3.3-3.6: EXTENDED API ---
+    validate() {
+        var _a;
+        return ((_a = this.validationEngine) === null || _a === void 0 ? void 0 : _a.validate(this.getAllNodes(), this.getAllEdges())) || { valid: true, errors: [], warnings: [] };
+    }
+    toXML() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toXML(this.getAllNodes(), this.getAllEdges())) || ""; }
+    toMermaid() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toMermaid(this.getAllNodes(), this.getAllEdges())) || ""; }
+    toDOT() { var _a; return ((_a = this.serializationEngine) === null || _a === void 0 ? void 0 : _a.toDOT(this.getAllNodes(), this.getAllEdges())) || ""; }
+    /**
+     * Aligns selected nodes in a specific direction.
+     */
+    alignSelection(direction) {
+        if (this.selectedNodeIds.length <= 1)
+            return;
+        const nodes = this.placedNodes.filter(n => this.selectedNodeIds.includes(n.id));
+        const firstId = this.selectedNodeIds[0];
+        const anchor = this.placedNodes.find(n => n.id === firstId);
+        if (!anchor)
+            return;
+        this.beginOperation(firstId, "drag"); // Dummy start for history grouping if we had a multi-undo
+        nodes.forEach(node => {
+            if (direction === "left")
+                node.x = anchor.x;
+            if (direction === "right")
+                node.x = anchor.x + (anchor.width || 0) - (node.width || 0);
+            if (direction === "center")
+                node.x = anchor.x + (anchor.width || 0) / 2 - (node.width || 0) / 2;
+            if (direction === "top")
+                node.y = anchor.y;
+            if (direction === "bottom")
+                node.y = anchor.y + (anchor.height || 0) - (node.height || 0);
+            if (direction === "middle")
+                node.y = anchor.y + (anchor.height || 0) / 2 - (node.height || 0) / 2;
+        });
+        this.refreshNodes();
+        this.reRenderConnections();
+        this.emit("node:aligned", { direction, ids: this.selectedNodeIds });
+    }
+    /**
+     * Distributes selected nodes uniformly.
+     */
+    distributeSelection(direction) {
+        if (this.selectedNodeIds.length <= 2)
+            return;
+        const nodes = this.placedNodes
+            .filter(n => this.selectedNodeIds.includes(n.id))
+            .sort((a, b) => direction === "horizontal" ? a.x - b.x : a.y - b.y);
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        const totalDist = direction === "horizontal" ? last.x - first.x : last.y - first.y;
+        const step = totalDist / (nodes.length - 1);
+        nodes.forEach((n, i) => {
+            if (direction === "horizontal")
+                n.x = first.x + i * step;
+            else
+                n.y = first.y + i * step;
+        });
+        this.refreshNodes();
+        this.reRenderConnections();
     }
     /**
      * Programmatically triggers the text editor for a node or edge.

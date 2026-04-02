@@ -45,6 +45,8 @@ export declare class ZenodeEngine {
     private activeOperation;
     private undoManager;
     private selectionKeyboardListener;
+    private validationEngine;
+    private serializationEngine;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
     undo(): void;
@@ -112,6 +114,20 @@ export declare class ZenodeEngine {
      */
     updateNode(id: string, patch: Partial<NodeConfig>, recordHistory?: boolean): void;
     /**
+     * Sets the status of a node for live execution feedback.
+     * @param id Node ID
+     * @param status 'idle' | 'running' | 'success' | 'error' | 'warning'
+     */
+    setNodeStatus(id: string, status: "idle" | "running" | "success" | "error" | "warning"): void;
+    /**
+     * Centers the viewport on a specific node.
+     */
+    focusNode(id: string): void;
+    /**
+     * Temporarily highlights a node for visual emphasis.
+     */
+    highlight(id: string, durationMs?: number): void;
+    /**
      * Retrieves a node's full state.
      */
     getNode(id: string): NodeData | null;
@@ -142,6 +158,18 @@ export declare class ZenodeEngine {
      * Returns all connections on the canvas.
      */
     getAllEdges(): EdgeData[];
+    validate(): import("./validation.js").ValidationResult;
+    toXML(): string;
+    toMermaid(): string;
+    toDOT(): string;
+    /**
+     * Aligns selected nodes in a specific direction.
+     */
+    alignSelection(direction: "left" | "center" | "right" | "top" | "middle" | "bottom"): void;
+    /**
+     * Distributes selected nodes uniformly.
+     */
+    distributeSelection(direction: "horizontal" | "vertical"): void;
     /**
      * Programmatically triggers the text editor for a node or edge.
      */

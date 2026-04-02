@@ -30,6 +30,8 @@ import { DecagonRenderer } from "../nodes/shapes/decagon.js";
 import { LicenseManager } from "./license.js";
 import { SmartRouter } from "../connections/routing/smartRouter.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
+import { ValidationEngine } from "./validation.js";
+import { SerializationEngine } from "./serialization.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
 import * as d3 from "d3";
@@ -108,6 +110,10 @@ export class ZenodeEngine {
   private activeOperation: { type: string, nodeId: string, originalData: PlacedNode } | null = null;
   private undoManager: UndoManager;
   private selectionKeyboardListener: any;
+  
+  // Phase 3 Engines
+  private validationEngine: ValidationEngine;
+  private serializationEngine: SerializationEngine;
 
   constructor(container: HTMLElement | null, config: Partial<Config>) {
     this.container = container;
@@ -117,10 +123,13 @@ export class ZenodeEngine {
     this.eventManager = new EventManager();
     this.contextPadRegistry = new ContextPadRegistry();
     this.undoManager = new UndoManager(this.config.historyLimit || 20);
+    this.validationEngine = new ValidationEngine();
+    this.serializationEngine = new SerializationEngine();
+
     this.initializeCanvas();
     this.initializeContextPad();
     this.setupKeyboardShortcuts();
-    this.emit("engine:ready", { version: "1.5.0" });
+    this.emit("engine:ready", { version: "3.3.0" });
   }
 
   private initializeContextPad(): void {
@@ -483,6 +492,85 @@ export class ZenodeEngine {
   }
 
   /**
+   * Sets the status of a node for live execution feedback.
+   * @param id Node ID
+   * @param status 'idle' | 'running' | 'success' | 'error' | 'warning'
+   */
+  public setNodeStatus(id: string, status: "idle" | "running" | "success" | "error" | "warning"): void {
+    const node = this.placedNodes.find(n => n.id === id);
+    if (!node) return;
+
+    node.visualState = { 
+      ...node.visualState, 
+      status 
+    };
+    
+    this.refreshNodes();
+    this.emit("node:status:change", { id, status, node: { ...node } });
+  }
+
+  /**
+   * Centers the viewport on a specific node.
+   */
+  public focusNode(id: string): void {
+    const node = this.placedNodes.find(n => n.id === id);
+    if (!node && this.svg && this.zoomManager) {
+      const transform = d3.zoomIdentity;
+      this.svg.transition().duration(750)
+        .call(this.zoomManager.getZoomBehaviour().transform, transform);
+      return;
+    }
+
+    if (node && this.svg && this.zoomManager) {
+      const width = this.config.canvas.width;
+      const height = this.config.canvas.height;
+      const transform = d3.zoomIdentity
+        .translate(width / 2 - node.x, height / 2 - node.y)
+        .scale(1);
+
+      this.svg.transition()
+        .duration(750)
+        .ease(d3.easeCubicInOut)
+        .call(this.zoomManager.getZoomBehaviour().transform, transform);
+    }
+  }
+
+  /**
+   * Temporarily highlights a node for visual emphasis.
+   */
+  public highlight(id: string, durationMs: number = 2000): void {
+    const node = this.placedNodes.find(n => n.id === id);
+    if (!node) return;
+
+    const originalStatus = node.visualState?.status || "idle";
+    const originalGlow = node.visualState?.effects?.glow;
+
+    // Apply high-intensity glow
+    node.visualState = {
+      ...node.visualState,
+      effects: {
+        ...node.visualState?.effects,
+        glow: { color: "var(--zenode-accent, #3b82f6)", intensity: 2 }
+      }
+    };
+    this.refreshNodes();
+
+    setTimeout(() => {
+      const currentNode = this.placedNodes.find(n => n.id === id);
+      if (currentNode) {
+        currentNode.visualState = {
+          ...currentNode.visualState,
+          effects: {
+            ...currentNode.visualState?.effects,
+            glow: originalGlow
+          }
+        };
+        this.refreshNodes();
+      }
+    }, durationMs);
+  }
+
+  /**
    * Retrieves a node's full state.
    */
   public getNode(id: string): NodeData | null {
@@ -578,6 +666,66 @@ export class ZenodeEngine {
    */
   public getAllEdges(): EdgeData[] {
     return this.connections.map(c => ({ ...c } as EdgeData));
+  }
+
+  // --- PHASE 3.3-3.6: EXTENDED API ---
+
+  public validate(): import("./validation.js").ValidationResult {
+      return this.validationEngine?.validate(this.getAllNodes(), this.getAllEdges()) || { valid: true, errors: [], warnings: [] };
+  }
+
+  public toXML(): string { return this.serializationEngine?.toXML(this.getAllNodes(), this.getAllEdges()) || ""; }
+  public toMermaid(): string { return this.serializationEngine?.toMermaid(this.getAllNodes(), this.getAllEdges()) || ""; }
+  public toDOT(): string { return this.serializationEngine?.toDOT(this.getAllNodes(), this.getAllEdges()) || ""; }
+
+  /**
+   * Aligns selected nodes in a specific direction.
+   */
+  public alignSelection(direction: "left" | "center" | "right" | "top" | "middle" | "bottom"): void {
+    if (this.selectedNodeIds.length <= 1) return;
+
+    const nodes = this.placedNodes.filter(n => this.selectedNodeIds.includes(n.id));
+    const firstId = this.selectedNodeIds[0];
+    const anchor = this.placedNodes.find(n => n.id === firstId);
+    if (!anchor) return;
+
+    this.beginOperation(firstId, "drag"); // Dummy start for history grouping if we had a multi-undo
+
+    nodes.forEach(node => {
+        if (direction === "left") node.x = anchor.x;
+        if (direction === "right") node.x = anchor.x + (anchor.width || 0) - (node.width || 0);
+        if (direction === "center") node.x = anchor.x + (anchor.width || 0)/2 - (node.width || 0)/2;
+        if (direction === "top") node.y = anchor.y;
+        if (direction === "bottom") node.y = anchor.y + (anchor.height || 0) - (node.height || 0);
+        if (direction === "middle") node.y = anchor.y + (anchor.height || 0)/2 - (node.height || 0)/2;
+    });
+
+    this.refreshNodes();
+    this.reRenderConnections();
+    this.emit("node:aligned", { direction, ids: this.selectedNodeIds });
+  }
+
+  /**
+   * Distributes selected nodes uniformly.
+   */
+  public distributeSelection(direction: "horizontal" | "vertical"): void {
+     if (this.selectedNodeIds.length <= 2) return;
+     const nodes = this.placedNodes
+        .filter(n => this.selectedNodeIds.includes(n.id))
+        .sort((a,b) => direction === "horizontal" ? a.x - b.x : a.y - b.y);
+     
+     const first = nodes[0];
+     const last = nodes[nodes.length - 1];
+     const totalDist = direction === "horizontal" ? last.x - first.x : last.y - first.y;
+     const step = totalDist / (nodes.length - 1);
+
+     nodes.forEach((n, i) => {
+         if (direction === "horizontal") n.x = first.x + i * step;
+         else n.y = first.y + i * step;
+     });
+
+     this.refreshNodes();
+     this.reRenderConnections();
   }
 
   /**

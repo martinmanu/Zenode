@@ -7,6 +7,7 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 
 [![npm version](https://img.shields.io/npm/v/@zenode/designer?style=flat-square&color=4A90E2)](https://www.npmjs.com/package/@zenode/designer)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/martinmanu/Zenode?style=flat-square&color=ffd700)](https://github.com/martinmanu/Zenode/stargazers)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=flat-square)](https://www.typescriptlang.org/)
 [![D3.js](https://img.shields.io/badge/Powered%20by-D3.js-orange?style=flat-square)](https://d3js.org/)
 
@@ -138,10 +139,16 @@ Layers are strictly ordered to ensure predictable depth management and event bub
 
 ---
 
+## Community
+
+If you find Zenode useful for your projects, **please consider leaving a GitHub star! ⭐** It helps the project grow and motivates further development of the execution runtime.
+
+---
+
 <div align="center">
 
 **Built with D3.js · TypeScript · Premium Aesthetics**
 
-[NPM](https://npmjs.com/package/@zenode/designer) · [GitHub](https://github.com/zenode/designer) · [Discord](https://discord.gg/zenode)
+[NPM](https://npmjs.com/package/@zenode/designer) · [GitHub](https://github.com/martinmanu/Zenode) · [Discord](https://discord.gg/zenode)
 
 </div>
