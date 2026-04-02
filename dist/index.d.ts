@@ -76,7 +76,7 @@ declare const removeEdge: (id: string) => void;
 declare const getEdge: (id: string) => EdgeData | null;
 /** Returns all connections on the canvas. */
 declare const getAllEdges: () => EdgeData[];
-export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusOnSelectedNode, registerContextPadAction, registerSmartConnect };
+export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusOnSelectedNode, undo, redo, registerContextPadAction, registerSmartConnect };
 /** Sets the license key for the engine. */
 declare function setLicense(key: string): void;
 /** Enables or disables smart routing for connections. */
@@ -97,6 +97,10 @@ declare function zoomIn(): void;
 declare function zoomOut(): void;
 /** Focuses (center + zoom) on the first selected node. */
 declare function focusOnSelectedNode(): void;
+/** Undoes the last action. */
+declare function undo(): void;
+/** Redoes the last undone action. */
+declare function redo(): void;
 /** Registers a custom action for the context pad. */
 declare function registerContextPadAction(action: any): void;
 /**

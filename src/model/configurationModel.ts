@@ -287,4 +287,5 @@ export interface Config {
   connections: Connections;
   globalProperties: GlobalProperties;
   dragOptions: DragOptions;
+  historyLimit?: number;
 }

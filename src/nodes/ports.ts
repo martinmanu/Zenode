@@ -142,7 +142,7 @@ export function renderPorts(
             // Apply 15-degree snapping
             angle = Math.round(angle / 15) * 15;
             
-            engine.rotateNode(node.id, angle);
+            engine.rotateNode(node.id, angle, false);
         };
 
         const onMouseUp = () => {
@@ -214,15 +214,15 @@ export function renderPorts(
             if (node.type === "circle") {
                 const delta = d.axis === "w" ? dx : dy;
                 const newR = Math.max(minR, Math.min(maxR, startR + delta));
-                engine.updateNodeDimensions(node.id, { radius: newR });
+                engine.updateNodeDimensions(node.id, { radius: newR }, false);
             } else if (d.axis === "w") {
                 const dir = d.id === "resize-e" ? 1 : -1;
                 const newW = Math.max(minW, Math.min(maxW, startW + dir * dx * 2));
-                engine.updateNodeDimensions(node.id, { width: newW });
+                engine.updateNodeDimensions(node.id, { width: newW }, false);
             } else {
                 const dir = d.id === "resize-s" ? 1 : -1;
                 const newH = Math.max(minH, Math.min(maxH, startH + dir * dy * 2));
-                engine.updateNodeDimensions(node.id, { height: newH });
+                engine.updateNodeDimensions(node.id, { height: newH }, false);
             }
         };
 

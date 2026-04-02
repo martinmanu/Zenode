@@ -73,12 +73,12 @@ const testConfig = {
         },
         ghostPreview: {
             enabled: true,
-            strokeColor: '#ff0000ff',
+            strokeColor: '#000000ff',
             strokeWidth: 1.5,
             strokeDashArray: [4, 4],
             fillColor: 'transparent',
-            opacity: 0.6,
-            filter: 'blur(1px)'
+            opacity: 0.7,
+            filter: 'blur(0.5px)'
         },
         keyboardShortcuts: {
             enabled: true,

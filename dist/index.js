@@ -265,6 +265,18 @@ function focusOnSelectedNode() {
         return;
     engineInstance.focusOnSelectedNode();
 }
+/** Undoes the last action. */
+function undo() {
+    if (!engineInstance)
+        return;
+    engineInstance.undo();
+}
+/** Redoes the last undone action. */
+function redo() {
+    if (!engineInstance)
+        return;
+    engineInstance.redo();
+}
 /** Registers a custom action for the context pad. */
 function registerContextPadAction(action) {
     if (!engineInstance)
@@ -361,5 +373,5 @@ function registerSmartConnect() {
     });
 }
 
-export { ZenodeEngine, addEdge, addNode, beginLabelEdit, createConnection, createShape, duplicateNode, focusOnSelectedNode, getAllEdges, getAllNodes, getEdge, getEngine, getLicenseTier, getNode, getPlacedNodes, initializeCanvas, off, on, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, zoomIn, zoomOut };
+export { ZenodeEngine, addEdge, addNode, beginLabelEdit, createConnection, createShape, duplicateNode, focusOnSelectedNode, getAllEdges, getAllNodes, getEdge, getEngine, getLicenseTier, getNode, getPlacedNodes, initializeCanvas, off, on, redo, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, undo, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, zoomIn, zoomOut };
 //# sourceMappingURL=index.js.map

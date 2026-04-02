@@ -6,7 +6,7 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 
 export interface DragApi {
-  updateNodePosition(id: string, x: number, y: number): void;
+  updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
   getPlacedNodes(): PlacedNode[];
   config: Config;
   shapeRegistry: ShapeRegistry;
@@ -179,7 +179,7 @@ export function createDragBehavior(api: DragApi) {
       d3.select(this).attr("transform", `translate(${newX},${newY}) rotate(${d.rotation || 0})`);
       
       // Real-time update for connections
-      api.updateNodePosition(d.id, newX, newY);
+      api.updateNodePosition(d.id, newX, newY, false);
 
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
@@ -218,7 +218,7 @@ export function createDragBehavior(api: DragApi) {
           finalY = snapped.y;
         }
         
-        api.updateNodePosition(d.id, finalX, finalY);
+        api.updateNodePosition(d.id, finalX, finalY, false);
       }
       
       initialPointers.delete(d.id);

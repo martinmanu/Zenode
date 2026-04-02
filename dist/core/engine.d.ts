@@ -43,8 +43,13 @@ export declare class ZenodeEngine {
     private contextPadRegistry;
     private contextPadRenderer;
     private activeOperation;
+    private undoManager;
+    private selectionKeyboardListener;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
+    undo(): void;
+    redo(): void;
+    private setupKeyboardShortcuts;
     /**
      * Registers a custom action for the context pad.
      */
@@ -63,7 +68,7 @@ export declare class ZenodeEngine {
      * Updates canvas dimensions without a full re-render.
      */
     resizeCanvas(width: number, height: number): void;
-    updateConfig(newConfig: Partial<Config>): void;
+    updateConfig(newConfig: Partial<Config>, recordHistory?: boolean): void;
     /**
      * Manually hides the context pad.
      */
@@ -97,15 +102,15 @@ export declare class ZenodeEngine {
      * @param config Partial configuration for the new node.
      * @returns The ID of the created node.
      */
-    addNode(config: NodeConfig): string;
+    addNode(config: NodeConfig, recordHistory?: boolean): string;
     /**
      * Removes a node and its associated connections.
      */
-    removeNode(id: string): void;
+    removeNode(id: string, recordHistory?: boolean): void;
     /**
      * Updates an existing node's properties.
      */
-    updateNode(id: string, patch: Partial<NodeConfig>): void;
+    updateNode(id: string, patch: Partial<NodeConfig>, recordHistory?: boolean): void;
     /**
      * Retrieves a node's full state.
      */
@@ -124,11 +129,11 @@ export declare class ZenodeEngine {
      * Programmatically creates a connection between two nodes.
      * @returns The ID of the created connection.
      */
-    addEdge(config: EdgeConfig): string;
+    addEdge(config: EdgeConfig, recordHistory?: boolean): string;
     /**
      * Removes a connection by ID.
      */
-    removeEdge(id: string): void;
+    removeEdge(id: string, recordHistory?: boolean): void;
     /**
      * Returns a specific connection's state.
      */
@@ -176,7 +181,7 @@ export declare class ZenodeEngine {
      * Places a node on the canvas: appends to state and re-renders g.placed-nodes.
      * @param node - Node to place (id must be unique; use generatePlacedNodeId() if creating new).
      */
-    placeNode(node: PlacedNode): void;
+    placeNode(node: PlacedNode, recordHistory?: boolean): void;
     /** Returns a copy of the current placed nodes (immutable). */
     getPlacedNodes(): PlacedNode[];
     /** Returns a single placed node by id. */
@@ -184,11 +189,11 @@ export declare class ZenodeEngine {
     /**
      * Updates a placed node's position and triggers sub-renders.
      */
-    updateNodePosition(id: string, x: number, y: number): void;
+    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
     /**
      * Updates a node's rotation.
      */
-    rotateNode(id: string, rotation: number): void;
+    rotateNode(id: string, rotation: number, recordHistory?: boolean): void;
     /**
      * Updates a node's dimensions (width/height or radius).
      */
@@ -196,13 +201,13 @@ export declare class ZenodeEngine {
         width?: number;
         height?: number;
         radius?: number;
-    }): void;
+    }, recordHistory?: boolean): void;
     zoomIn(): void;
     zoomOut(): void;
     focusOnNode(id: string): void;
     focusOnSelectedNode(): void;
     panBy(dx: number, dy: number): void;
-    deleteSelection(): void;
+    deleteSelection(recordHistory?: boolean): void;
     reRenderConnections(): void;
     /**
      * Converts a mouse event to canvas coordinates (with optional grid snap).
@@ -238,7 +243,7 @@ export declare class ZenodeEngine {
      * Updates the content (text, icon, layout) of a placed node.
      * Immutably merges the patch and re-renders.
      */
-    updateNodeContent(id: string, content: import("../types/index.js").NodeContent): void;
+    updateNodeContent(id: string, content: import("../types/index.js").NodeContent, recordHistory?: boolean): void;
     /**
      * Starts a connection drag from a specific port.
      */
@@ -268,7 +273,7 @@ export declare class ZenodeEngine {
      * Completes the connection drag and creates a new connection if dropped on a port.
      */
     endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
-    createConnectionFromPorts(sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string): void;
+    createConnectionFromPorts(sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string, recordHistory?: boolean): void;
     private renderGhostConnection;
     lockedTheCanvas(locked: boolean): void;
     gridToggles(toggle: boolean): void;

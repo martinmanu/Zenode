@@ -21,8 +21,8 @@ export interface RenderApi extends DragApi {
   updateConnectionDrag(currentPoint: { x: number; y: number }): void;
   endConnectionDrag(targetNodeId?: string, targetPortId?: string): void;
   isDrawingConnection(): boolean;
-  rotateNode(id: string, rotation: number): void;
-  updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }): void;
+  rotateNode(id: string, rotation: number, recordHistory?: boolean): void;
+  updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }, recordHistory?: boolean): void;
   beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
   endOperation(): void;
   getActiveOperation(): { type: string, nodeId: string, originalData: PlacedNode } | null;
