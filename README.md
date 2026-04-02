@@ -21,9 +21,7 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 
 ## Demo
 
-<p align="center">
-  <video src="./assets/demo.mp4" width="100%" autoplay loop muted playsinline style="border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);"></video>
-</p>
+![Zenode Designer Demo](assets/demo.mp4)
 
 ---
 
