@@ -1060,8 +1060,8 @@
         <div class="loading-text">Initializing Engine</div>
     </div>
     <div class="left-panel">
-        <div class="toolbox-section" data-category="Basic">
-            <span class="toolbox-label">Basic</span>
+        <div class="toolbox-section" data-category="Shapes">
+            <span class="toolbox-label">Shapes</span>
             <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'task0')" title="Rectangle">
                 <i data-lucide="square"></i>
             </button>
@@ -1088,10 +1088,7 @@
                     <path d="M7 6L21 6L17 18H3L7 6Z" />
                 </svg>
             </button>
-        </div>
 
-        <div class="toolbox-section" data-category="Advanced">
-            <span class="toolbox-label">Advanced</span>
             <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'long-card')" title="Long Card">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="2" y="7" width="20" height="10" rx="2" />
@@ -1575,7 +1572,7 @@
         window.switchDocsTab = async (tab) => {
             const content = document.getElementById('docsContent');
             const tabs = ['overview', 'apis'];
-            
+
             // Toggle active UI
             tabs.forEach(t => {
                 const btn = document.getElementById('tab-' + t);
@@ -1607,12 +1604,12 @@
                 const response = await fetch(fileName);
                 if (!response.ok) throw new Error("Not found");
                 const text = await response.text();
-                
+
                 let html = marked.parse(text);
                 if (tab === 'overview') {
                     html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
                 }
-                
+
                 docsCache[tab] = html;
                 content.innerHTML = html;
                 lucide.createIcons();
@@ -1983,7 +1980,8 @@
                     </div>
                     <div>
                         <h2 id="docsTitle" style="font-size:16px; font-weight:800; margin:0;">Zenode Designer Guide</h2>
-                        <div id="docsSub" style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing: 0.5px;">
+                        <div id="docsSub"
+                            style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing: 0.5px;">
                             SYSTEM README.MD</div>
                     </div>
                 </div>
