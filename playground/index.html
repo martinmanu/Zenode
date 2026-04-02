@@ -1607,25 +1607,23 @@
 
                 let html = marked.parse(text);
                 
-                // Smart Pathing & Video Transformer
+                // 1. Global Path Correction (Environment-Aware)
+                const isDev = window.location.pathname.includes('/playground/');
+                const assetPrefix = isDev ? '../assets/' : './assets/';
+                
+                // Fixes all instances of assets/ in any attribute (src, href, etc.)
+                html = html.replace(/(src|href)="(\.\/)?assets\//g, `$1="${assetPrefix}`);
+                
+                // 2. Transform Markdown Image links into Styled <video>
                 if (tab === 'overview') {
-                    // Auto-detect production vs development
-                    const isDev = window.location.pathname.includes('/playground/');
-                    const assetPrefix = isDev ? '../assets/' : './assets/';
-                    
-                    // 1. Fix standard asset pathing based on environment
-                    html = html.replace(/src="\.\/assets\//g, `src="${assetPrefix}`);
-                    html = html.replace(/src="assets\//g, `src="${assetPrefix}`);
-                    
-                    // 2. Transform Markdown Image links into Styled <video>
                     html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
                         return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
                     });
                     
-                    // 3. Transform existing plain <video> tags into Styled <video>
-                    html = html.replace(/<video src="([^"]+)"[^>]*><\/video>/g, (match, src) => {
-                        return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
-                    });
+                    // 3. Ensure any existing <video> tags are also styled properly
+                    if (!html.includes('style="width:100%')) {
+                         html = html.replace(/<video /g, '<video style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);" ');
+                    }
                 }
 
                 docsCache[tab] = html;
