@@ -50,6 +50,7 @@ export declare class ZenodeEngine {
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
     undo(): void;
+    clear(): void;
     redo(): void;
     private setupKeyboardShortcuts;
     /**
@@ -120,13 +121,24 @@ export declare class ZenodeEngine {
      */
     setNodeStatus(id: string, status: "idle" | "running" | "success" | "error" | "warning"): void;
     /**
-     * Centers the viewport on a specific node.
+     * Centers the viewport on a specific node with optional zoom and transition settings.
      */
-    focusNode(id: string): void;
+    focusNode(id: string, options?: {
+        zoom?: number;
+        duration?: number;
+        offset?: {
+            x: number;
+            y: number;
+        };
+    }): void;
     /**
-     * Temporarily highlights a node for visual emphasis.
+     * Temporarily highlights a node for visual emphasis using configurable effects.
      */
-    highlight(id: string, durationMs?: number): void;
+    highlight(id: string, options?: {
+        color?: string;
+        duration?: number;
+        intensity?: number;
+    }): void;
     /**
      * Retrieves a node's full state.
      */
@@ -158,10 +170,27 @@ export declare class ZenodeEngine {
      * Returns all connections on the canvas.
      */
     getAllEdges(): EdgeData[];
+    /**
+     * Returns a unified snapshot of the current diagram state.
+     * Useful for persistence, syncing, or debugging.
+     */
+    getDiagramState(): {
+        nodes: NodeData[];
+        edges: EdgeData[];
+        viewport: {
+            x: number;
+            y: number;
+            zoom: number;
+        };
+    };
     validate(): import("./validation.js").ValidationResult;
     toXML(): string;
     toMermaid(): string;
     toDOT(): string;
+    /**
+     * Clears the current canvas and loads state from a Zenode XML string.
+     */
+    fromXML(xml: string): void;
     /**
      * Aligns selected nodes in a specific direction.
      */

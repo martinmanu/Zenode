@@ -907,6 +907,45 @@
             align-items: center;
         }
 
+        .docs-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 4px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            margin: 0 32px;
+            flex: 1;
+            max-width: fit-content;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 8px 18px;
+            border-radius: 10px;
+            color: #94a3b8;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 0.3px;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+        }
+
         .docs-body {
             flex: 1;
             overflow-y: auto;
@@ -1531,6 +1570,70 @@
             }
         };
 
+        const docsCache = {};
+
+        window.switchDocsTab = async (tab) => {
+            const content = document.getElementById('docsContent');
+            const tabs = ['overview', 'apis'];
+            
+            // Toggle active UI
+            tabs.forEach(t => {
+                const btn = document.getElementById('tab-' + t);
+                if (btn) btn.classList.toggle('active', t === tab);
+            });
+
+            // Set title/sub based on tab
+            const title = document.getElementById('docsTitle');
+            const sub = document.getElementById('docsSub');
+            if (tab === 'overview') {
+                if (title) title.innerText = 'Zenode Designer Guide';
+                if (sub) sub.innerText = 'SYSTEM README.MD';
+            } else {
+                if (title) title.innerText = 'Zenode Engine API';
+                if (sub) sub.innerText = 'PUBLIC API REFERENCE';
+            }
+
+            // Show loader if not cached
+            const fileName = tab === 'overview' ? '../README.md' : '../APIs.md';
+            if (docsCache[tab]) {
+                content.innerHTML = docsCache[tab];
+                lucide.createIcons();
+                return;
+            }
+
+            content.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; min-height: 200px;"><div class="loading-spinner"></div><span style="font-size:12px; color:var(--text-muted); font-weight:600;">LOADING DOCUMENTATION...</span></div>';
+
+            try {
+                const response = await fetch(fileName);
+                if (!response.ok) throw new Error("Not found");
+                const text = await response.text();
+                
+                let html = marked.parse(text);
+                if (tab === 'overview') {
+                    html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
+                }
+                
+                docsCache[tab] = html;
+                content.innerHTML = html;
+                lucide.createIcons();
+            } catch (err) {
+                content.innerHTML = `
+                    <div style="text-align:center; padding: 60px 20px;">
+                        <i data-lucide="alert-circle" style="width:48px; height:48px; color:var(--status-error); margin-bottom:16px;"></i>
+                        <h3 style="margin-bottom:8px;">Offline</h3>
+                        <p style="color:var(--text-muted); font-size:14px; max-width:400px; margin:0 auto;">
+                            We couldn't fetch ${fileName} directly. 
+                            <br><br>
+                            <a href="https://github.com/martinmanu/Zenode#readme" target="_blank" style="color:var(--zenode-accent); text-decoration:underline;">
+                                View on GitHub instead →
+                            </a>
+                        </p>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        };
+
         window.toggleDocs = async (e) => {
             const modal = document.getElementById('docsModal');
             if (e && (e.target === modal || e.target.closest('.close-docs'))) {
@@ -1541,36 +1644,7 @@
 
             modal.classList.toggle('active');
             if (modal.classList.contains('active')) {
-                const content = document.getElementById('docsContent');
-                content.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; min-height: 200px;"><div class="loading-spinner"></div><span style="font-size:12px; color:var(--text-muted); font-weight:600;">LOADING README...</span></div>';
-                try {
-                    // Fetch from project root
-                    const response = await fetch('./README.md');
-                    if (!response.ok) throw new Error("Not found");
-                    const text = await response.text();
-                    
-                    // Parse markdown and rewrite local asset paths to point to project root
-                    let html = marked.parse(text);
-                    html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
-                    
-                    content.innerHTML = html;
-                    lucide.createIcons();
-                } catch (err) {
-                    content.innerHTML = `
-                        <div style="text-align:center; padding: 60px 20px;">
-                            <i data-lucide="alert-circle" style="width:48px; height:48px; color:var(--status-error); margin-bottom:16px;"></i>
-                            <h3 style="margin-bottom:8px;">Documentation Offline</h3>
-                            <p style="color:var(--text-muted); font-size:14px; max-width:400px; margin:0 auto;">
-                                We couldn't fetch the README.md file directly. 
-                                <br><br>
-                                <a href="https://github.com/martinmanu/Zenode#readme" target="_blank" style="color:var(--zenode-accent); text-decoration:none;">
-                                    View on GitHub instead →
-                                </a>
-                            </p>
-                        </div>
-                    `;
-                    lucide.createIcons();
-                }
+                switchDocsTab('overview');
             }
         };
 
@@ -1597,6 +1671,12 @@
             const formRoot = document.getElementById('formContainer');
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
+
+            // Check for initial state via URL
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('state') === 'xml') {
+                setTimeout(() => Zenode.loadTestXML(), 100);
+            }
 
             // Fade out the loading screen when the engine is 100% ready
             if (Zenode.on) {
@@ -1902,10 +1982,19 @@
                         <i data-lucide="book-open" style="width:20px; height:20px;"></i>
                     </div>
                     <div>
-                        <h2 style="font-size:16px; font-weight:800; margin:0;">Zenode Designer Guide</h2>
-                        <div style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing: 0.5px;">
+                        <h2 id="docsTitle" style="font-size:16px; font-weight:800; margin:0;">Zenode Designer Guide</h2>
+                        <div id="docsSub" style="font-size:10px; color:var(--text-muted); font-weight:600; letter-spacing: 0.5px;">
                             SYSTEM README.MD</div>
                     </div>
+                </div>
+
+                <div class="docs-tabs">
+                    <button id="tab-overview" class="tab-btn active" onclick="switchDocsTab('overview')">
+                        <i data-lucide="book-open"></i> Overview
+                    </button>
+                    <button id="tab-apis" class="tab-btn" onclick="switchDocsTab('apis')">
+                        <i data-lucide="code-2"></i> APIs
+                    </button>
                 </div>
                 <button class="tool-btn icon-only close-docs" onclick="toggleDocs(event)"
                     style="border:none; width:40px; height:40px; border-radius:12px; background:rgba(255,255,255,0.05); color:#fff; cursor: pointer;">

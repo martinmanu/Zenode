@@ -1,6 +1,7 @@
 import * as d3 from 'd3';
 export { d3 };
 import { ZenodeEngine } from './core/engine.js';
+import { testXML } from './config/testXML.js';
 
 let engineInstance = null;
 /**
@@ -17,6 +18,8 @@ function initializeCanvas(containerSelector, userConfig) {
             throw new Error(`Container '${containerSelector}' not found in DOM.`);
         }
         engineInstance = new ZenodeEngine(container, inputConfig);
+        // Expose for console testing
+        window.engine = engineInstance;
     }
     else {
         console.warn("ZenodeEngine is already initialized!");
@@ -177,6 +180,24 @@ const beginLabelEdit = (id, kind) => {
     if (engineInstance)
         engineInstance.beginLabelEdit(id, kind);
 };
+const validate = () => {
+    return engineInstance ? engineInstance.validate() : { valid: true, errors: [], warnings: [] };
+};
+const clear = () => {
+    if (engineInstance)
+        engineInstance.clear();
+};
+const toXML = () => engineInstance ? engineInstance.toXML() : "";
+const toMermaid = () => engineInstance ? engineInstance.toMermaid() : "";
+const toDOT = () => engineInstance ? engineInstance.toDOT() : "";
+const fromXML = (xml) => {
+    if (engineInstance)
+        engineInstance.fromXML(xml);
+};
+const loadTestXML = () => {
+    if (engineInstance)
+        engineInstance.fromXML(testXML);
+};
 /** Adds a new connection programmatically. */
 const addEdge = (config) => {
     return engineInstance ? engineInstance.addEdge(config) : "";
@@ -193,6 +214,13 @@ const getEdge = (id) => {
 /** Returns all connections on the canvas. */
 const getAllEdges = () => {
     return engineInstance ? engineInstance.getAllEdges() : [];
+};
+const focusNode = (id, options) => {
+    if (engineInstance)
+        engineInstance.focusNode(id, options);
+};
+const getDiagramState = () => {
+    return engineInstance ? engineInstance.getDiagramState() : null;
 };
 /** Sets the license key for the engine. */
 function setLicense(key) {
@@ -258,12 +286,6 @@ function zoomOut() {
     if (!engineInstance)
         return;
     engineInstance.zoomOut();
-}
-/** Focuses (center + zoom) on the first selected node. */
-function focusOnSelectedNode() {
-    if (!engineInstance)
-        return;
-    engineInstance.focusOnSelectedNode();
 }
 /** Undoes the last action. */
 function undo() {
@@ -373,5 +395,5 @@ function registerSmartConnect() {
     });
 }
 
-export { ZenodeEngine, addEdge, addNode, beginLabelEdit, createConnection, createShape, duplicateNode, focusOnSelectedNode, getAllEdges, getAllNodes, getEdge, getEngine, getLicenseTier, getNode, getPlacedNodes, initializeCanvas, off, on, redo, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, undo, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, zoomIn, zoomOut };
+export { ZenodeEngine, addEdge, addNode, beginLabelEdit, clear, createConnection, createShape, duplicateNode, focusNode, fromXML, getAllEdges, getAllNodes, getDiagramState, getEdge, getEngine, getLicenseTier, getNode, getPlacedNodes, initializeCanvas, loadTestXML, off, on, redo, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, testXML, toDOT, toMermaid, toXML, undo, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, validate, zoomIn, zoomOut };
 //# sourceMappingURL=index.js.map

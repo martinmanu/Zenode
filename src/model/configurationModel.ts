@@ -119,8 +119,21 @@ export interface CanvasProperties {
   allowMultipleConnections: boolean;
   keyboardShortcuts: KeyboardShortcuts;
   contextPad?: ContextPadConfig;
-  // defaultNodeSpacing: number;
-  // dragType: string;
+  visualEffects: VisualEffects;
+}
+
+export interface VisualEffects {
+  highlight: {
+    color: string;
+    duration: number;
+    scale: number;
+    intensity: number;
+  };
+  focus: {
+    padding: number;
+    duration: number;
+    defaultZoom: number;
+  };
 }
 
 export interface PortStyle {

@@ -3,7 +3,8 @@ import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
 import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
-export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3 };
+import { testXML } from "./config/testXML.js";
+export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3, testXML };
 /**
  * Initializes the Zenode engine.
  * @param containerSelector The selector for the container element.
@@ -68,6 +69,13 @@ declare const getAllNodes: () => NodeData[];
 declare const duplicateNode: (id: string) => string;
 /** Triggers the text editor programmatically. */
 declare const beginLabelEdit: (id: string, kind: "node" | "edge") => void;
+declare const validate: () => import("./core/validation.js").ValidationResult;
+declare const clear: () => void;
+declare const toXML: () => string;
+declare const toMermaid: () => string;
+declare const toDOT: () => string;
+declare const fromXML: (xml: string) => void;
+declare const loadTestXML: () => void;
 /** Adds a new connection programmatically. */
 declare const addEdge: (config: EdgeConfig) => string;
 /** Removes a connection by ID. */
@@ -76,7 +84,17 @@ declare const removeEdge: (id: string) => void;
 declare const getEdge: (id: string) => EdgeData | null;
 /** Returns all connections on the canvas. */
 declare const getAllEdges: () => EdgeData[];
-export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusOnSelectedNode, undo, redo, registerContextPadAction, registerSmartConnect };
+declare const focusNode: (id: string, options?: any) => void;
+declare const getDiagramState: () => {
+    nodes: NodeData[];
+    edges: EdgeData[];
+    viewport: {
+        x: number;
+        y: number;
+        zoom: number;
+    };
+} | null;
+export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, getDiagramState, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusNode, undo, redo, clear, validate, toXML, toMermaid, toDOT, fromXML, loadTestXML, registerContextPadAction, registerSmartConnect };
 /** Sets the license key for the engine. */
 declare function setLicense(key: string): void;
 /** Enables or disables smart routing for connections. */
@@ -95,8 +113,6 @@ declare function getLicenseTier(): string;
 declare function zoomIn(): void;
 /** Zooms the canvas out. */
 declare function zoomOut(): void;
-/** Focuses (center + zoom) on the first selected node. */
-declare function focusOnSelectedNode(): void;
 /** Undoes the last action. */
 declare function undo(): void;
 /** Redoes the last undone action. */

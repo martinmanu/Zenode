@@ -119,6 +119,19 @@ const defaultConfig = {
                 buttonHoverColor: "rgba(230, 230, 230, 1)",
                 buttonActiveColor: "rgba(230, 255, 234, 1)"
             }
+        },
+        visualEffects: {
+            highlight: {
+                color: 'var(--zenode-accent, #3b82f6)',
+                duration: 2000,
+                scale: 1.1,
+                intensity: 2
+            },
+            focus: {
+                padding: 40,
+                duration: 750,
+                defaultZoom: 1
+            }
         }
         // defaultNodeSpacing: 50,
         // dragType: "smooth"

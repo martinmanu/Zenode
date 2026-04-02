@@ -3,6 +3,7 @@ import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
 import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
+import { testXML } from "./config/testXML.js";
 
 export { 
   ZenodeEngine, 
@@ -11,7 +12,8 @@ export {
   VisualState, ContextPadAction, ContextPadTarget, NodeContent,
   NodeConfig, NodeData,
   EdgeConfig, EdgeData,
-  d3
+  d3,
+  testXML
 };
 
 let engineInstance: ZenodeEngine | null = null;
@@ -31,6 +33,8 @@ function initializeCanvas(containerSelector: string, userConfig: Partial<Config>
       throw new Error(`Container '${containerSelector}' not found in DOM.`);
     }
     engineInstance = new ZenodeEngine(container, inputConfig);
+    // Expose for console testing
+    (window as any).engine = engineInstance;
   } else {
     console.warn("ZenodeEngine is already initialized!");
   }
@@ -209,6 +213,26 @@ const beginLabelEdit = (id: string, kind: 'node' | 'edge') => {
   if (engineInstance) engineInstance.beginLabelEdit(id, kind);
 };
 
+const validate = () => {
+    return engineInstance ? engineInstance.validate() : { valid: true, errors: [], warnings: [] };
+};
+
+const clear = () => {
+    if (engineInstance) engineInstance.clear();
+};
+
+const toXML = () => engineInstance ? engineInstance.toXML() : "";
+const toMermaid = () => engineInstance ? engineInstance.toMermaid() : "";
+const toDOT = () => engineInstance ? engineInstance.toDOT() : "";
+
+const fromXML = (xml: string) => {
+    if (engineInstance) engineInstance.fromXML(xml);
+};
+
+const loadTestXML = () => {
+    if (engineInstance) engineInstance.fromXML(testXML);
+};
+
 /** Adds a new connection programmatically. */
 const addEdge = (config: EdgeConfig) => {
   return engineInstance ? engineInstance.addEdge(config) : "";
@@ -229,6 +253,18 @@ const getAllEdges = () => {
   return engineInstance ? engineInstance.getAllEdges() : [];
 };
 
+const focusNode = (id: string, options?: any) => {
+  if (engineInstance) engineInstance.focusNode(id, options);
+};
+
+const highlight = (id: string, options?: any) => {
+  if (engineInstance) engineInstance.highlight(id, options);
+};
+
+const getDiagramState = () => {
+  return engineInstance ? engineInstance.getDiagramState() : null;
+};
+
 export {
   initializeCanvas,
   updateConfig,
@@ -244,6 +280,7 @@ export {
   updateNode,
   getNode,
   getAllNodes,
+  getDiagramState,
   duplicateNode,
   beginLabelEdit,
   addEdge,
@@ -257,9 +294,16 @@ export {
   getLicenseTier,
   zoomIn,
   zoomOut,
-  focusOnSelectedNode,
+  focusNode,
   undo,
   redo,
+  clear,
+  validate,
+  toXML,
+  toMermaid,
+  toDOT,
+  fromXML,
+  loadTestXML,
   registerContextPadAction,
   registerSmartConnect
 };

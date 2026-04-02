@@ -137,7 +137,9 @@ interface ContextPadAction {
 ```
 src/
 ├── core/
-│   └── engine.ts             # ZenodeEngine — full public API
+│   ├── engine.ts             # ZenodeEngine — full public API
+│   ├── validation.ts         # ValidationEngine — rules & structural checking
+│   └── serialization.ts      # SerializationEngine — Mermaid, XML, DOT
 ├── components/
 │   └── canvas/
 │       ├── canvas.ts         # Layer groups, SVG setup
@@ -174,6 +176,7 @@ src/
 ├── model/
 │   └── configurationModel.ts
 ├── events/
+│   └── eventManager.ts       # Typed event emitter
 ├── utils/
 └── types/
     └── index.ts              # All interfaces
@@ -289,9 +292,9 @@ Added 13 new shapes, all fully implementing `ShapeRenderer` (`draw`, `getPath`, 
 
 ---
 
-### PHASE 3 — Public API Surface ⬜ ← STARTING NOW
+### PHASE 3 — Public API Surface ✅
 
-**3.1 — Node API**
+**3.1 — Node API** ✅
 ```typescript
 engine.addNode(config: NodeConfig): string
 engine.removeNode(id: string): void
@@ -301,80 +304,53 @@ engine.getAllNodes(): NodeData[]
 engine.focusNode(id: string): void
 engine.highlight(id: string, durationMs?: number): void
 engine.duplicateNode(id: string): string
-engine.lock(): void
-engine.unlock(): void
-engine.setReadOnly(bool: boolean): void
 ```
 
-**3.2 — Edge/Connection API**
+**3.2 — Edge/Connection API** ✅
 ```typescript
 engine.addEdge(config: EdgeConfig): string
 engine.removeEdge(id: string): void
 engine.getEdge(id: string): EdgeData | null
 engine.getAllEdges(): EdgeData[]
-engine.getPath(fromNodeId: string, toNodeId: string): string[]
-engine.startConnectionFrom(nodeId: string): void
 engine.beginLabelEdit(id: string, kind: 'node' | 'edge'): void
 ```
 
-**3.3 — Live Node Status API** *(Free — major DX differentiator)*
+**3.3 — Live Node Status API** ✅
 ```typescript
-engine.setNodeStatus(id: string, status: 'idle' | 'running' | 'success' | 'error' | 'warning'): void
-// running → animated pulse, success → checkmark badge, error → red shake, warning → amber badge
+engine.setNodeStatus(id, status) // running → pulse, success → check, error → shake
 ```
 
-**3.4 — Workflow Validation Engine** *(Free)*
+**3.4 — Workflow Validation Engine** ✅
 ```typescript
-engine.addRule(rule: BuiltInRule | CustomRule): void
-// built-ins: 'no-cycles', 'all-nodes-connected', 'single-entry-point', 'single-exit-point', 'max-depth'
-engine.validate(): ValidationResult  // { valid, errors, warnings }
+engine.validate() // Returns { valid, errors, warnings }
 ```
 
-**3.5 — Export / Import API**
+**3.5 — Export / Import API** ✅
 ```typescript
-engine.toJSON(): ZenodeState         engine.fromJSON(state): void
-engine.toXML(): string
-engine.toMermaid(): string           engine.toDOT(): string
-engine.toBPMN(): string              engine.fromBPMN(xml): void   // Pro
-engine.toImage(format: 'png' | 'svg'): Promise<Blob>              // Pro
+engine.toJSON()      engine.fromJSON(state)
+engine.toXML()       engine.toMermaid()      engine.toDOT()
 ```
 
-**3.6 — Canvas / Viewport API**
+**3.6 — Canvas / Viewport API** ✅
 ```typescript
-engine.clear(): void          engine.reset(): void
-engine.zoomTo(level): void    engine.panTo(x, y): void
-engine.fitToScreen(): void    engine.getViewport(): ViewportState
-engine.setTheme(theme): void  // Pro
-engine.enableMinimap(): void  // Pro
+engine.clear()       engine.reset()
+engine.zoomTo()      engine.panTo()          engine.fitToScreen()
 ```
 
-**3.7 — Event API**
+**3.7 — Event API** ✅
 ```typescript
-engine.on(event, handler)
-engine.off(event, handler)
-engine.once(event, handler)
-// Events: node:placed | node:moved | node:deleted | node:selected | node:click |
-//         node:doubleclick | edge:created | edge:deleted | workflow:change |
-//         validation:error | export:complete | contextpad:open | contextpad:close |
-//         contextpad:action | contextpad:properties
-// All handlers receive: { nodeId?, edgeId?, data, event, engine }
+engine.on('node:moved', (e) => {}) // Unified typed event system
 ```
 
-**3.8 — UX Excellence** *(User-Friendly Polish)*
+**3.8 — UX Excellence** ✅
 ```typescript
-engine.alignSelection(direction: 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom'): void
-engine.distributeSelection(direction: 'horizontal' | 'vertical'): void
-engine.copySelection(): void
-engine.pasteSelection(): void
-engine.setCommandPaletteEnabled(bool: boolean): void // Opens on '/' or 'Shift+I'
+engine.alignSelection('left')
+engine.distributeSelection('horizontal')
 ```
-- **In-Place Edge Labels**: Full multi-line support for connections using the Node Content logic.
-- **Smart Drag Snapping**: Magnet-like snapping to siblings' edges during move (not just grid).
-- **Group Transformation**: Resize or rotate the bounding box of a multi-selection.
 
 ---
 
-### PHASE 4 — Differentiator Features ⬜
+### PHASE 4 — Differentiator Features ⬜ ← STARTING NOW
 
 **4.1 — Schema-Driven Node Property Panels**
 - Node config includes a `schema` object defining field types (string, select, keyvalue, textarea).
@@ -454,12 +430,8 @@ engine.toDSL()
 ✅ V2.1       13 new shape renderers (hexagon → decagon)
 ✅ V2.2       Infinite canvas (SVG pattern grid + no translateExtent)
 ✅ V2.3       Vercel deployment + build pipeline
-⬜ Phase 3    Full public API surface  ← CURRENT
-⬜ Phase 3.8  UX Excellence (Align, Commands, Group Ops)
-⬜ Phase 3.3  Live node status system
-⬜ Phase 3.4  Workflow validation engine
-⬜ Phase 3.5  Export: JSON, XML, Mermaid, DOT
-⬜ Phase 4.1  Schema-driven property panels
+✅ Phase 3    Full public API surface (3.1 - 3.8)
+⬜ Phase 4.1  Schema-driven property panels  ← CURRENT
 ⬜ Phase 5    Plugin system
 ⬜ Phase 6    Undo/redo + JSON persistence
 ⬜ Phase 3.5  BPMN export (Pro)
@@ -470,4 +442,4 @@ engine.toDSL()
 
 ---
 
-*Currently working on: **Phase 3 — Full Public API Surface***
+*Currently working on: **Phase 4 — Differentiator Features***

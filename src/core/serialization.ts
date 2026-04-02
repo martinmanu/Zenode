@@ -82,4 +82,49 @@ export class SerializationEngine {
     xml += '</zenode:workflow>';
     return xml;
   }
+
+  /**
+   * Parses a Zenode XML string back into node and edge arrays.
+   */
+  public fromXML(xmlString: string): { nodes: NodeData[], edges: EdgeData[] } {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+    const nodes: NodeData[] = [];
+    const edges: EdgeData[] = [];
+
+    // Parse Nodes
+    const nodeElems = xmlDoc.getElementsByTagName("node");
+    for (let i = 0; i < nodeElems.length; i++) {
+        const el = nodeElems[i];
+        const id = el.getAttribute("id") || `node-${i}`;
+        const type = el.getAttribute("type") || "rectangle";
+        const x = parseFloat(el.getAttribute("x") || "0");
+        const y = parseFloat(el.getAttribute("y") || "0");
+        
+        const meta: Record<string, any> = {};
+        const metaElems = el.getElementsByTagName("property");
+        for (let j = 0; j < metaElems.length; j++) {
+            const p = metaElems[j];
+            const name = p.getAttribute("name");
+            if (name) meta[name] = p.textContent;
+        }
+
+        nodes.push({ id, type, x, y, meta, shapeVariantId: type });
+    }
+
+    // Parse Connections
+    const connElems = xmlDoc.getElementsByTagName("connection");
+    for (let i = 0; i < connElems.length; i++) {
+        const el = connElems[i];
+        edges.push({
+            id: el.getAttribute("id") || `edge-${i}`,
+            sourceNodeId: el.getAttribute("from") || "",
+            targetNodeId: el.getAttribute("to") || "",
+            sourcePortId: "right", // Fallback defaults
+            targetPortId: "left"
+        });
+    }
+
+    return { nodes, edges };
+  }
 }

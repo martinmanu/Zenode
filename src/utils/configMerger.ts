@@ -141,10 +141,11 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
           buttonMargin: userConfig.canvasProperties?.contextPad?.style?.buttonMargin ?? defaultConfig.canvasProperties.contextPad?.style?.buttonMargin,
           iconColor: userConfig.canvasProperties?.contextPad?.style?.iconColor ?? defaultConfig.canvasProperties.contextPad?.style?.iconColor,
           buttonHoverColor: userConfig.canvasProperties?.contextPad?.style?.buttonHoverColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonHoverColor,
-          buttonActiveColor: userConfig.canvasProperties?.contextPad?.style?.buttonActiveColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonActiveColor,
-        }
+          buttonActiveColor: userConfig.canvasProperties?.contextPad?.style?.buttonActiveColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonActiveColor
       }
     },
+    visualEffects: userConfig.canvasProperties?.visualEffects ?? defaultConfig.canvasProperties.visualEffects
+  },
     shapes: userConfig.shapes ?? defaultConfig.shapes,
     connections: userConfig.connections ?? defaultConfig.connections,
     globalProperties: userConfig.globalProperties ?? defaultConfig.globalProperties,

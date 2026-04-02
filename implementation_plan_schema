@@ -1,0 +1,131 @@
+# Zenode Engine Documentation & Schema Expansion Plan
+
+This document provides a complete reference for the current Zenode Public API and outlines the proposed schema expansion to support advanced properties (rotation, custom plugin metadata) in both JSON and XML formats.
+
+## 1. Exposed Public API Reference
+
+The following table lists the core APIs available via the `Zenode` module or the global `engine` object.
+
+### Lifecycle & Configuration
+| API | Description | Usage Example |
+|---|---|---|
+| `initializeCanvas(selector, config)` | Initializes the engine in the target DOM element. | `Zenode.initializeCanvas('#canvas', { ... })` |
+| `updateConfig(config)` | Updates the global engine configuration properties. | `Zenode.updateConfig({ grid: { visible: false } })` |
+| `resizeCanvas(w, h)` | Manually resets the canvas dimensions. | `Zenode.resizeCanvas(1920, 1080)` |
+| `clear()` | Wipes all nodes and edges from the canvas. | `Zenode.clear()` |
+
+### Node & Edge Management
+| API | Description | Usage Example |
+|---|---|---|
+| `addNode(config)` | Adds a new node to the canvas programmatically. | `Zenode.addNode({ type: 'circle', x: 100, y: 100 })` |
+| `removeNode(id)` | Deletes a node and its associated connections. | `Zenode.removeNode('node-123')` |
+| `updateNode(id, patch)` | Updates node data (position, metadata). | `Zenode.updateNode('n1', { x: 200 })` |
+| `addEdge(config)` | Creates a connection between two node ports. | `Zenode.addEdge({ sourceNodeId: 'n1', targetNodeId: 'n2' })` |
+| `duplicateNode(id)` | Clones a node and its current content. | `const newId = Zenode.duplicateNode('n1')` |
+
+### Visuals & Status
+| API | Description | Usage Example |
+|---|---|---|
+| `setNodeStatus(id, type)` | Triggers visual feedback (running, success, error). | `engine.setNodeStatus('n1', 'running')` |
+| `updateNodeContent(id, cnt)` | Sets text, icons, and layout for a node. | `Zenode.updateNodeContent('n1', { items: [...] })` |
+| `highlight(id, duration)` | Pulses a node to draw user attention. | `engine.highlight('n1', 2000)` |
+| `focusNode(id)` | Centers and zooms the viewport on a specific node. | `engine.focusNode('n1')` |
+
+### Serialization & Data
+| API | Description | Usage Example |
+|---|---|---|
+| `toXML()` | Exports current state as a Zenode-schema XML string. | `const xml = Zenode.toXML()` |
+| `fromXML(xml)` | Restores the engine state from an XML string. | `Zenode.fromXML(myXmlString)` |
+| `toMermaid()` | Generates a Mermaid.js flowchart script. | `console.log(Zenode.toMermaid())` |
+| `toDOT()` | Generates a Graphviz DOT representation. | `const dot = Zenode.toDOT()` |
+| `validate()` | Runs structural checks (cycles, orphans). | `const results = Zenode.validate()` |
+
+---
+
+## 2. Proposed XML/JSON Schema Expansion
+
+To support **Phase 4 (Differentiator Features)**, we need to extend the data model to handle rotation, explicit sizing, and custom plugin metadata.
+
+### Proposed XML Structure
+We will adopt a more granular structure that allows for future-proofing and third-party plugin data.
+
+```xml
+<zenode:workflow version="3.3">
+  <nodes>
+    <node id="task1" type="rectangle" x="150" y="200" 
+          width="160" height="80" rotation="45">
+          
+      <!-- Core Content: Serialized from NodeContent -->
+      <content layout="icon-top-text">
+        <item kind="icon" value="lucide:zap" color="#ff0" />
+        <item kind="text" value="High Energy Task" size="14" />
+      </content>
+
+      <!-- Advanced Visual State -->
+      <status current="running" />
+      <effects glow="#3b82f6" intensity="0.8" />
+
+      <!-- Plugin Metadata: Catch-all for non-standard data -->
+      <meta>
+        <property name="custom:plugin-id">{"key": "value"}</property>
+        <property name="execution:timeout">5000</property>
+      </meta>
+    </node>
+  </nodes>
+</zenode:workflow>
+```
+
+### Proposed JSON Structure (`NodeData` Update)
+The JSON structure will mirror the XML changes for parity.
+
+```json
+{
+  "id": "task1",
+  "type": "rectangle",
+  "x": 150,
+  "y": 200,
+  "width": 160,
+  "height": 80,
+  "rotation": 45,
+  "content": {
+    "layout": "icon-top-text",
+    "items": [ ... ]
+  },
+  "visualState": {
+    "status": "running",
+    "effects": { "glow": { "color": "#3b82f6" } }
+  },
+  "meta": {
+    "custom:plugin-id": { "key": "value" },
+    "execution:timeout": 5000
+  }
+}
+```
+
+---
+
+## 3. Implementation Workflow (Plan Only)
+
+### Phase 4.1: Property Inspector Support
+1.  **Extension**: Update `src/types/index.ts` to include `width`, `height`, and `rotation` in `NodeConfig`.
+2.  **Renderer Support**: Update `ShapeRenderer.draw` to apply `transform="rotate(...)"` based on node data.
+3.  **Serialization**: 
+    *   Update `toXML` to include these attributes.
+    *   Update `fromXML` to parse them into the engine state.
+4.  **Plugin Persistence**:
+    *   Allow the Context Pad to register "Properties" that write directly to the node's `meta` object.
+    *   Ensure any keys in `meta` are serialized to/from `<property>` tags in XML.
+
+### Phase 4.2: High-Fidelity Labels
+*   Expand the `<content>` XML tag to support multi-item lists, allowing multiple icons and text blocks per node.
+
+---
+
+## Open Questions
+
+> [!IMPORTANT]
+> 1.  **Plugin Data Formatting**: Should we enforce that all `meta` properties are JSON-serialized strings in XML, or should we support nested XML structures for plugins? (Proposal: JSON-strings for simplicity).
+> 2.  **Rotation Anchor**: Should rotation always be around the node center, or support custom anchor points? (Proposal: Center-only for Layer 1).
+> 3.  **Coordinate Precision**: Should we round coordinates to integers in XML to save space? (Proposal: Yes, 1 decimal place).
+
+**Please review the API list and the proposed XML structure.**
