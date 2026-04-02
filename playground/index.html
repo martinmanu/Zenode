@@ -1609,12 +1609,16 @@
                 
                 // Smart Pathing & Video Transformer
                 if (tab === 'overview') {
-                    // 1. Fix standard asset pathing for subfolder playground
-                    html = html.replace(/src="\.\/assets\//g, 'src="../assets/');
-                    html = html.replace(/src="assets\//g, 'src="../assets/');
+                    // Auto-detect production vs development
+                    const isDev = window.location.pathname.includes('/playground/');
+                    const assetPrefix = isDev ? '../assets/' : './assets/';
                     
-                    // 2. Transform Markdown Video links (which "marked" turns to <img>) into <video>
-                    // Works for both ![alt](path.mp4) and <img src="path.mp4">
+                    // 1. Fix standard asset pathing based on environment
+                    html = html.replace(/src="\.\/assets\//g, `src="${assetPrefix}`);
+                    html = html.replace(/src="assets\//g, `src="${assetPrefix}`);
+                    
+                    // 2. Transform Markdown Video links into <video>
+                    // We target the <img> tags created by 'marked' and swap them for styled <video>
                     html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
                         return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
                     });
