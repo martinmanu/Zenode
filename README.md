@@ -22,7 +22,7 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 ## Demo
 
 <div align="center">
-  <video src="assets/demo.mp4" type="video/mp4" width="100%" autoplay loop muted playsinline style="max-width: 800px; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);"></video>
+  <video src="assets/demo.mp4" width="100%" autoplay loop muted playsinline></video>
 </div>
 
 ---

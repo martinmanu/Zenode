@@ -1617,9 +1617,13 @@
                     html = html.replace(/src="\.\/assets\//g, `src="${assetPrefix}`);
                     html = html.replace(/src="assets\//g, `src="${assetPrefix}`);
                     
-                    // 2. Transform Markdown Video links into <video>
-                    // We target the <img> tags created by 'marked' and swap them for styled <video>
+                    // 2. Transform Markdown Image links into Styled <video>
                     html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
+                        return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
+                    });
+                    
+                    // 3. Transform existing plain <video> tags into Styled <video>
+                    html = html.replace(/<video src="([^"]+)"[^>]*><\/video>/g, (match, src) => {
                         return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
                     });
                 }
