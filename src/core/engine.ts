@@ -32,6 +32,7 @@ import { LicenseManager } from "./license.js";
 import { SmartRouter } from "../connections/routing/smartRouter.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 import { ValidationEngine } from "./validation.js";
+import { loadOnboardingSample } from "./samples.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
 import * as d3 from "d3";
@@ -39,12 +40,12 @@ import { snapToGrid, generatePlacedNodeId } from "../utils/helpers.js";
 import { ContextPadRegistry } from "../contextpad/registry.js";
 import { ContextPadRenderer } from "../contextpad/renderer.js";
 import { UndoManager } from "./history/undoManager.js";
-import { 
-  AddNodeCommand, 
-  RemoveNodeCommand, 
-  AddEdgeCommand, 
+import {
+  AddNodeCommand,
+  RemoveNodeCommand,
+  AddEdgeCommand,
   RemoveEdgeCommand,
-  UpdateNodeCommand, 
+  UpdateNodeCommand,
   UpdateConfigCommand,
   Command,
   BatchCommand,
@@ -113,9 +114,9 @@ export class ZenodeEngine {
   private canvasContainerGroup: unknown;
   private contextPadRegistry: ContextPadRegistry;
   private contextPadRenderer!: ContextPadRenderer;
-  private activeOperation: { 
-    type: string, 
-    nodeId: string, 
+  private activeOperation: {
+    type: string,
+    nodeId: string,
     originalData: PlacedNode,
     selectionStates?: Map<string, PlacedNode>
   } | null = null;
@@ -127,7 +128,8 @@ export class ZenodeEngine {
   private onWindowMouseMove: ((e: MouseEvent) => void) | null = null;
   /** Transient visual groups (for interaction only, no structural parentId). */
   private visualGroups: VisualGroup[] = [];
-  
+  private demoEnabled = true;
+
   // Phase 3 Engines
   private validationEngine: ValidationEngine;
 
@@ -148,133 +150,139 @@ export class ZenodeEngine {
     // Set initial class state
     if (this.container) {
       if (this.connectionModeEnabled) {
-          this.container.classList.add("zenode-connection-mode");
+        this.container.classList.add("zenode-connection-mode");
       } else {
-          this.container.classList.remove("zenode-connection-mode");
+        this.container.classList.remove("zenode-connection-mode");
       }
     }
+
+    // Load sample workflow if canvas is empty
+    if (this.placedNodes.length === 0 && this.demoEnabled) {
+      this.loadSampleWorkflow();
+    }
+
     this.emit("engine:ready", { version: "3.3.0" });
   }
 
   private initializeContextPad(): void {
-      if (this.container) {
-          this.contextPadRenderer = new ContextPadRenderer(this.container);
-          import("../contextpad/defaults.js").then(({ defaultActions }) => {
-              defaultActions.forEach(action => this.contextPadRegistry.register(action));
-          });
+    if (this.container) {
+      this.contextPadRenderer = new ContextPadRenderer(this.container);
+      import("../contextpad/defaults.js").then(({ defaultActions }) => {
+        defaultActions.forEach(action => this.contextPadRegistry.register(action));
+      });
 
-          // Auto-disable connection mode when pad closes
-          this.on("contextpad:close", () => {
-             this.setConnectionModeEnabled(false);
-          });
-      }
+      // Auto-disable connection mode when pad closes
+      this.on("contextpad:close", () => {
+        this.setConnectionModeEnabled(false);
+      });
+    }
   }
 
   public undo(): void {
-      this.undoManager.undo();
-      this.emit("history:undo", this.undoManager.getHistory());
+    this.undoManager.undo();
+    this.emit("history:undo", this.undoManager.getHistory());
   }
 
   public clear(): void {
-      this.placedNodes = [];
-      this.connections = [];
-      this.selectedNodeIds = [];
-      this.refreshNodes();
-      this.reRenderConnections();
-      this.emit("workflow:clear", {});
+    this.placedNodes = [];
+    this.connections = [];
+    this.selectedNodeIds = [];
+    this.refreshNodes();
+    this.reRenderConnections();
+    this.emit("workflow:clear", {});
   }
 
   public redo(): void {
-      this.undoManager.redo();
-      this.emit("history:redo", this.undoManager.getHistory());
+    this.undoManager.redo();
+    this.emit("history:redo", this.undoManager.getHistory());
   }
 
   private setupKeyboardShortcuts(): void {
-      window.addEventListener("keydown", (event: KeyboardEvent) => {
-          if (this.isTypingTarget(event.target)) return;
+    window.addEventListener("keydown", (event: KeyboardEvent) => {
+      if (this.isTypingTarget(event.target)) return;
 
-          const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-          const modifier = isMac ? event.metaKey : event.ctrlKey;
-          const shortcuts = this.config.canvasProperties.keyboardShortcuts;
-          if (!shortcuts?.enabled) return;
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? event.metaKey : event.ctrlKey;
+      const shortcuts = this.config.canvasProperties.keyboardShortcuts;
+      if (!shortcuts?.enabled) return;
 
-          // 1. Core Selection Actions (Delete/Clear) via Config
-          if (shortcuts.deleteSelection.some((s) => this.matchesShortcut(event, s))) {
-              const handled = shortcuts.callbacks?.onDeleteSelection?.({
-                  event,
-                  action: "selection:delete",
-                  selectedNodeIds: this.selectedNodeIds,
-                  engine: this,
-              });
-              if (handled !== false) {
-                  event.preventDefault();
-                  this.deleteSelection();
-              }
-              return;
+      // 1. Core Selection Actions (Delete/Clear) via Config
+      if (shortcuts.deleteSelection.some((s) => this.matchesShortcut(event, s))) {
+        const handled = shortcuts.callbacks?.onDeleteSelection?.({
+          event,
+          action: "selection:delete",
+          selectedNodeIds: this.selectedNodeIds,
+          engine: this,
+        });
+        if (handled !== false) {
+          event.preventDefault();
+          this.deleteSelection();
+        }
+        return;
+      }
+
+      if (shortcuts.clearSelection.some((s) => this.matchesShortcut(event, s))) {
+        const handled = shortcuts.callbacks?.onClearSelection?.({
+          event,
+          action: "selection:clear",
+          selectedNodeIds: this.selectedNodeIds,
+          engine: this,
+        });
+        if (handled !== false) {
+          event.preventDefault();
+          this.clearSelection();
+        }
+        return;
+      }
+
+      // 2. Modifier Actions (Z, Y, C, V, A, G)
+      if (modifier) {
+        const key = event.key.toLowerCase();
+        if (key === 'z') {
+          event.preventDefault();
+          if (event.shiftKey) this.redo();
+          else this.undo();
+        } else if (key === 'y' && !isMac) {
+          event.preventDefault();
+          this.redo();
+        } else if (key === 'c') {
+          this.copySelection();
+        } else if (key === 'v') {
+          event.preventDefault();
+          this.pasteSelection();
+        } else if (key === 'd') {
+          event.preventDefault();
+          if (this.selectedNodeIds.length === 1) {
+            this.duplicateNode(this.selectedNodeIds[0]);
+          } else if (this.selectedNodeIds.length > 1) {
+            this.copySelection();
+            this.pasteSelection();
           }
-
-          if (shortcuts.clearSelection.some((s) => this.matchesShortcut(event, s))) {
-              const handled = shortcuts.callbacks?.onClearSelection?.({
-                  event,
-                  action: "selection:clear",
-                  selectedNodeIds: this.selectedNodeIds,
-                  engine: this,
-              });
-              if (handled !== false) {
-                  event.preventDefault();
-                  this.clearSelection();
-              }
-              return;
-          }
-
-          // 2. Modifier Actions (Z, Y, C, V, A, G)
-          if (modifier) {
-              const key = event.key.toLowerCase();
-              if (key === 'z') {
-                  event.preventDefault();
-                  if (event.shiftKey) this.redo();
-                  else this.undo();
-              } else if (key === 'y' && !isMac) {
-                  event.preventDefault();
-                  this.redo();
-              } else if (key === 'c') {
-                  this.copySelection();
-              } else if (key === 'v') {
-                  event.preventDefault();
-                  this.pasteSelection();
-              } else if (key === 'd') {
-                  event.preventDefault();
-                  if (this.selectedNodeIds.length === 1) {
-                      this.duplicateNode(this.selectedNodeIds[0]);
-                  } else if (this.selectedNodeIds.length > 1) {
-                      this.copySelection();
-                      this.pasteSelection();
-                  }
-              } else if (key === 'a') {
-                  event.preventDefault();
-                  const allIds = this.placedNodes.map(n => n.id);
-                  this.setSelectedNodeIds(allIds);
-              } else if (key === 'g') {
-                  event.preventDefault();
-                  if (event.shiftKey) this.ungroupSelection();
-                  else this.groupSelection();
-              } else if (key === '+' || key === '=') {
-                  event.preventDefault();
-                  this.zoomIn();
-              } else if (key === '-') {
-                  event.preventDefault();
-                  this.zoomOut();
-              } else if (key === '0') {
-                  event.preventDefault();
-                  this.zoomTo(1.0);
-              }
-          } else if (event.key === 'Escape') {
-              this.cancelPlacement();
-          } else if (event.key.toLowerCase() === 'l') {
-              this.setLassoEnabled(!this.lassoEnabled);
-              this.emit("lasso:toggle", { enabled: this.lassoEnabled });
-          }
-      });
+        } else if (key === 'a') {
+          event.preventDefault();
+          const allIds = this.placedNodes.map(n => n.id);
+          this.setSelectedNodeIds(allIds);
+        } else if (key === 'g') {
+          event.preventDefault();
+          if (event.shiftKey) this.ungroupSelection();
+          else this.groupSelection();
+        } else if (key === '+' || key === '=') {
+          event.preventDefault();
+          this.zoomIn();
+        } else if (key === '-') {
+          event.preventDefault();
+          this.zoomOut();
+        } else if (key === '0') {
+          event.preventDefault();
+          this.zoomTo(1.0);
+        }
+      } else if (event.key === 'Escape') {
+        this.cancelPlacement();
+      } else if (event.key.toLowerCase() === 'l') {
+        this.setLassoEnabled(!this.lassoEnabled);
+        this.emit("lasso:toggle", { enabled: this.lassoEnabled });
+      }
+    });
   }
 
   /**
@@ -309,8 +317,8 @@ export class ZenodeEngine {
    */
   public showContextPad(target: ContextPadTarget): void {
     if (this.contextPadRenderer) {
-        const actions = this.contextPadRegistry.getActionsFor(target, this);
-        this.contextPadRenderer.render(target, actions, this);
+      const actions = this.contextPadRegistry.getActionsFor(target, this);
+      this.contextPadRenderer.render(target, actions, this);
     }
   }
 
@@ -322,44 +330,44 @@ export class ZenodeEngine {
     this.config.canvas.height = height;
 
     if (this.svg) {
-        // Fluid infinite layout doesn't need fixed dimensions or viewBox
-        // But we re-sync the grid transform to make sure pattern offset is still happy
-        const transform = d3.zoomTransform(this.svg.node());
-        updateGridTransform(this.svg, transform);
+      // Fluid infinite layout doesn't need fixed dimensions or viewBox
+      // But we re-sync the grid transform to make sure pattern offset is still happy
+      const transform = d3.zoomTransform(this.svg.node());
+      updateGridTransform(this.svg, transform);
     }
   }
 
   public updateConfig(newConfig: Partial<Config>, recordHistory: boolean = true): void {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
-    
+
     // Check if we only updated contextPad settings
     const keys = Object.keys(newConfig);
-    const isContextPadOnly = keys.length === 1 && 
-                             keys[0] === 'canvasProperties' && 
-                             newConfig.canvasProperties &&
-                             Object.keys(newConfig.canvasProperties).length === 1 &&
-                             newConfig.canvasProperties.contextPad !== undefined;
+    const isContextPadOnly = keys.length === 1 &&
+      keys[0] === 'canvasProperties' &&
+      newConfig.canvasProperties &&
+      Object.keys(newConfig.canvasProperties).length === 1 &&
+      newConfig.canvasProperties.contextPad !== undefined;
 
     this.config = mergeConfig(newConfig);
-    
+
     if (recordHistory) {
-        this.undoManager.push(new UpdateConfigCommand(this, oldConfig, JSON.parse(JSON.stringify(this.config))));
+      this.undoManager.push(new UpdateConfigCommand(this, oldConfig, JSON.parse(JSON.stringify(this.config))));
     }
 
     // Optimization: If only context pad changed, just refresh it if active
     if (isContextPadOnly && this.svg) {
       if (this.selectedNodeIds.length === 1) {
-          const node = this.placedNodes.find(n => n.id === this.selectedNodeIds[0]);
-          if (node) {
-              const actions = this.contextPadRegistry.getActionsFor({ kind: 'node', id: node.id, data: node }, this);
-              this.contextPadRenderer.render({ kind: 'node', id: node.id, data: node }, actions, this);
-          }
+        const node = this.placedNodes.find(n => n.id === this.selectedNodeIds[0]);
+        if (node) {
+          const actions = this.contextPadRegistry.getActionsFor({ kind: 'node', id: node.id, data: node }, this);
+          this.contextPadRenderer.render({ kind: 'node', id: node.id, data: node }, actions, this);
+        }
       } else if (this.selectedEdgeIds.length === 1) {
-          const edge = this.connections.find(e => e.id === this.selectedEdgeIds[0]);
-          if (edge) {
-              const actions = this.contextPadRegistry.getActionsFor({ kind: 'edge', id: edge.id, data: edge }, this);
-              this.contextPadRenderer.render({ kind: 'edge', id: edge.id, data: edge }, actions, this);
-          }
+        const edge = this.connections.find(e => e.id === this.selectedEdgeIds[0]);
+        if (edge) {
+          const actions = this.contextPadRegistry.getActionsFor({ kind: 'edge', id: edge.id, data: edge }, this);
+          this.contextPadRenderer.render({ kind: 'edge', id: edge.id, data: edge }, actions, this);
+        }
       }
       this.emit("config:updated", { config: this.config, partial: true });
       return;
@@ -406,40 +414,40 @@ export class ZenodeEngine {
    */
   public hideContextPad(): void {
     if (this.contextPadRenderer) {
-        this.contextPadRenderer.hide(this);
+      this.contextPadRenderer.hide(this);
     }
   }
 
   public beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void {
     const node = this.placedNodes.find(n => n.id === nodeId);
     const group = !node ? this.visualGroups.find(g => g.id === nodeId) : null;
-    
+
     // Support either a single node or a visual group as the operation trigger
     if (node || group) {
       const selectionStates = new Map<string, PlacedNode>();
       if (type === 'drag') {
-          // 1. Capture all currently selected nodes
-          this.selectedNodeIds.forEach(id => {
-              const sn = this.placedNodes.find(pn => pn.id === id);
-              if (sn) selectionStates.set(id, JSON.parse(JSON.stringify(sn)));
-          });
-          // 2. Capture the trigger node if not selected
-          if (node && !selectionStates.has(nodeId)) {
-              selectionStates.set(nodeId, JSON.parse(JSON.stringify(node)));
+        // 1. Capture all currently selected nodes
+        this.selectedNodeIds.forEach(id => {
+          const sn = this.placedNodes.find(pn => pn.id === id);
+          if (sn) selectionStates.set(id, JSON.parse(JSON.stringify(sn)));
+        });
+        // 2. Capture the trigger node if not selected
+        if (node && !selectionStates.has(nodeId)) {
+          selectionStates.set(nodeId, JSON.parse(JSON.stringify(node)));
+        }
+        // 3. CRITICAL: If any of these are part of a visual group, capture ALL group members
+        // This ensures getGroupBounds can always calculate the original ghost boundary.
+        const idsToCapture = new Set([...selectionStates.keys()]);
+        this.visualGroups.forEach(g => {
+          if (g.nodeIds.some(id => idsToCapture.has(id))) {
+            g.nodeIds.forEach(nid => {
+              if (!selectionStates.has(nid)) {
+                const member = this.placedNodes.find(n => n.id === nid);
+                if (member) selectionStates.set(nid, JSON.parse(JSON.stringify(member)));
+              }
+            });
           }
-          // 3. CRITICAL: If any of these are part of a visual group, capture ALL group members
-          // This ensures getGroupBounds can always calculate the original ghost boundary.
-          const idsToCapture = new Set([...selectionStates.keys()]);
-          this.visualGroups.forEach(g => {
-            if (g.nodeIds.some(id => idsToCapture.has(id))) {
-              g.nodeIds.forEach(nid => {
-                if (!selectionStates.has(nid)) {
-                    const member = this.placedNodes.find(n => n.id === nid);
-                    if (member) selectionStates.set(nid, JSON.parse(JSON.stringify(member)));
-                }
-              });
-            }
-          });
+        });
       }
 
       // If it's a group drag but nodeId was a group, use first node for originalData placeholder
@@ -458,39 +466,39 @@ export class ZenodeEngine {
   public endOperation(): void {
     if (this.activeOperation) {
       if (this.activeOperation.type === 'drag') {
-          // Handle potential multi-drag history
-          const commands: any[] = [];
-          const states = this.activeOperation.selectionStates;
-          
-          if (states) {
-              states.forEach((oldState, id) => {
-                  const node = this.placedNodes.find(pn => pn.id === id);
-                  if (node) {
-                      const hasMoved = oldState.x !== node.x || oldState.y !== node.y;
-                      if (hasMoved) {
-                          commands.push(new UpdateNodeCommand(this, id, oldState, JSON.parse(JSON.stringify(node))));
-                      }
-                  }
-              });
-          }
+        // Handle potential multi-drag history
+        const commands: any[] = [];
+        const states = this.activeOperation.selectionStates;
 
-          if (commands.length > 1) {
-              this.undoManager.push(new BatchCommand(commands));
-          } else if (commands.length === 1) {
-              this.undoManager.push(commands[0]);
-          }
+        if (states) {
+          states.forEach((oldState, id) => {
+            const node = this.placedNodes.find(pn => pn.id === id);
+            if (node) {
+              const hasMoved = oldState.x !== node.x || oldState.y !== node.y;
+              if (hasMoved) {
+                commands.push(new UpdateNodeCommand(this, id, oldState, JSON.parse(JSON.stringify(node))));
+              }
+            }
+          });
+        }
+
+        if (commands.length > 1) {
+          this.undoManager.push(new BatchCommand(commands));
+        } else if (commands.length === 1) {
+          this.undoManager.push(commands[0]);
+        }
       } else {
         // Fallback for rotate/resize (currently single node)
         const node = this.placedNodes.find(n => n.id === this.activeOperation!.nodeId);
         if (node && this.activeOperation.originalData) {
           const oldState = this.activeOperation.originalData;
           const newState = JSON.parse(JSON.stringify(node));
-          
-          const hasChanged = 
-              oldState.rotation !== newState.rotation ||
-              oldState.width !== newState.width ||
-              oldState.height !== newState.height ||
-              oldState.radius !== newState.radius;
+
+          const hasChanged =
+            oldState.rotation !== newState.rotation ||
+            oldState.width !== newState.width ||
+            oldState.height !== newState.height ||
+            oldState.radius !== newState.radius;
 
           if (hasChanged) {
             this.undoManager.push(new UpdateNodeCommand(this, node.id, oldState, newState));
@@ -548,10 +556,10 @@ export class ZenodeEngine {
     ) as CanvasElements;
     this.svg = this.canvasObject.svg;
     this.svg.attr("data-lasso-enabled", "false");
-    
+
     // Ensure ghosts layer is reactive
     if (this.canvasObject.ghosts) {
-        this.canvasObject.ghosts.style("pointer-events", "none");
+      this.canvasObject.ghosts.style("pointer-events", "none");
     }
 
     this.activeConnectionType = this.config.connections.defaultType || "straight";
@@ -593,6 +601,13 @@ export class ZenodeEngine {
     }
   }
 
+  /**
+   * Loads a small, pre-built sample workflow to guide new users.
+   */
+  public loadSampleWorkflow(): void {
+    loadOnboardingSample(this);
+  }
+
   // --- PHASE 3.1: PUBLIC NODE API ---
 
   /**
@@ -620,7 +635,7 @@ export class ZenodeEngine {
     this.placedNodes.push(newNode);
     this.refreshNodes();
     this.reRenderConnections();
-    
+
     if (recordHistory) {
       this.undoManager.push(new AddNodeCommand(this, { ...newNode }));
     }
@@ -649,7 +664,7 @@ export class ZenodeEngine {
 
     // 3. Remove node
     this.placedNodes = this.placedNodes.filter(n => n.id !== id);
-    
+
     this.refreshNodes();
     this.reRenderConnections();
     this.emit("node:deleted", { id, node: deletedNode });
@@ -663,8 +678,8 @@ export class ZenodeEngine {
     if (idx === -1) return;
 
     if (recordHistory) {
-        const oldState = { ...this.placedNodes[idx] };
-        this.undoManager.push(new UpdateNodeCommand(this, id, oldState, patch));
+      const oldState = { ...this.placedNodes[idx] };
+      this.undoManager.push(new UpdateNodeCommand(this, id, oldState, patch));
     }
 
     this.placedNodes[idx] = {
@@ -687,11 +702,11 @@ export class ZenodeEngine {
     const node = this.placedNodes.find(n => n.id === id);
     if (!node) return;
 
-    node.visualState = { 
-      ...node.visualState, 
-      status 
+    node.visualState = {
+      ...node.visualState,
+      status
     };
-    
+
     this.refreshNodes();
     this.reRenderConnections();
     this.emit("node:status:change", { id, status, node: { ...node } });
@@ -703,7 +718,7 @@ export class ZenodeEngine {
   public focusNode(id: string, options: { zoom?: number, duration?: number, offset?: { x: number, y: number } } = {}): void {
     const node = this.placedNodes.find(n => n.id === id);
     const focusDefaults = this.config.canvasProperties.visualEffects?.focus || { padding: 60, duration: 1000, defaultZoom: 1.2 };
-    
+
     // Zoom behavior reset if no node
     if (!node && this.svg && this.zoomManager) {
       const transform = d3.zoomIdentity;
@@ -745,9 +760,9 @@ export class ZenodeEngine {
       ...node.visualState,
       effects: {
         ...node.visualState?.effects,
-        glow: { 
-          color: options.color || highlightDefaults.color, 
-          intensity: options.intensity || highlightDefaults.intensity 
+        glow: {
+          color: options.color || highlightDefaults.color,
+          intensity: options.intensity || highlightDefaults.intensity
         }
       }
     };
@@ -804,10 +819,10 @@ export class ZenodeEngine {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.reRenderConnections();
-    
+
     // Explicitly update context pad if nodes are selected
     if (this.selectedNodeIds.length > 0 && this.contextPadRenderer) {
-        this.contextPadRenderer.updatePosition(this);
+      this.contextPadRenderer.updatePosition(this);
     }
   }
 
@@ -815,7 +830,7 @@ export class ZenodeEngine {
    * Retrieves a node object by ID.
    */
   private getPlacedNode(id: string): PlacedNode | undefined {
-      return this.placedNodes.find(n => n.id === id);
+    return this.placedNodes.find(n => n.id === id);
   }
 
   /**
@@ -823,16 +838,16 @@ export class ZenodeEngine {
    */
   public copySelection(): void {
     if (this.selectedNodeIds.length === 0) return;
-    
+
     const nodesToCopy = this.placedNodes.filter(n => this.selectedNodeIds.includes(n.id));
     const nodeIds = nodesToCopy.map(n => n.id);
-    
+
     // Only copy edges that connect two nodes within the current selection
-    const edgesToCopy = this.connections.filter(c => 
-      nodeIds.includes(c.sourceNodeId) && 
+    const edgesToCopy = this.connections.filter(c =>
+      nodeIds.includes(c.sourceNodeId) &&
       nodeIds.includes(c.targetNodeId)
     );
-    
+
     this.clipboard = {
       nodes: JSON.parse(JSON.stringify(nodesToCopy)),
       connections: JSON.parse(JSON.stringify(edgesToCopy))
@@ -847,56 +862,56 @@ export class ZenodeEngine {
    */
   public pasteSelection(offset: { x: number, y: number } = { x: 40, y: 40 }): void {
     if (!this.clipboard) return;
-    
+
     const idMap = new Map<string, string>();
     const newNodesConfigs: NodeConfig[] = [];
     const newEdgesConfigs: EdgeConfig[] = [];
-    
+
     // 1. Prepare new node configs and map IDs
     this.clipboard.nodes.forEach(n => {
       const newId = this.generateId();
       idMap.set(n.id, newId);
-      
+
       const config: NodeConfig = {
-          ...JSON.parse(JSON.stringify(n)),
-          id: newId,
-          x: n.x + offset.x,
-          y: n.y + offset.y
+        ...JSON.parse(JSON.stringify(n)),
+        id: newId,
+        x: n.x + offset.x,
+        y: n.y + offset.y
       };
       newNodesConfigs.push(config);
     });
 
     // 1.5. Remap parentIds within the new set if both child and parent are being pasted
     newNodesConfigs.forEach(config => {
-        if (config.parentId && idMap.has(config.parentId)) {
-            config.parentId = idMap.get(config.parentId);
-        }
+      if (config.parentId && idMap.has(config.parentId)) {
+        config.parentId = idMap.get(config.parentId);
+      }
     });
-    
+
     // 2. Prepare new edge configs using mapped IDs
     this.clipboard.connections.forEach(e => {
-        if (idMap.has(e.sourceNodeId) && idMap.has(e.targetNodeId)) {
-           const config: EdgeConfig = {
-             ...JSON.parse(JSON.stringify(e)),
-             id: this.generateId(),
-             sourceNodeId: idMap.get(e.sourceNodeId)!,
-             targetNodeId: idMap.get(e.targetNodeId)!
-           };
-           newEdgesConfigs.push(config);
-        }
+      if (idMap.has(e.sourceNodeId) && idMap.has(e.targetNodeId)) {
+        const config: EdgeConfig = {
+          ...JSON.parse(JSON.stringify(e)),
+          id: this.generateId(),
+          sourceNodeId: idMap.get(e.sourceNodeId)!,
+          targetNodeId: idMap.get(e.targetNodeId)!
+        };
+        newEdgesConfigs.push(config);
+      }
     });
 
     // 3. Batch apply changes via history
     const commands: Command[] = [];
-    
+
     newNodesConfigs.forEach(config => {
-       const id = this.addNode(config, false); // No individual history
-       commands.push(new AddNodeCommand(this, this.getPlacedNode(id)!));
+      const id = this.addNode(config, false); // No individual history
+      commands.push(new AddNodeCommand(this, this.getPlacedNode(id)!));
     });
 
     newEdgesConfigs.forEach(config => {
-       const id = this.addEdge(config, false); // No individual history
-       commands.push(new AddEdgeCommand(this, this.getEdge(id)! as any));
+      const id = this.addEdge(config, false); // No individual history
+      commands.push(new AddEdgeCommand(this, this.getEdge(id)! as any));
     });
 
     if (commands.length > 0) {
@@ -907,7 +922,7 @@ export class ZenodeEngine {
     this.setSelectedNodeIds(Array.from(idMap.values()));
     this.refreshNodes();
     this.reRenderConnections();
-    
+
     console.log(`[ZENODE] Pasted ${newNodesConfigs.length} nodes and ${newEdgesConfigs.length} connections.`);
   }
 
@@ -991,11 +1006,11 @@ export class ZenodeEngine {
   // --- PHASE 3.3-3.6: EXTENDED API ---
 
   public validate(): import("./validation.js").ValidationResult {
-      return this.validationEngine?.validate(this.getAllNodes(), this.getAllEdges()) || { valid: true, errors: [], warnings: [] };
+    return this.validationEngine?.validate(this.getAllNodes(), this.getAllEdges()) || { valid: true, errors: [], warnings: [] };
   }
 
   public toJSON(): string {
-      return JSON.stringify(this.getDiagramState(), null, 2);
+    return JSON.stringify(this.getDiagramState(), null, 2);
   }
 
   /**
@@ -1016,25 +1031,25 @@ export class ZenodeEngine {
    * Clears the current canvas and loads state from a Zenode JSON string.
    */
   public fromJSON(json: string): void {
-      try {
-          const state = JSON.parse(json);
-          const { nodes, edges, viewport } = state;
-          
-          this.placedNodes = nodes || [];
-          this.connections = edges || [];
-          
-          if (viewport && this.zoomManager && this.svg) {
-              const transform = d3.zoomIdentity.translate(viewport.x, viewport.y).scale(viewport.zoom);
-              this.svg.transition().duration(500)
-                .call(this.zoomManager.getZoomBehaviour().transform as any, transform);
-          }
+    try {
+      const state = JSON.parse(json);
+      const { nodes, edges, viewport } = state;
 
-          this.refreshNodes();
-          this.reRenderConnections();
-          this.emit("workflow:load", { nodes: this.placedNodes, edges: this.connections });
-      } catch (e) {
-          console.error("[ZENODE] Failed to load JSON state", e);
+      this.placedNodes = nodes || [];
+      this.connections = edges || [];
+
+      if (viewport && this.zoomManager && this.svg) {
+        const transform = d3.zoomIdentity.translate(viewport.x, viewport.y).scale(viewport.zoom);
+        this.svg.transition().duration(500)
+          .call(this.zoomManager.getZoomBehaviour().transform as any, transform);
       }
+
+      this.refreshNodes();
+      this.reRenderConnections();
+      this.emit("workflow:load", { nodes: this.placedNodes, edges: this.connections });
+    } catch (e) {
+      console.error("[ZENODE] Failed to load JSON state", e);
+    }
   }
 
   /**
@@ -1051,12 +1066,12 @@ export class ZenodeEngine {
     this.beginOperation(firstId, "drag"); // Dummy start for history grouping if we had a multi-undo
 
     nodes.forEach(node => {
-        if (direction === "left") node.x = anchor.x;
-        if (direction === "right") node.x = anchor.x + (anchor.width || 0) - (node.width || 0);
-        if (direction === "center") node.x = anchor.x + (anchor.width || 0)/2 - (node.width || 0)/2;
-        if (direction === "top") node.y = anchor.y;
-        if (direction === "bottom") node.y = anchor.y + (anchor.height || 0) - (node.height || 0);
-        if (direction === "middle") node.y = anchor.y + (anchor.height || 0)/2 - (node.height || 0)/2;
+      if (direction === "left") node.x = anchor.x;
+      if (direction === "right") node.x = anchor.x + (anchor.width || 0) - (node.width || 0);
+      if (direction === "center") node.x = anchor.x + (anchor.width || 0) / 2 - (node.width || 0) / 2;
+      if (direction === "top") node.y = anchor.y;
+      if (direction === "bottom") node.y = anchor.y + (anchor.height || 0) - (node.height || 0);
+      if (direction === "middle") node.y = anchor.y + (anchor.height || 0) / 2 - (node.height || 0) / 2;
     });
 
     this.refreshNodes();
@@ -1068,23 +1083,23 @@ export class ZenodeEngine {
    * Distributes selected nodes uniformly.
    */
   public distributeSelection(direction: "horizontal" | "vertical"): void {
-     if (this.selectedNodeIds.length <= 2) return;
-     const nodes = this.placedNodes
-        .filter(n => this.selectedNodeIds.includes(n.id))
-        .sort((a,b) => direction === "horizontal" ? a.x - b.x : a.y - b.y);
-     
-     const first = nodes[0];
-     const last = nodes[nodes.length - 1];
-     const totalDist = direction === "horizontal" ? last.x - first.x : last.y - first.y;
-     const step = totalDist / (nodes.length - 1);
+    if (this.selectedNodeIds.length <= 2) return;
+    const nodes = this.placedNodes
+      .filter(n => this.selectedNodeIds.includes(n.id))
+      .sort((a, b) => direction === "horizontal" ? a.x - b.x : a.y - b.y);
 
-     nodes.forEach((n, i) => {
-         if (direction === "horizontal") n.x = first.x + i * step;
-         else n.y = first.y + i * step;
-     });
+    const first = nodes[0];
+    const last = nodes[nodes.length - 1];
+    const totalDist = direction === "horizontal" ? last.x - first.x : last.y - first.y;
+    const step = totalDist / (nodes.length - 1);
 
-      this.refreshNodes();
-      this.reRenderConnections();
+    nodes.forEach((n, i) => {
+      if (direction === "horizontal") n.x = first.x + i * step;
+      else n.y = first.y + i * step;
+    });
+
+    this.refreshNodes();
+    this.reRenderConnections();
   }
 
   /**
@@ -1092,71 +1107,71 @@ export class ZenodeEngine {
    * Higher index = rendered on top.
    */
   public setNodeOrder(newIds: string[], recordHistory: boolean = true): void {
-      const oldIds = this.placedNodes.map(n => n.id);
-      
-      const nodeMap = new Map<string, PlacedNode>();
-      this.placedNodes.forEach(n => nodeMap.set(n.id, n));
-      
-      const newOrder: PlacedNode[] = [];
-      newIds.forEach(id => {
-          const node = nodeMap.get(id);
-          if (node) newOrder.push(node);
+    const oldIds = this.placedNodes.map(n => n.id);
+
+    const nodeMap = new Map<string, PlacedNode>();
+    this.placedNodes.forEach(n => nodeMap.set(n.id, n));
+
+    const newOrder: PlacedNode[] = [];
+    newIds.forEach(id => {
+      const node = nodeMap.get(id);
+      if (node) newOrder.push(node);
+    });
+
+    // Add any nodes that were missing from the newIds list (safety)
+    if (newOrder.length < this.placedNodes.length) {
+      this.placedNodes.forEach(n => {
+        if (!newIds.includes(n.id)) newOrder.push(n);
       });
+    }
 
-      // Add any nodes that were missing from the newIds list (safety)
-      if (newOrder.length < this.placedNodes.length) {
-          this.placedNodes.forEach(n => {
-              if (!newIds.includes(n.id)) newOrder.push(n);
-          });
-      }
+    this.placedNodes = newOrder;
 
-      this.placedNodes = newOrder;
+    if (recordHistory) {
+      import("./history/command.js").then(({ ReorderNodesCommand }) => {
+        this.undoManager.push(new ReorderNodesCommand(this, oldIds, newIds));
+      });
+    }
 
-      if (recordHistory) {
-          import("./history/command.js").then(({ ReorderNodesCommand }) => {
-              this.undoManager.push(new ReorderNodesCommand(this, oldIds, newIds));
-          });
-      }
-
-      this.refreshNodes();
-      this.reRenderConnections();
+    this.refreshNodes();
+    this.reRenderConnections();
   }
 
   /**
    * Moves specific nodes to the end of the drawing array so they appear on top.
    */
   public bringToFront(ids: string[]): void {
-      const currentIds = this.placedNodes.map(n => n.id);
-      const toMove = new Set(ids);
-      const remaining = currentIds.filter(id => !toMove.has(id));
-      const newOrder = [...remaining, ...ids.filter(id => currentIds.includes(id))];
-      this.setNodeOrder(newOrder);
+    const currentIds = this.placedNodes.map(n => n.id);
+    const toMove = new Set(ids);
+    const remaining = currentIds.filter(id => !toMove.has(id));
+    const newOrder = [...remaining, ...ids.filter(id => currentIds.includes(id))];
+    this.setNodeOrder(newOrder);
   }
 
   /**
    * Moves specific nodes to the beginning of the drawing array so they appear behind others.
    */
   public sendToBack(ids: string[]): void {
-      const currentIds = this.placedNodes.map(n => n.id);
-      const toMove = new Set(ids);
-      const remaining = currentIds.filter(id => !toMove.has(id));
-      const newOrder = [...ids.filter(id => currentIds.includes(id)), ...remaining];
-      this.setNodeOrder(newOrder);
+    const currentIds = this.placedNodes.map(n => n.id);
+    const toMove = new Set(ids);
+    const remaining = currentIds.filter(id => !toMove.has(id));
+    const newOrder = [...ids.filter(id => currentIds.includes(id)), ...remaining];
+    this.setNodeOrder(newOrder);
   }
 
   /**
    * Programmatically triggers the text editor for a node or edge.
    */
   public beginLabelEdit(id: string, kind: 'node' | 'edge'): void {
-    const target = kind === 'node' 
+    const target = kind === 'node'
       ? this.placedNodes.find(n => n.id === id)
       : this.connections.find(c => c.id === id);
-    
+
     if (target) {
-      this.emit("contextpad:edit-content", { 
-        kind, 
-        id, 
-        data: target 
+      this.emit("contextpad:edit-content", {
+        kind,
+        id,
+        data: target
       });
     }
   }
@@ -1187,7 +1202,7 @@ export class ZenodeEngine {
     this.clearPlacementContext();
     this.removePlacementListeners();
     if (this.canvasObject.elements) {
-        this.canvasObject.elements.selectAll(".shape-preview").remove();
+      this.canvasObject.elements.selectAll(".shape-preview").remove();
     }
     this.emit("placement:cancelled", {});
   }
@@ -1218,7 +1233,7 @@ export class ZenodeEngine {
     });
 
     this.svg.on("click", () => {
-        this.completePlacement();
+      this.completePlacement();
     });
 
     return ghostId;
@@ -1226,14 +1241,14 @@ export class ZenodeEngine {
 
   public updatePlacementPreview(x: number, y: number): void {
     if (!this.placementContext || !this.canvasObject.elements) return;
-    
+
     let preview = this.canvasObject.elements.selectAll(".shape-preview");
     if (preview.empty()) {
       preview = this.canvasObject.elements.append("g").attr("class", "shape-preview");
       const renderer = this.shapeRegistry.get(this.placementContext.type);
       const style = this.config.shapes.default?.[this.placementContext.type as keyof typeof this.config.shapes.default]
         ?.find((s: any) => s.id === (this.placementContext?.variantId || "default"));
-      
+
       if (renderer && style) {
         renderer.draw(preview as any, { ...style, type: this.placementContext.type, x: 0, y: 0 } as any, {});
         preview.style("opacity", 0.5).style("pointer-events", "none");
@@ -1245,11 +1260,11 @@ export class ZenodeEngine {
   public completePlacement(): string {
     if (!this.placementContext) return "";
     const { type, variantId } = this.placementContext;
-    
+
     // Get last mouse position if possible, or use 0,0
     const point = d3.pointer(d3.select("body").node() as any);
     const canvasPoint = this.getCanvasPointFromEvent(point[0], point[1]);
-    
+
     const node = this.placeShapeAt(type, variantId || "default", canvasPoint.x, canvasPoint.y, { shapeVariantId: variantId });
     this.cancelPlacement();
     return node ? node.id : "";
@@ -1289,8 +1304,8 @@ export class ZenodeEngine {
 
   setConnectionModeEnabled(enabled: boolean): void {
     if (enabled) {
-        this.rotationModeEnabled = false;
-        this.resizeModeEnabled = false;
+      this.rotationModeEnabled = false;
+      this.resizeModeEnabled = false;
     }
     this.connectionModeEnabled = enabled;
 
@@ -1310,35 +1325,35 @@ export class ZenodeEngine {
   }
 
   isRotationModeEnabled(): boolean {
-      return this.rotationModeEnabled;
+    return this.rotationModeEnabled;
   }
 
   setRotationModeEnabled(enabled: boolean): void {
-      if (enabled) {
-          this.connectionModeEnabled = false;
-          this.resizeModeEnabled = false;
-      }
-      this.rotationModeEnabled = enabled;
-      if (this.canvasObject.placedNodes) {
-          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
-      }
-      this.eventManager.trigger("rotation:mode:changed", { enabled });
+    if (enabled) {
+      this.connectionModeEnabled = false;
+      this.resizeModeEnabled = false;
+    }
+    this.rotationModeEnabled = enabled;
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("rotation:mode:changed", { enabled });
   }
 
   isResizeModeEnabled(): boolean {
-      return this.resizeModeEnabled;
+    return this.resizeModeEnabled;
   }
 
   setResizeModeEnabled(enabled: boolean): void {
-      if (enabled) {
-          this.connectionModeEnabled = false;
-          this.rotationModeEnabled = false;
-      }
-      this.resizeModeEnabled = enabled;
-      if (this.canvasObject.placedNodes) {
-          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
-      }
-      this.eventManager.trigger("resize:mode:changed", { enabled });
+    if (enabled) {
+      this.connectionModeEnabled = false;
+      this.rotationModeEnabled = false;
+    }
+    this.resizeModeEnabled = enabled;
+    if (this.canvasObject.placedNodes) {
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+    }
+    this.eventManager.trigger("resize:mode:changed", { enabled });
   }
 
   /** Sets the active connection type for newly created connections. */
@@ -1350,58 +1365,58 @@ export class ZenodeEngine {
   public setSelectedNodeIds(ids: string[], primaryId?: string): void {
     const nodeIds = Array.isArray(ids) ? ids : [ids];
     this.selectedEdgeIds = []; // Clear edges when nodes selected
-    
+
     // Only auto-expand selection if explicitly triggered by a collective-group-trigger
     let expandedIds = new Set(nodeIds);
     if (primaryId === 'collective-group-trigger') {
-        this.visualGroups.forEach(group => {
-          const nodeIdsInGroup = new Set(group.nodeIds);
-          if (nodeIds.some(id => nodeIdsInGroup.has(id))) {
-            group.nodeIds.forEach(id => expandedIds.add(id));
-          }
-        });
+      this.visualGroups.forEach(group => {
+        const nodeIdsInGroup = new Set(group.nodeIds);
+        if (nodeIds.some(id => nodeIdsInGroup.has(id))) {
+          group.nodeIds.forEach(id => expandedIds.add(id));
+        }
+      });
     }
 
     this.selectedNodeIds = Array.from(expandedIds);
     this.refreshNodes();
 
     if (this.selectedNodeIds.length === 1) {
-        const node = this.placedNodes.find(n => n.id === this.selectedNodeIds[0]);
-        if (node) {
-            this.showContextPad({ kind: 'node', id: node.id, data: node });
-        }
+      const node = this.placedNodes.find(n => n.id === this.selectedNodeIds[0]);
+      if (node) {
+        this.showContextPad({ kind: 'node', id: node.id, data: node });
+      }
     } else if (primaryId === 'collective-group-trigger' || this.selectedNodeIds.length > 1) {
-        const activeGroups = this.visualGroups.filter(g => {
-            const gNodes = new Set(g.nodeIds);
-            return this.selectedNodeIds.some(id => gNodes.has(id));
-        });
-        
-        const group = activeGroups[0];
-        // Collective group pad if we have exactly one group and it's either explicitly triggered or fully selected
-        const isCollectiveGroup = group && activeGroups.length === 1 && 
-            (primaryId === 'collective-group-trigger' || this.selectedNodeIds.length === group.nodeIds.length);
-        
-        if (isCollectiveGroup) {
-            const bounds = this.getGroupBounds(group.id);
-            if (bounds) {
-                const target: ContextPadTarget = { 
-                    kind: 'group', 
-                    id: group.id, 
-                    data: group.nodeIds,
-                    box: {
-                        x: bounds.x,
-                        y: bounds.y + 28, // Offset down
-                        width: bounds.width,
-                        height: bounds.height - 28
-                    }
-                };
-                this.showContextPad(target);
+      const activeGroups = this.visualGroups.filter(g => {
+        const gNodes = new Set(g.nodeIds);
+        return this.selectedNodeIds.some(id => gNodes.has(id));
+      });
+
+      const group = activeGroups[0];
+      // Collective group pad if we have exactly one group and it's either explicitly triggered or fully selected
+      const isCollectiveGroup = group && activeGroups.length === 1 &&
+        (primaryId === 'collective-group-trigger' || this.selectedNodeIds.length === group.nodeIds.length);
+
+      if (isCollectiveGroup) {
+        const bounds = this.getGroupBounds(group.id);
+        if (bounds) {
+          const target: ContextPadTarget = {
+            kind: 'group',
+            id: group.id,
+            data: group.nodeIds,
+            box: {
+              x: bounds.x,
+              y: bounds.y + 28, // Offset down
+              width: bounds.width,
+              height: bounds.height - 28
             }
-        } else {
-            this.contextPadRenderer?.hide(this);
+          };
+          this.showContextPad(target);
         }
-    } else if (this.selectedEdgeIds.length !== 1) {
+      } else {
         this.contextPadRenderer?.hide(this);
+      }
+    } else if (this.selectedEdgeIds.length !== 1) {
+      this.contextPadRenderer?.hide(this);
     }
 
     this.eventManager.trigger("node:selected", { ids: this.getSelectedNodeIds(), primaryId });
@@ -1410,27 +1425,27 @@ export class ZenodeEngine {
   public groupSelection(recordHistory: boolean = true): void {
     if (this.selectedNodeIds.length < 2) return;
     const newNodeIds = [...this.selectedNodeIds];
-    
+
     // Capture removed group IDs
     const removedGroupIds = new Set(this.visualGroups.filter(g => newNodeIds.some(id => g.nodeIds.includes(id))).map(g => g.id));
-    
+
     // Remove old groups
     this.visualGroups = this.visualGroups.filter(g => !removedGroupIds.has(g.id));
-    
+
     // Purge connections referencing the removed groups/shapes
     if (removedGroupIds.size > 0) {
-        this.connections = this.connections.filter(c => 
-            !removedGroupIds.has(c.sourceNodeId) && !removedGroupIds.has(c.targetNodeId)
-        );
+      this.connections = this.connections.filter(c =>
+        !removedGroupIds.has(c.sourceNodeId) && !removedGroupIds.has(c.targetNodeId)
+      );
     }
 
     const newGroup: VisualGroup = {
-        id: `vgroup-${Date.now()}`,
-        nodeIds: newNodeIds
+      id: `vgroup-${Date.now()}`,
+      nodeIds: newNodeIds
     };
-    
+
     this.visualGroups.push(newGroup);
-    
+
     if (recordHistory) {
       this.undoManager.push(new AddVisualGroupCommand(this, { ...newGroup }));
     }
@@ -1443,15 +1458,15 @@ export class ZenodeEngine {
   public ungroupSelection(recordHistory: boolean = true): void {
     if (this.selectedNodeIds.length === 0) return;
     const ids = new Set(this.selectedNodeIds);
-    
+
     const groupsToRemove = this.visualGroups.filter(group => {
-        return [...ids].some(id => group.nodeIds.includes(id));
+      return [...ids].some(id => group.nodeIds.includes(id));
     });
 
     if (recordHistory) {
-        groupsToRemove.forEach(g => {
-            this.undoManager.push(new RemoveVisualGroupCommand(this, { ...g }));
-        });
+      groupsToRemove.forEach(g => {
+        this.undoManager.push(new RemoveVisualGroupCommand(this, { ...g }));
+      });
     }
 
     const removedGroupIds = new Set(groupsToRemove.map(g => g.id));
@@ -1459,9 +1474,9 @@ export class ZenodeEngine {
 
     // Purge related connections
     if (removedGroupIds.size > 0) {
-        this.connections = this.connections.filter(c => 
-            !removedGroupIds.has(c.sourceNodeId) && !removedGroupIds.has(c.targetNodeId)
-        );
+      this.connections = this.connections.filter(c =>
+        !removedGroupIds.has(c.sourceNodeId) && !removedGroupIds.has(c.targetNodeId)
+      );
     }
 
     this.refreshNodes();
@@ -1471,15 +1486,15 @@ export class ZenodeEngine {
 
   /** Internal helpers for undo/redo */
   public restoreVisualGroup(group: VisualGroup): void {
-      this.visualGroups.push(group);
-      this.refreshNodes();
+    this.visualGroups.push(group);
+    this.refreshNodes();
   }
 
   public removeVisualGroup(groupId: string): void {
-      this.visualGroups = this.visualGroups.filter(g => g.id !== groupId);
-      this.connections = this.connections.filter(c => c.sourceNodeId !== groupId && c.targetNodeId !== groupId);
-      this.refreshNodes();
-      this.reRenderConnections();
+    this.visualGroups = this.visualGroups.filter(g => g.id !== groupId);
+    this.connections = this.connections.filter(c => c.sourceNodeId !== groupId && c.targetNodeId !== groupId);
+    this.refreshNodes();
+    this.reRenderConnections();
   }
 
   public toggleGroupingSelection(): void {
@@ -1489,104 +1504,104 @@ export class ZenodeEngine {
     // Check if current selection represents an existing group exactly
     const exists = this.visualGroups.some(g => g.nodeIds.length === selected.length && selected.every(id => g.nodeIds.includes(id)));
     if (exists) {
-        this.ungroupSelection();
+      this.ungroupSelection();
     } else {
-        this.groupSelection();
+      this.groupSelection();
     }
   }
 
   public getVisualGroups(): VisualGroup[] {
-      return [...this.visualGroups];
+    return [...this.visualGroups];
   }
 
   public getSelectedEdgeIds(): string[] {
-      return [...this.selectedEdgeIds];
+    return [...this.selectedEdgeIds];
   }
 
   public setSelectedEdgeIds(ids: string[]): void {
-      this.selectedEdgeIds = ids;
-      this.selectedNodeIds = []; // Clear nodes when edges selected
-      this.refreshNodes();
-      this.reRenderConnections();
-      this.emit("selection:changed", { nodeIds: [], edgeIds: ids });
+    this.selectedEdgeIds = ids;
+    this.selectedNodeIds = []; // Clear nodes when edges selected
+    this.refreshNodes();
+    this.reRenderConnections();
+    this.emit("selection:changed", { nodeIds: [], edgeIds: ids });
 
-      if (this.selectedEdgeIds.length === 1) {
-          const edge = this.connections.find((e) => e.id === this.selectedEdgeIds[0]);
-          if (edge) {
-              const actions = this.contextPadRegistry.getActionsFor(
-                  { kind: "edge", id: edge.id, data: edge },
-                  this
-              );
-              this.contextPadRenderer.render({ kind: "edge", id: edge.id, data: edge }, actions, this);
-          }
-      } else {
-         this.contextPadRenderer?.hide(this);
+    if (this.selectedEdgeIds.length === 1) {
+      const edge = this.connections.find((e) => e.id === this.selectedEdgeIds[0]);
+      if (edge) {
+        const actions = this.contextPadRegistry.getActionsFor(
+          { kind: "edge", id: edge.id, data: edge },
+          this
+        );
+        this.contextPadRenderer.render({ kind: "edge", id: edge.id, data: edge }, actions, this);
       }
+    } else {
+      this.contextPadRenderer?.hide(this);
+    }
   }
 
   public toggleConnectionStyle(id: string, property: 'dashed' | 'animated'): void {
-      const conn = this.connections.find(c => c.id === id);
-      if (conn) {
-          if (property === 'dashed') conn.dashed = !conn.dashed;
-          if (property === 'animated') conn.animated = !conn.animated;
-          
-          this.reRenderConnections();
-          
-          // Refresh context pad instantly so the Animation button visibility updates
-          if (this.selectedEdgeIds.includes(id)) {
-            const actions = this.contextPadRegistry.getActionsFor({ kind: "edge", id: conn.id, data: conn }, this);
-            this.contextPadRenderer.render({ kind: "edge", id: conn.id, data: conn }, actions, this);
-          }
+    const conn = this.connections.find(c => c.id === id);
+    if (conn) {
+      if (property === 'dashed') conn.dashed = !conn.dashed;
+      if (property === 'animated') conn.animated = !conn.animated;
+
+      this.reRenderConnections();
+
+      // Refresh context pad instantly so the Animation button visibility updates
+      if (this.selectedEdgeIds.includes(id)) {
+        const actions = this.contextPadRegistry.getActionsFor({ kind: "edge", id: conn.id, data: conn }, this);
+        this.contextPadRenderer.render({ kind: "edge", id: conn.id, data: conn }, actions, this);
       }
+    }
   }
 
   public getConnections(): StoredConnection[] {
-      return [...this.connections];
+    return [...this.connections];
   }
 
   public getGroupBounds(groupId: string, overrideNodes?: Map<string, PlacedNode>): BoundingBox | null {
-      const group = this.visualGroups.find(g => g.id === groupId);
-      if (!group) return null;
+    const group = this.visualGroups.find(g => g.id === groupId);
+    if (!group) return null;
 
-      const padding = 20;
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-      let found = 0;
+    const padding = 20;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    let found = 0;
 
-      group.nodeIds.forEach(nodeId => {
-          let node = overrideNodes?.get(nodeId);
-          if (!node) {
-              node = this.placedNodes.find(n => n.id === nodeId);
-          }
-          
-          if (!node) return;
+    group.nodeIds.forEach(nodeId => {
+      let node = overrideNodes?.get(nodeId);
+      if (!node) {
+        node = this.placedNodes.find(n => n.id === nodeId);
+      }
 
-          const style = this.getShapeStyle(node);
-          if (!style) return;
-          const renderer = this.shapeRegistry.get(node.type);
-          const resolved = buildResolvedShapeConfig(node, style);
-          const localBounds = renderer.getBounds(resolved);
-          
-          const absL = node.x + localBounds.x;
-          const absR = absL + localBounds.width;
-          const absT = node.y + localBounds.y;
-          const absB = absT + localBounds.height;
+      if (!node) return;
 
-          minX = Math.min(minX, absL);
-          minY = Math.min(minY, absT);
-          maxX = Math.max(maxX, absR);
-          maxY = Math.max(maxY, absB);
-          found++;
-      });
+      const style = this.getShapeStyle(node);
+      if (!style) return;
+      const renderer = this.shapeRegistry.get(node.type);
+      const resolved = buildResolvedShapeConfig(node, style);
+      const localBounds = renderer.getBounds(resolved);
 
-      if (found === 0) return null;
+      const absL = node.x + localBounds.x;
+      const absR = absL + localBounds.width;
+      const absT = node.y + localBounds.y;
+      const absB = absT + localBounds.height;
 
-      // Final bounding box in canvas coordinates with padding
-      return {
-          x: Math.floor(minX - padding),
-          y: Math.floor(minY - padding),
-          width: Math.ceil((maxX - minX) + padding * 2),
-          height: Math.ceil((maxY - minY) + padding * 2)
-      };
+      minX = Math.min(minX, absL);
+      minY = Math.min(minY, absT);
+      maxX = Math.max(maxX, absR);
+      maxY = Math.max(maxY, absB);
+      found++;
+    });
+
+    if (found === 0) return null;
+
+    // Final bounding box in canvas coordinates with padding
+    return {
+      x: Math.floor(minX - padding),
+      y: Math.floor(minY - padding),
+      width: Math.ceil((maxX - minX) + padding * 2),
+      height: Math.ceil((maxY - minY) + padding * 2)
+    };
   }
 
   /** Clears all selections. */
@@ -1624,9 +1639,9 @@ export class ZenodeEngine {
    */
   public placeNode(node: PlacedNode, recordHistory: boolean = true): void {
     this.placedNodes = [...this.placedNodes, node];
-    
+
     if (recordHistory) {
-        this.undoManager.push(new AddNodeCommand(this, { ...node }));
+      this.undoManager.push(new AddNodeCommand(this, { ...node }));
     }
 
     if (this.canvasObject.placedNodes) {
@@ -1657,9 +1672,9 @@ export class ZenodeEngine {
     if (this.canvasObject.connections) {
       this.reRenderConnections();
     }
-    
+
     if (this.selectedNodeIds.includes(id)) {
-        this.contextPadRenderer?.updatePosition(this);
+      this.contextPadRenderer?.updatePosition(this);
     }
 
     this.refreshNodes();
@@ -1670,14 +1685,14 @@ export class ZenodeEngine {
    * Updates a node's rotation.
    */
   rotateNode(id: string, rotation: number, recordHistory: boolean = true): void {
-    const targets = (recordHistory && this.selectedNodeIds.includes(id)) 
-      ? this.selectedNodeIds 
+    const targets = (recordHistory && this.selectedNodeIds.includes(id))
+      ? this.selectedNodeIds
       : [id];
-      
+
     targets.forEach(nodeId => {
       const n = this.placedNodes.find(pn => pn.id === nodeId);
       if (!n) return;
-      
+
       if (recordHistory) {
         this.undoManager.push(new UpdateNodeCommand(this, nodeId, { ...n }, { ...n, rotation }));
       }
@@ -1685,12 +1700,12 @@ export class ZenodeEngine {
     });
 
     if (this.canvasObject.placedNodes) {
-        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.reRenderConnections();
-    
+
     if (this.contextPadRenderer && this.selectedNodeIds.includes(id)) {
-        this.contextPadRenderer.updatePosition(this);
+      this.contextPadRenderer.updatePosition(this);
     }
 
     this.eventManager.trigger("node:rotated", { id, rotation });
@@ -1700,8 +1715,8 @@ export class ZenodeEngine {
    * Updates a node's dimensions (width/height or radius).
    */
   updateNodeDimensions(id: string, dimensions: { width?: number; height?: number; radius?: number }, recordHistory: boolean = true): void {
-    const targets = (recordHistory && this.selectedNodeIds.includes(id)) 
-      ? this.selectedNodeIds 
+    const targets = (recordHistory && this.selectedNodeIds.includes(id))
+      ? this.selectedNodeIds
       : [id];
 
     targets.forEach(nodeId => {
@@ -1713,24 +1728,24 @@ export class ZenodeEngine {
       }
 
       this.placedNodes = this.placedNodes.map((n) => {
-          if (n.id !== nodeId) return n;
-          const baseDimensions = n.baseDimensions ?? {
-              width: n.width,
-              height: n.height,
-              radius: n.radius,
-          };
-          return {
-              ...n,
-              baseDimensions,
-              width: dimensions.width ?? n.width,
-              height: dimensions.height ?? n.height,
-              radius: dimensions.radius ?? n.radius,
-          };
+        if (n.id !== nodeId) return n;
+        const baseDimensions = n.baseDimensions ?? {
+          width: n.width,
+          height: n.height,
+          radius: n.radius,
+        };
+        return {
+          ...n,
+          baseDimensions,
+          width: dimensions.width ?? n.width,
+          height: dimensions.height ?? n.height,
+          radius: dimensions.radius ?? n.radius,
+        };
       });
     });
 
     if (this.canvasObject.placedNodes) {
-        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
     this.reRenderConnections();
 
@@ -1773,7 +1788,7 @@ export class ZenodeEngine {
   }
 
   public focusOnNode(id: string): void {
-      this.focusNode(id);
+    this.focusNode(id);
   }
 
   public focusOnSelectedNode(): void {
@@ -1831,19 +1846,19 @@ export class ZenodeEngine {
     let changed = false;
     if (this.selectedNodeIds.length) {
       const selected = new Set(this.selectedNodeIds);
-      
+
       if (recordHistory) {
-         // Create a composite command or multiple commands
-         [...selected].forEach(id => {
-             this.undoManager.push(new RemoveNodeCommand(this, id));
-         });
+        // Create a composite command or multiple commands
+        [...selected].forEach(id => {
+          this.undoManager.push(new RemoveNodeCommand(this, id));
+        });
       }
 
       this.placedNodes = this.placedNodes.filter((n) => !selected.has(n.id));
       this.connections = this.connections.filter(
         (c) => !selected.has(c.sourceNodeId) && !selected.has(c.targetNodeId)
       );
-      
+
       // Clean up visual groups containing any of these nodes
       this.visualGroups = this.visualGroups.filter(g => {
         return ![...selected].some(id => g.nodeIds.includes(id));
@@ -1857,12 +1872,12 @@ export class ZenodeEngine {
       const selectedE = new Set(this.selectedEdgeIds);
 
       if (recordHistory) {
-          [...selectedE].forEach(id => {
-              const edge = this.connections.find(e => e.id === id);
-              if (edge) {
-                  this.undoManager.push(new RemoveEdgeCommand(this, { ...edge }));
-              }
-          });
+        [...selectedE].forEach(id => {
+          const edge = this.connections.find(e => e.id === id);
+          if (edge) {
+            this.undoManager.push(new RemoveEdgeCommand(this, { ...edge }));
+          }
+        });
       }
 
       this.connections = this.connections.filter((c) => !selectedE.has(c.id));
@@ -1870,10 +1885,10 @@ export class ZenodeEngine {
       changed = true;
       this.eventManager.trigger("edge:deleted", { ids: [...selectedE] });
     }
-    
+
     if (changed) {
       if (this.contextPadRenderer) {
-          this.contextPadRenderer.hide(this);
+        this.contextPadRenderer.hide(this);
       }
       if (this.canvasObject.placedNodes) {
         renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
@@ -1976,12 +1991,12 @@ export class ZenodeEngine {
     const transform = d3.zoomTransform(this.svg.node() as Element);
     const width = this.container?.clientWidth || 800;
     const height = this.container?.clientHeight || 600;
-    
+
     const centerX = (width / 2 - transform.x) / transform.k;
     const centerY = (height / 2 - transform.y) / transform.k;
 
     // Search for a safe position in a spiral/grid pattern from center
-    const step = 20; 
+    const step = 20;
     let found = false;
     let finalX = centerX;
     let finalY = centerY;
@@ -1989,39 +2004,39 @@ export class ZenodeEngine {
     // Spiral search pattern
     let x = 0, y = 0, dx = 0, dy = -1;
     const maxIters = 400; // Search up to 20x20 grid cells
-    for(let i = 0; i < maxIters; i++){
-        const candidateX = centerX + x * step;
-        const candidateY = centerY + y * step;
-        
-        const overlaps = this.placedNodes.some(n => {
-            const nStyle = this.getShapeStyle(n);
-            if (!nStyle) return false;
-            const nResolved = buildResolvedShapeConfig(n, nStyle);
-            const nBounds = this.shapeRegistry.get(n.type).getBounds(nResolved);
-            
-            const nL = n.x + nBounds.x, nR = nL + nBounds.width;
-            const nT = n.y + nBounds.y, nB = nT + nBounds.height;
-            
-            const cL = candidateX + bounds.x, cR = cL + bounds.width;
-            const cT = candidateY + bounds.y, cB = cT + bounds.height;
+    for (let i = 0; i < maxIters; i++) {
+      const candidateX = centerX + x * step;
+      const candidateY = centerY + y * step;
 
-            return !(cR < nL || cL > nR || cB < nT || cT > nB);
-        });
+      const overlaps = this.placedNodes.some(n => {
+        const nStyle = this.getShapeStyle(n);
+        if (!nStyle) return false;
+        const nResolved = buildResolvedShapeConfig(n, nStyle);
+        const nBounds = this.shapeRegistry.get(n.type).getBounds(nResolved);
 
-        if (!overlaps) {
-            finalX = candidateX;
-            finalY = candidateY;
-            found = true;
-            break;
-        }
+        const nL = n.x + nBounds.x, nR = nL + nBounds.width;
+        const nT = n.y + nBounds.y, nB = nT + nBounds.height;
 
-        if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
-            const tmp = dx;
-            dx = -dy;
-            dy = tmp;
-        }
-        x += dx;
-        y += dy;
+        const cL = candidateX + bounds.x, cR = cL + bounds.width;
+        const cT = candidateY + bounds.y, cB = cT + bounds.height;
+
+        return !(cR < nL || cL > nR || cB < nT || cT > nB);
+      });
+
+      if (!overlaps) {
+        finalX = candidateX;
+        finalY = candidateY;
+        found = true;
+        break;
+      }
+
+      if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
+        const tmp = dx;
+        dx = -dy;
+        dy = tmp;
+      }
+      x += dx;
+      y += dy;
     }
 
     this.placeShapeAt(shapeType, variantId, finalX, finalY, data);
@@ -2036,11 +2051,11 @@ export class ZenodeEngine {
     if (!dataStr) return;
 
     try {
-        const { type, id } = JSON.parse(dataStr);
-        const pt = this.getCanvasPoint(event as unknown as MouseEvent);
-        this.placeShapeAt(type, id, pt.x, pt.y);
+      const { type, id } = JSON.parse(dataStr);
+      const pt = this.getCanvasPoint(event as unknown as MouseEvent);
+      this.placeShapeAt(type, id, pt.x, pt.y);
     } catch (e) {
-        console.error("Invalid Zenode drop data", e);
+      console.error("Invalid Zenode drop data", e);
     }
   }
 
@@ -2169,7 +2184,7 @@ export class ZenodeEngine {
       const snapped = this.connectionDragContext?.snapped;
       this.endConnectionDrag(snapped?.nodeId, snapped?.portId);
     };
-    
+
     if (this.onWindowMouseMove) {
       window.removeEventListener("mousemove", this.onWindowMouseMove);
     }
@@ -2206,19 +2221,19 @@ export class ZenodeEngine {
 
     for (const node of this.placedNodes) {
       // Don't snap to source node
-        const sourceId = this.connectionDragContext?.sourceNodeId;
-        if (node.id === sourceId) continue;
+      const sourceId = this.connectionDragContext?.sourceNodeId;
+      if (node.id === sourceId) continue;
 
-        // Block internal member snapping if source is a group
-        if (sourceId?.startsWith("vgroup-")) {
-            const group = this.visualGroups.find(g => g.id === sourceId);
-            if (group && group.nodeIds.includes(node.id)) continue;
-        }
-        // ... and vice versa
-        if (!sourceId?.startsWith("vgroup-") && sourceId !== node.id) {
-            const group = this.visualGroups.find(g => g.nodeIds.includes(node.id));
-            if (group && group.id === sourceId) continue;
-        }
+      // Block internal member snapping if source is a group
+      if (sourceId?.startsWith("vgroup-")) {
+        const group = this.visualGroups.find(g => g.id === sourceId);
+        if (group && group.nodeIds.includes(node.id)) continue;
+      }
+      // ... and vice versa
+      if (!sourceId?.startsWith("vgroup-") && sourceId !== node.id) {
+        const group = this.visualGroups.find(g => g.nodeIds.includes(node.id));
+        if (group && group.id === sourceId) continue;
+      }
 
       const style = this.getShapeStyle(node);
       if (!style) continue;
@@ -2246,17 +2261,17 @@ export class ZenodeEngine {
 
     // Snap to group ports
     for (const group of this.visualGroups) {
-        if (group.id === this.connectionDragContext?.sourceNodeId) continue;
-        const ports = this.getGroupPorts(group.id);
-        if (!ports) continue;
+      if (group.id === this.connectionDragContext?.sourceNodeId) continue;
+      const ports = this.getGroupPorts(group.id);
+      if (!ports) continue;
 
-        for (const [portId, pos] of Object.entries(ports)) {
-            const dist = Math.hypot(point.x - pos.x, point.y - pos.y);
-            if (dist < bestDist) {
-                bestDist = dist;
-                result = { nodeId: group.id, portId, point: pos };
-            }
+      for (const [portId, pos] of Object.entries(ports)) {
+        const dist = Math.hypot(point.x - pos.x, point.y - pos.y);
+        if (dist < bestDist) {
+          bestDist = dist;
+          result = { nodeId: group.id, portId, point: pos };
         }
+      }
     }
 
     return result;
@@ -2274,11 +2289,11 @@ export class ZenodeEngine {
     if (finalTargetNodeId && finalTargetPortId) {
       // Prevent self-connection
       if (finalTargetNodeId === this.connectionDragContext.sourceNodeId) {
-          this.connectionDragContext = null;
-          if (this.canvasObject.ghostConnection) {
-              this.canvasObject.ghostConnection.selectAll("*").remove();
-          }
-          return;
+        this.connectionDragContext = null;
+        if (this.canvasObject.ghostConnection) {
+          this.canvasObject.ghostConnection.selectAll("*").remove();
+        }
+        return;
       }
 
       this.createConnectionFromPorts(
@@ -2326,13 +2341,13 @@ export class ZenodeEngine {
     const sourceG = sourceNodeId.startsWith("vgroup-");
     const targetG = targetNodeId.startsWith("vgroup-");
     if (sourceG !== targetG) {
-        const gid = sourceG ? sourceNodeId : targetNodeId;
-        const nid = sourceG ? targetNodeId : sourceNodeId;
-        const group = this.visualGroups.find(g => g.id === gid);
-        if (group && group.nodeIds.includes(nid)) {
-            console.warn("[ZENODE] Blocked internal group connection");
-            return;
-        }
+      const gid = sourceG ? sourceNodeId : targetNodeId;
+      const nid = sourceG ? targetNodeId : sourceNodeId;
+      const group = this.visualGroups.find(g => g.id === gid);
+      if (group && group.nodeIds.includes(nid)) {
+        console.warn("[ZENODE] Blocked internal group connection");
+        return;
+      }
     }
 
     if (!allowMultiple) {
@@ -2355,9 +2370,9 @@ export class ZenodeEngine {
     };
 
     this.connections = [...this.connections, connection];
-    
+
     if (recordHistory) {
-        this.undoManager.push(new AddEdgeCommand(this, { ...connection }));
+      this.undoManager.push(new AddEdgeCommand(this, { ...connection }));
     }
 
     this.reRenderConnections();
@@ -2371,27 +2386,27 @@ export class ZenodeEngine {
     let from: { x: number, y: number } | null = null;
 
     if (sourceId.startsWith("vgroup-")) {
-        const ports = this.getGroupPorts(sourceId);
-        from = ports?.[this.connectionDragContext!.sourcePortId] || null;
+      const ports = this.getGroupPorts(sourceId);
+      from = ports?.[this.connectionDragContext!.sourcePortId] || null;
     } else {
-        const sourceNode = this.placedNodes.find(n => n.id === sourceId);
-        if (sourceNode) {
-            const style = this.getShapeStyle(sourceNode);
-            if (style) {
-                const renderer = this.shapeRegistry.get(sourceNode.type);
-                const resolved = buildResolvedShapeConfig(sourceNode, style);
-                const ports = renderer.getPorts(resolved);
-                const portPos = ports[this.connectionDragContext!.sourcePortId];
-                if (portPos) {
-                    const rotation = (sourceNode.rotation || 0) * (Math.PI / 180);
-                    const cos = Math.cos(rotation);
-                    const sin = Math.sin(rotation);
-                    const rotatedX = portPos.x * cos - portPos.y * sin;
-                    const rotatedY = portPos.x * sin + portPos.y * cos;
-                    from = { x: sourceNode.x + rotatedX, y: sourceNode.y + rotatedY };
-                }
-            }
+      const sourceNode = this.placedNodes.find(n => n.id === sourceId);
+      if (sourceNode) {
+        const style = this.getShapeStyle(sourceNode);
+        if (style) {
+          const renderer = this.shapeRegistry.get(sourceNode.type);
+          const resolved = buildResolvedShapeConfig(sourceNode, style);
+          const ports = renderer.getPorts(resolved);
+          const portPos = ports[this.connectionDragContext!.sourcePortId];
+          if (portPos) {
+            const rotation = (sourceNode.rotation || 0) * (Math.PI / 180);
+            const cos = Math.cos(rotation);
+            const sin = Math.sin(rotation);
+            const rotatedX = portPos.x * cos - portPos.y * sin;
+            const rotatedY = portPos.x * sin + portPos.y * cos;
+            from = { x: sourceNode.x + rotatedX, y: sourceNode.y + rotatedY };
+          }
         }
+      }
     }
 
     if (!from) return;
@@ -2412,18 +2427,18 @@ export class ZenodeEngine {
   }
 
   public getGroupPorts(groupId: string, overrideNodes?: Map<string, PlacedNode>): Record<string, { x: number, y: number }> | null {
-      const b = this.getGroupBounds(groupId, overrideNodes);
-      if (!b) return null;
-      return {
-          "nw": { x: b.x, y: b.y },
-          "n":  { x: b.x + b.width / 2, y: b.y },
-          "ne": { x: b.x + b.width, y: b.y },
-          "e":  { x: b.x + b.width, y: b.y + b.height / 2 },
-          "se": { x: b.x + b.width, y: b.y + b.height },
-          "s":  { x: b.x + b.width / 2, y: b.y + b.height },
-          "sw": { x: b.x, y: b.y + b.height },
-          "w":  { x: b.x, y: b.y + b.height / 2 }
-      };
+    const b = this.getGroupBounds(groupId, overrideNodes);
+    if (!b) return null;
+    return {
+      "nw": { x: b.x, y: b.y },
+      "n": { x: b.x + b.width / 2, y: b.y },
+      "ne": { x: b.x + b.width, y: b.y },
+      "e": { x: b.x + b.width, y: b.y + b.height / 2 },
+      "se": { x: b.x + b.width, y: b.y + b.height },
+      "s": { x: b.x + b.width / 2, y: b.y + b.height },
+      "sw": { x: b.x, y: b.y + b.height },
+      "w": { x: b.x, y: b.y + b.height / 2 }
+    };
   }
 
   lockedTheCanvas(locked: boolean) {
@@ -2453,10 +2468,10 @@ export class ZenodeEngine {
       this.rotationModeEnabled = false;
       this.resizeModeEnabled = false;
       if (this.canvasObject.ghostConnection) {
-          this.canvasObject.ghostConnection.selectAll("*").remove();
+        this.canvasObject.ghostConnection.selectAll("*").remove();
       }
       if (this.canvasObject.placedNodes) {
-          renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+        renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
       }
     });
 

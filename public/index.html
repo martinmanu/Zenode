@@ -122,9 +122,15 @@
 
         /* Animated Connection Flow */
         @keyframes zenode-flow {
-            from { stroke-dashoffset: 20; }
-            to { stroke-dashoffset: 0; }
+            from {
+                stroke-dashoffset: 20;
+            }
+
+            to {
+                stroke-dashoffset: 0;
+            }
         }
+
         .connection-line.animated-flow {
             stroke-dasharray: 10, 5;
             animation: zenode-flow 0.8s linear infinite;
@@ -1320,7 +1326,8 @@
             <button id="lassoBtn" class="tool-btn icon-only" onclick="toggleLasso()" title="Lasso Selection (L)">
                 <i data-lucide="lasso"></i>
             </button>
-            <button class="tool-btn icon-only" onclick="Zenode.toggleGroupingSelection()" title="Toggle Visual Grouping (Ctrl+G)">
+            <button class="tool-btn icon-only" onclick="Zenode.toggleGroupingSelection()"
+                title="Toggle Visual Grouping (Ctrl+G)">
                 <i data-lucide="layers"></i>
             </button>
             <hr style="border: none; border-top: 1px solid var(--border); margin: 4px 8px; opacity: 0.5;">

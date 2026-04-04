@@ -28,6 +28,7 @@ import { LicenseManager } from './license.js';
 import { SmartRouter } from '../connections/routing/smartRouter.js';
 import { buildResolvedShapeConfig } from '../nodes/overlay.js';
 import { ValidationEngine } from './validation.js';
+import { loadOnboardingSample } from './samples.js';
 import { mergeConfig } from '../utils/configMerger.js';
 import * as d3 from 'd3';
 import { snapToGrid, generatePlacedNodeId } from '../utils/helpers.js';
@@ -85,6 +86,7 @@ class ZenodeEngine {
         this.onWindowMouseMove = null;
         /** Transient visual groups (for interaction only, no structural parentId). */
         this.visualGroups = [];
+        this.demoEnabled = true;
         this.container = container;
         this.config = mergeConfig(config);
         this.shapeRegistry = new ShapeRegistry();
@@ -104,6 +106,10 @@ class ZenodeEngine {
             else {
                 this.container.classList.remove("zenode-connection-mode");
             }
+        }
+        // Load sample workflow if canvas is empty
+        if (this.placedNodes.length === 0 && this.demoEnabled) {
+            this.loadSampleWorkflow();
         }
         this.emit("engine:ready", { version: "3.3.0" });
     }
@@ -508,6 +514,12 @@ class ZenodeEngine {
             }
             this.placementContext = null;
         }
+    }
+    /**
+     * Loads a small, pre-built sample workflow to guide new users.
+     */
+    loadSampleWorkflow() {
+        loadOnboardingSample(this);
     }
     // --- PHASE 3.1: PUBLIC NODE API ---
     /**

@@ -56,6 +56,7 @@ export declare class ZenodeEngine {
     private onWindowMouseMove;
     /** Transient visual groups (for interaction only, no structural parentId). */
     private visualGroups;
+    private demoEnabled;
     private validationEngine;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
@@ -111,6 +112,10 @@ export declare class ZenodeEngine {
     } | null;
     /** Clears placement context (e.g. after placing or cancel). */
     clearPlacementContext(): void;
+    /**
+     * Loads a small, pre-built sample workflow to guide new users.
+     */
+    loadSampleWorkflow(): void;
     /**
      * Programmatically adds a node to the canvas.
      * @param config Partial configuration for the new node.

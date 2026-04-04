@@ -16,6 +16,7 @@ export function drawCanvas(
   placedNodes: any;
   visualGroups: any;
   guides: any;
+  ghosts: any;
   lasso: any;
 } {
   const container = d3.select(containerSelector);
