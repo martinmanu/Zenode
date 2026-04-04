@@ -3,8 +3,7 @@ import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
 import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
-import { testXML } from "./config/testXML.js";
-export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3, testXML };
+export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3 };
 /**
  * Initializes the Zenode engine.
  * @param containerSelector The selector for the container element.
@@ -53,6 +52,10 @@ export declare function updateEdgeVisualState(id: string, patch: Partial<VisualS
  * Updates the content (text, icon, layout) of a placed node.
  */
 declare function updateNodeContent(id: string, content: NodeContent): void;
+/** Sets the current editing node ID to suppress SVG rendering. */
+declare function setEditingNode(id: string | null): void;
+/** Gets the current editing node ID. */
+declare function getEditingNodeId(): string | null;
 /**
  * Listens to engine events.
  */
@@ -71,11 +74,12 @@ declare const duplicateNode: (id: string) => string;
 declare const beginLabelEdit: (id: string, kind: "node" | "edge") => void;
 declare const validate: () => import("./core/validation.js").ValidationResult;
 declare const clear: () => void;
-declare const toXML: () => string;
-declare const toMermaid: () => string;
-declare const toDOT: () => string;
-declare const fromXML: (xml: string) => void;
-declare const loadTestXML: () => void;
+/** Handles a drop event from the UI to place a shape. */
+declare function handleDrop(event: DragEvent): void;
+/** Places a shape at a specific canvas coordinate. */
+declare function placeShapeAt(type: string, id: string, x: number, y: number, data?: any): void;
+/** Places a shape at a safe, non-overlapping position. */
+declare function placeShapeAtSafePos(type: string, id: string, data?: any): void;
 /** Adds a new connection programmatically. */
 declare const addEdge: (config: EdgeConfig) => string;
 /** Removes a connection by ID. */
@@ -94,7 +98,12 @@ declare const getDiagramState: () => {
         zoom: number;
     };
 } | null;
-export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, getDiagramState, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusNode, undo, redo, clear, validate, toXML, toMermaid, toDOT, fromXML, loadTestXML, registerContextPadAction, registerSmartConnect };
+declare const copySelection: () => void;
+declare const pasteSelection: (offset?: {
+    x: number;
+    y: number;
+}) => void;
+export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, getDiagramState, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusNode, focusOnSelectedNode, undo, redo, clear, validate, registerContextPadAction, registerSmartConnect, copySelection, pasteSelection, setEditingNode, getEditingNodeId, handleDrop, placeShapeAt, placeShapeAtSafePos };
 /** Sets the license key for the engine. */
 declare function setLicense(key: string): void;
 /** Enables or disables smart routing for connections. */
@@ -113,6 +122,8 @@ declare function getLicenseTier(): string;
 declare function zoomIn(): void;
 /** Zooms the canvas out. */
 declare function zoomOut(): void;
+/** Focuses (center + zoom) on the first selected node. */
+declare function focusOnSelectedNode(): void;
 /** Undoes the last action. */
 declare function undo(): void;
 /** Redoes the last undone action. */

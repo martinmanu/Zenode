@@ -240,6 +240,37 @@
             overflow: hidden;
             position: relative;
             border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        body.connection-mode-active #canvasContainer {
+            border: 2px solid #3b82f6;
+            box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+            background: #f0f7ff;
+        }
+
+        body.connection-mode-active #canvasContainer::after {
+            content: "CONNECTION MODE ACTIVE";
+            position: absolute;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #3b82f6;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translateX(-50%) translateY(-20px) scale(0.8); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
         }
 
         /* Sidebars */
@@ -474,6 +505,34 @@
             display: flex;
             flex-direction: column;
             gap: 14px;
+        }
+
+        .config-card.sub-card {
+            background: rgba(15, 23, 42, 0.3);
+            margin-bottom: 12px;
+            border-radius: 10px;
+        }
+
+        .config-card.sub-card .config-card-header {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        .config-card.sub-card .config-card-body {
+            padding: 12px;
+            gap: 10px;
+        }
+
+        .item-label {
+            font-size: 9px;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+            opacity: 0.7;
         }
 
         .config-item {
@@ -1062,8 +1121,15 @@
     <div class="left-panel">
         <div class="toolbox-section" data-category="Shapes">
             <span class="toolbox-label">Shapes</span>
-            <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'task0')" title="Rectangle">
+            <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'task0')" title="Task 0 (Rect)">
                 <i data-lucide="square"></i>
+            </button>
+            <button class="tool-btn" onclick="Zenode.createShape('rectangle', 'task1')" title="Task 1 (Rect)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
             </button>
             <button class="tool-btn" onclick="Zenode.createShape('circle', 'circle1')" title="Circle">
                 <i data-lucide="circle"></i>
@@ -1296,6 +1362,8 @@
                 <textarea id="nodeIcon" class="content-textarea" style="min-height: 60px; font-family: monospace;"
                     placeholder='<svg viewBox="0 0 24 24">...</svg>' oninput="applyContentUpdate()"></textarea>
             </div>
+
+            </div>
         </div>
     </div>
 
@@ -1313,6 +1381,7 @@
                         data-lucide="x"></i></button>
             </div>
         </div>
+        
         <div id="formContainer" class="form-container"></div>
         <div style="padding: 20px; border-top: 1px solid var(--border); background: #0f172a;">
             <button class="tool-btn" style="width: 100%; border-radius: 14px; padding: 12px;"
@@ -1400,6 +1469,18 @@
             document.getElementById('connBtn').classList.toggle('active', connOn);
         }
 
+        window.updateGlobalCPConfig = () => {
+            const pos = document.getElementById('cpPositionSelect').value;
+            const layout = document.getElementById('cpLayoutSelect').value;
+            
+            currentConfig.canvasProperties.contextPad.position = pos;
+            currentConfig.canvasProperties.contextPad.layout = layout === 'grid' ? 'grid' : layout;
+            currentConfig.canvasProperties.contextPad.gridColumns = layout === 'grid' ? 3 : undefined;
+            
+            Zenode.updateConfig(currentConfig);
+            updatePreview();
+        };
+
         let editingNodeId = null;
         let activeLayout = 'text-only';
 
@@ -1482,6 +1563,9 @@
             }
 
             const fontSize = (textItem?.fontSize || 13) * k;
+            
+            // Signal engine to hide text
+            Zenode.setEditingNode(id);
 
             editor.style.cssText = `
                 position: fixed;
@@ -1518,19 +1602,18 @@
             const sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(range);
-
+            
             const commit = () => {
                 if (!document.body.contains(editor)) return;
 
                 const newVal = editor.innerText.trim();
                 const currentContent = node.content || { layout: 'text-only', items: [] };
-                const currentTextItem = currentContent.items.find(i => i.kind === 'text') || { kind: 'text', value: "" };
+                const textItem = (currentContent.items || []).find(i => i.kind === 'text') || { kind: 'text', value: "" };
 
-                // Update items
                 const otherItems = currentContent.items.filter(i => i.kind !== 'text');
                 const updatedItems = [...otherItems];
                 if (newVal) {
-                    updatedItems.push({ ...currentTextItem, value: newVal });
+                    updatedItems.push({ ...textItem, value: newVal });
                 }
 
                 Zenode.updateNodeContent(node.id, {
@@ -1538,6 +1621,7 @@
                     items: updatedItems
                 });
 
+                Zenode.setEditingNode(null);
                 document.body.removeChild(editor);
                 updatePreview();
             };
@@ -1546,6 +1630,7 @@
             editor.onkeydown = (e) => {
                 if (e.key === 'Escape') {
                     e.preventDefault();
+                    Zenode.setEditingNode(null);
                     document.body.removeChild(editor);
                 }
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -1673,9 +1758,81 @@
 
             Zenode.initializeCanvas("#canvasContainer", currentConfig);
 
-            // Hook context pad edit action
+            // Hook context pad actions
             Zenode.on("contextpad:edit-content", ({ target }) => {
                 openInPlaceEditor(target.id);
+            });
+
+            // --- New Feature: Drag-and-Drop & DblClick Setup ---
+            document.querySelectorAll('.toolbox-section[data-category="Shapes"] .tool-btn').forEach(btn => {
+                const onclickStr = btn.getAttribute('onclick') || "";
+                const match = onclickStr.match(/createShape\('([^']*)', '([^']*)'\)/);
+                if (match) {
+                    const [, type, id] = match;
+                    btn.setAttribute('draggable', 'true');
+                    btn.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('application/zenode-shape', JSON.stringify({ type, id }));
+                        e.dataTransfer.effectAllowed = "copy";
+                    });
+                    btn.addEventListener('dblclick', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Cancel the placement preview started by the initial single 'click'
+                        Zenode.cancelPlacement();
+                        Zenode.placeShapeAtSafePos(type, id);
+                    });
+                }
+            });
+
+            const canvasContainer = document.getElementById('canvasContainer');
+            canvasContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "copy";
+            });
+            canvasContainer.addEventListener('drop', (e) => {
+                e.preventDefault();
+                Zenode.handleDrop(e);
+            });
+            // ----------------------------------------------------
+
+            Zenode.on("lasso:toggle", ({ enabled }) => {
+                const btn = document.getElementById('lassoBtn');
+                if (btn) btn.classList.toggle('active', enabled);
+                lassoOn = enabled;
+            });
+
+            Zenode.on("contextpad:style", ({ target }) => {
+                // Open content panel and focus style section instead of in-place text editor
+                editingNodeId = target.id;
+                const node = Zenode.getPlacedNodes().find(n => n.id === target.id);
+                if (node) {
+                    const cp = document.getElementById('contentPanel');
+                    closeAll();
+                    cp.classList.add('active');
+                    document.body.classList.add('panel-open');
+                    
+                    // Sync editor fields
+                    const textItem = (node.content?.items || []).find(it => it.kind === 'text');
+                    const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
+                    document.getElementById('nodeText').value = textItem ? textItem.value : "";
+                    document.getElementById('nodeIcon').value = iconItem ? iconItem.value : "";
+                    document.getElementById('nodeTextColor').value = textItem?.color || "#000000";
+                    document.getElementById('nodeFontSize').value = textItem?.fontSize || 12;
+                    activeLayout = node.content?.layout || "text-only";
+                    updateLayoutButtons();
+
+                    // Sync CP globals (dropdowns)
+                    const cpConf = currentConfig.canvasProperties.contextPad;
+                    document.getElementById('cpPositionSelect').value = cpConf.position;
+                    const layoutVal = cpConf.layout === 'grid' ? 'grid' : cpConf.layout;
+                    document.getElementById('cpLayoutSelect').value = layoutVal;
+                }
+            });
+
+            Zenode.on("connection:mode:changed", ({ enabled }) => {
+                document.body.classList.toggle('connection-mode-active', enabled);
+                const btn = document.getElementById('connectBtn'); // if it existed, but it's in context pad.
+                // We don't have a global connect toggle usually, but the pad has it.
             });
 
             // Optionally still open sidebar for advanced props?
@@ -1685,11 +1842,7 @@
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
 
-            // Check for initial state via URL
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('state') === 'xml') {
-                setTimeout(() => Zenode.loadTestXML(), 100);
-            }
+
 
             // Fade out the loading screen when the engine is 100% ready
             if (Zenode.on) {
@@ -1893,6 +2046,41 @@
         }
 
         function renderArrayItem(key, value, path, container) {
+            if (value.length > 0 && typeof value[0] === 'object' && value[0] !== null) {
+                // Array of objects (like shapes)
+                const group = document.createElement('div');
+                group.className = "config-group";
+                group.innerHTML = `<div class="item-label">${key} (List)</div>`;
+                
+                value.forEach((item, index) => {
+                    const itemPath = `${path}.${index}`;
+                    const itemCard = document.createElement('div');
+                    itemCard.className = "config-card sub-card";
+                    
+                    const header = document.createElement('div');
+                    header.className = "config-card-header";
+                    header.innerHTML = `<span>Item ${index} (${item.id || 'No ID'})</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>`;
+                    
+                    const body = document.createElement('div');
+                    body.className = "config-card-body";
+                    body.style.display = 'none'; // Default collapsed
+                    renderForm(item, body, itemPath);
+                    
+                    header.onclick = (e) => {
+                        e.stopPropagation();
+                        const isHidden = body.style.display === 'none';
+                        body.style.display = isHidden ? 'flex' : 'none';
+                        header.querySelector('svg').style.transform = isHidden ? '' : 'rotate(-90deg)';
+                    };
+                    
+                    itemCard.appendChild(header);
+                    itemCard.appendChild(body);
+                    group.appendChild(itemCard);
+                });
+                container.appendChild(group);
+                return;
+            }
+
             const item = document.createElement('div');
             item.className = "config-item";
             item.innerHTML = `<label style="margin-bottom:4px; display:block;">${key} (Array)</label>`;
@@ -1921,6 +2109,7 @@
             currentConfig.canvasProperties.zoomScale = 1.0;
 
             Zenode.updateConfig(currentConfig);
+
             const formRoot = document.getElementById('formContainer');
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
@@ -1964,23 +2153,49 @@
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Delete Selection</span>
-                <div class="shortcut-keys"><span class="key-tag">Del</span></div>
+                <div class="shortcut-keys"><span class="key-tag">Del</span><span class="key-tag">Backspace</span></div>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Clear Selection</span>
                 <div class="shortcut-keys"><span class="key-tag">Esc</span></div>
             </div>
             <div class="shortcut-item">
-                <span class="shortcut-label">Lasso Select</span>
-                <div class="shortcut-keys"><span class="key-tag">Click + Drag</span></div>
+                <span class="shortcut-label">Toggle Lasso Tool</span>
+                <div class="shortcut-keys"><span class="key-tag">L</span> or <span class="key-tag">Click + Drag</span></div>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Pan Canvas</span>
                 <div class="shortcut-keys"><span class="key-tag">Right Click + Drag</span></div>
             </div>
             <div class="shortcut-item">
-                <span class="shortcut-label">Zoom</span>
-                <div class="shortcut-keys"><span class="key-tag">Wheel</span></div>
+                <span class="shortcut-label">Zoom In/Out</span>
+                <div class="shortcut-keys">
+                    <span class="key-tag">Ctrl</span><span class="key-tag">+ / -</span> or <span class="key-tag">Wheel</span>
+                </div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Reset Zoom</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">0</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Copy Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">C</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Paste Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">V</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Select All</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">A</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Group Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">G</span></div>
+            </div>
+            <div class="shortcut-item">
+                <span class="shortcut-label">Ungroup Selection</span>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">Shift</span><span class="key-tag">G</span></div>
             </div>
         </div>
     </div>

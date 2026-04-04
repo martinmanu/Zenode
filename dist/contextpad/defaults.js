@@ -20,6 +20,18 @@ const defaultActions = [
         },
     },
     {
+        id: "duplicate",
+        icon: `<i data-lucide="copy" style="width:16px; height:16px;"></i>`,
+        tooltip: "Duplicate",
+        group: "primary",
+        targets: ["node"],
+        handler: (target, engine, event) => {
+            if (target.kind === "node") {
+                engine.duplicateNode(target.id);
+            }
+        },
+    },
+    {
         id: "edit-content",
         icon: `<i data-lucide="edit-3" style="width:16px; height:16px;"></i>`,
         tooltip: "Edit Content",
@@ -75,6 +87,40 @@ const defaultActions = [
         },
         isActive: (target, engine) => {
             return engine.isResizeModeEnabled();
+        }
+    },
+    {
+        id: "style",
+        icon: `<i data-lucide="palette" style="width:16px; height:16px;"></i>`,
+        tooltip: "Change Style",
+        group: "secondary",
+        targets: ["node", "edge"],
+        handler: (target, engine, event) => {
+            engine.emit("contextpad:style", { target });
+        },
+    },
+    {
+        id: "bringToFront",
+        icon: `<i data-lucide="arrow-up" style="width:16px; height:16px;"></i>`,
+        tooltip: "Bring to Front",
+        group: "secondary",
+        targets: ["node"],
+        handler: (target, engine, event) => {
+            if (target.kind === "node") {
+                engine.bringToFront([target.id]);
+            }
+        }
+    },
+    {
+        id: "sendToBack",
+        icon: `<i data-lucide="arrow-down" style="width:16px; height:16px;"></i>`,
+        tooltip: "Send to Back",
+        group: "secondary",
+        targets: ["node"],
+        handler: (target, engine, event) => {
+            if (target.kind === "node") {
+                engine.sendToBack([target.id]);
+            }
         }
     }
 ];

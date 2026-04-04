@@ -7,7 +7,7 @@ import { Config, Shape } from "../model/configurationModel.js";
 import { createDragBehavior, DragApi } from "../events/drag.js";
 import { ShapeRegistry } from "./registry.js";
 import { renderPorts } from "./ports.js";
-import { buildResolvedShapeConfig, renderSelectionRing } from "./overlay.js";
+import { buildResolvedShapeConfig, renderSelectionRing, renderResizeHandles } from "./overlay.js";
 import { applyEffects } from "../effects/engine.js";
 import { renderNodeContent } from "./content.js";
 
@@ -26,6 +26,7 @@ export interface RenderApi extends DragApi {
   beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
   endOperation(): void;
   getActiveOperation(): { type: string, nodeId: string, originalData: PlacedNode } | null;
+  getEditingNodeId(): string | null;
 }
 
 function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
@@ -79,7 +80,7 @@ export function renderPlacedNodes(
 
         renderer.draw(el as any, resolvedConfig, {});
         applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
-        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig));
+        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig), api.getEditingNodeId() === d.id);
       });
       return g;
     },
@@ -133,7 +134,7 @@ export function renderPlacedNodes(
 
         renderer.draw(el as any, resolvedConfig, {});
         applyEffects(el as any, renderer.getPath(resolvedConfig), d.visualState);
-        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig));
+        renderNodeContent(el as any, d.content, renderer.getBounds(resolvedConfig), api.getEditingNodeId() === d.id);
       });
       return update;
     },
@@ -168,6 +169,7 @@ function syncSelectionRings(
       if (!style) return;
 
       renderSelectionRing(group, nodeDatum, style, api.shapeRegistry, selectionStroke, 4);
+      renderResizeHandles(group, nodeDatum, style, api);
     });
 
   // Finally render ports for ALL nodes to ensure they are always on top

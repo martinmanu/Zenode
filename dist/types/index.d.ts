@@ -127,6 +127,7 @@ export interface NodeConfig {
     height?: number;
     radius?: number;
     rotation?: number;
+    parentId?: string;
     visualState?: VisualState;
     content?: NodeContent;
     meta?: Record<string, any>;

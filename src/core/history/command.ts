@@ -7,6 +7,7 @@ import { ZenodeEngine } from "../engine.js";
 export interface Command {
   execute(): void;
   undo(): void;
+  commands?: Command[]; // Optional sub-commands for BatchCommand
   metadata?: {
     id: string;
     label: string;
@@ -123,4 +124,38 @@ export class UpdateConfigCommand implements Command {
     undo() {
         this.engine.updateConfig(this.oldConfig, false);
     }
+}
+
+/**
+ * Concrete command for batching multiple operations into one undo step.
+ */
+export class BatchCommand implements Command {
+    constructor(public commands: Command[]) {}
+    
+    execute() {
+        this.commands.forEach(cmd => cmd.execute());
+    }
+    
+    undo() {
+        // Undo in reverse order to maintain state integrity
+        this.commands.slice().reverse().forEach(cmd => cmd.undo());
+    }
+}
+/**
+ * Concrete command for reordering nodes (Z-index).
+ */
+export class ReorderNodesCommand implements Command {
+  constructor(
+    private engine: any,
+    private oldOrder: string[],
+    private newOrder: string[]
+  ) {}
+
+  execute() {
+    this.engine.setNodeOrder(this.newOrder, false);
+  }
+
+  undo() {
+    this.engine.setNodeOrder(this.oldOrder, false);
+  }
 }

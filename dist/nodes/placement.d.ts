@@ -37,6 +37,7 @@ export interface RenderApi extends DragApi {
         nodeId: string;
         originalData: PlacedNode;
     } | null;
+    getEditingNodeId(): string | null;
 }
 /**
  * Renders the placed nodes layer using a D3 data join. Call after state changes.

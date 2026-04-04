@@ -3,7 +3,6 @@ import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
 import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
-import { testXML } from "./config/testXML.js";
 
 export { 
   ZenodeEngine, 
@@ -12,8 +11,7 @@ export {
   VisualState, ContextPadAction, ContextPadTarget, NodeContent,
   NodeConfig, NodeData,
   EdgeConfig, EdgeData,
-  d3,
-  testXML
+  d3
 };
 
 let engineInstance: ZenodeEngine | null = null;
@@ -163,6 +161,16 @@ function updateNodeContent(id: string, content: NodeContent): void {
   engineInstance.updateNodeContent(id, content);
 }
 
+/** Sets the current editing node ID to suppress SVG rendering. */
+function setEditingNode(id: string | null): void {
+  if (engineInstance) engineInstance.setEditingNode(id);
+}
+
+/** Gets the current editing node ID. */
+function getEditingNodeId(): string | null {
+  return engineInstance ? engineInstance.getEditingNodeId() : null;
+}
+
 /**
  * Listens to engine events.
  */
@@ -221,17 +229,21 @@ const clear = () => {
     if (engineInstance) engineInstance.clear();
 };
 
-const toXML = () => engineInstance ? engineInstance.toXML() : "";
-const toMermaid = () => engineInstance ? engineInstance.toMermaid() : "";
-const toDOT = () => engineInstance ? engineInstance.toDOT() : "";
+/** Handles a drop event from the UI to place a shape. */
+function handleDrop(event: DragEvent): void {
+  if (engineInstance) engineInstance.handleDrop(event);
+}
 
-const fromXML = (xml: string) => {
-    if (engineInstance) engineInstance.fromXML(xml);
-};
+/** Places a shape at a specific canvas coordinate. */
+function placeShapeAt(type: string, id: string, x: number, y: number, data?: any): void {
+  if (engineInstance) engineInstance.placeShapeAt(type, id, x, y, data);
+}
 
-const loadTestXML = () => {
-    if (engineInstance) engineInstance.fromXML(testXML);
-};
+/** Places a shape at a safe, non-overlapping position. */
+function placeShapeAtSafePos(type: string, id: string, data?: any): void {
+  if (engineInstance) engineInstance.placeShapeAtSafePos(type, id, data);
+}
+
 
 /** Adds a new connection programmatically. */
 const addEdge = (config: EdgeConfig) => {
@@ -265,6 +277,14 @@ const getDiagramState = () => {
   return engineInstance ? engineInstance.getDiagramState() : null;
 };
 
+const copySelection = () => {
+    if (engineInstance) engineInstance.copySelection();
+};
+
+const pasteSelection = (offset?: { x: number, y: number }) => {
+    if (engineInstance) engineInstance.pasteSelection(offset);
+};
+
 export {
   initializeCanvas,
   updateConfig,
@@ -295,17 +315,20 @@ export {
   zoomIn,
   zoomOut,
   focusNode,
+  focusOnSelectedNode,
   undo,
   redo,
   clear,
   validate,
-  toXML,
-  toMermaid,
-  toDOT,
-  fromXML,
-  loadTestXML,
   registerContextPadAction,
-  registerSmartConnect
+  registerSmartConnect,
+  copySelection,
+  pasteSelection,
+  setEditingNode,
+  getEditingNodeId,
+  handleDrop,
+  placeShapeAt,
+  placeShapeAtSafePos
 };
 
 /** Sets the license key for the engine. */

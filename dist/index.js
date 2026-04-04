@@ -1,7 +1,6 @@
 import * as d3 from 'd3';
 export { d3 };
 import { ZenodeEngine } from './core/engine.js';
-import { testXML } from './config/testXML.js';
 
 let engineInstance = null;
 /**
@@ -135,6 +134,15 @@ function updateNodeContent(id, content) {
     }
     engineInstance.updateNodeContent(id, content);
 }
+/** Sets the current editing node ID to suppress SVG rendering. */
+function setEditingNode(id) {
+    if (engineInstance)
+        engineInstance.setEditingNode(id);
+}
+/** Gets the current editing node ID. */
+function getEditingNodeId() {
+    return engineInstance ? engineInstance.getEditingNodeId() : null;
+}
 /**
  * Listens to engine events.
  */
@@ -187,17 +195,21 @@ const clear = () => {
     if (engineInstance)
         engineInstance.clear();
 };
-const toXML = () => engineInstance ? engineInstance.toXML() : "";
-const toMermaid = () => engineInstance ? engineInstance.toMermaid() : "";
-const toDOT = () => engineInstance ? engineInstance.toDOT() : "";
-const fromXML = (xml) => {
+/** Handles a drop event from the UI to place a shape. */
+function handleDrop(event) {
     if (engineInstance)
-        engineInstance.fromXML(xml);
-};
-const loadTestXML = () => {
+        engineInstance.handleDrop(event);
+}
+/** Places a shape at a specific canvas coordinate. */
+function placeShapeAt(type, id, x, y, data) {
     if (engineInstance)
-        engineInstance.fromXML(testXML);
-};
+        engineInstance.placeShapeAt(type, id, x, y, data);
+}
+/** Places a shape at a safe, non-overlapping position. */
+function placeShapeAtSafePos(type, id, data) {
+    if (engineInstance)
+        engineInstance.placeShapeAtSafePos(type, id, data);
+}
 /** Adds a new connection programmatically. */
 const addEdge = (config) => {
     return engineInstance ? engineInstance.addEdge(config) : "";
@@ -221,6 +233,14 @@ const focusNode = (id, options) => {
 };
 const getDiagramState = () => {
     return engineInstance ? engineInstance.getDiagramState() : null;
+};
+const copySelection = () => {
+    if (engineInstance)
+        engineInstance.copySelection();
+};
+const pasteSelection = (offset) => {
+    if (engineInstance)
+        engineInstance.pasteSelection(offset);
 };
 /** Sets the license key for the engine. */
 function setLicense(key) {
@@ -286,6 +306,12 @@ function zoomOut() {
     if (!engineInstance)
         return;
     engineInstance.zoomOut();
+}
+/** Focuses (center + zoom) on the first selected node. */
+function focusOnSelectedNode() {
+    if (!engineInstance)
+        return;
+    engineInstance.focusOnSelectedNode();
 }
 /** Undoes the last action. */
 function undo() {
@@ -395,5 +421,5 @@ function registerSmartConnect() {
     });
 }
 
-export { ZenodeEngine, addEdge, addNode, beginLabelEdit, clear, createConnection, createShape, duplicateNode, focusNode, fromXML, getAllEdges, getAllNodes, getDiagramState, getEdge, getEngine, getLicenseTier, getNode, getPlacedNodes, initializeCanvas, loadTestXML, off, on, redo, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setLassoEnabled, setLicense, setSmartRoutingEnabled, testXML, toDOT, toMermaid, toXML, undo, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, validate, zoomIn, zoomOut };
+export { ZenodeEngine, addEdge, addNode, beginLabelEdit, clear, copySelection, createConnection, createShape, duplicateNode, focusNode, focusOnSelectedNode, getAllEdges, getAllNodes, getDiagramState, getEdge, getEditingNodeId, getEngine, getLicenseTier, getNode, getPlacedNodes, handleDrop, initializeCanvas, off, on, pasteSelection, placeShapeAt, placeShapeAtSafePos, redo, registerContextPadAction, registerSmartConnect, removeEdge, removeNode, resizeCanvas, setActiveConnectionType, setConnectionLabel, setConnectionModeEnabled, setEditingNode, setLassoEnabled, setLicense, setSmartRoutingEnabled, undo, updateConfig, updateEdgeVisualState, updateNode, updateNodeContent, updateNodeVisualState, validate, zoomIn, zoomOut };
 //# sourceMappingURL=index.js.map

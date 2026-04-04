@@ -1,6 +1,6 @@
 # Zenode Engine Public API Reference
 
-The Zenode Engine is a high-performance, D3.js-powered diagramming library. This reference documented the Layer 1 (Core) APIs available for node management, viewport control, and data serialization.
+The Zenode Engine is a high-performance, D3.js-powered diagramming library. This reference documents the Layer 1 (Core) APIs available for node management, viewport control, and JSON-based persistence.
 
 ## 1. Core Lifecycle & Configuration
 
@@ -22,15 +22,15 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `addEdge(config)` | Creates a connection. Supports `type` override. | `Zenode.addEdge({ sourceNodeId: 'n1', targetNodeId: 'n2', type: 's-shaped' })` |
 | `duplicateNode(id)` | Clones a node and its content. | `Zenode.duplicateNode('n1')` |
 | `focusNode(id, opts?)` | Animates the viewport to focus on a node. | `Zenode.focusNode('n1', { zoom: 1.5, duration: 500 })` |
+| `groupSelection()` | Encapsulates selection within a 'group' node. | `Zenode.groupSelection()` |
+| `ungroupSelection()` | Breaks apart selected groups. | `Zenode.ungroupSelection()` |
+| `bringToFront(ids)` | Moves nodes to top layer. | `Zenode.bringToFront(['n1'])` |
+| `sendToBack(ids)` | Moves nodes to bottom layer. | `Zenode.sendToBack(['n1'])` |
 
 ## 3. Data Serialization & Export
 
 | API | Description | Usage Example |
 |---|---|---|
-| `toXML()` | Exports current state as a Zenode XML string. | `const xml = Zenode.toXML()` |
-| `fromXML(xmlString)` | Restores the canvas from a Zenode XML string. | `Zenode.fromXML(myXml)` |
-| `toMermaid()` | Generates a Mermaid.js flowchart script. | `console.log(Zenode.toMermaid())` |
-| `toDOT()` | Generates a Graphviz/DOT language script. | `const dot = Zenode.toDOT()` |
 | `validate()` | Runs structural validation (cycles, orphans). | `const result = Zenode.validate()` |
 
 ## 4. Visual Feedback & Status
@@ -40,6 +40,16 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `setNodeStatus(id, type)` | Triggers visual cues (`running`, `success`, `error`). | `engine.setNodeStatus('n1', 'error')` |
 | `updateNodeContent(id, cnt)` | Sets text, icons, and layout for a node. | `Zenode.updateNodeContent('n1', { items: [...] })` |
 | `highlight(id, opts?)` | Pulses a node with target behavior/color. | `engine.highlight('n1', { color: '#ff0000', duration: 3000 })` |
+
+## 5. Placement & Interaction
+
+| API | Description | Usage Example |
+|---|---|---|
+| `placeShapeAt(type, id, x, y)` | Immediately places a shape at exact canvas coordinates. | `engine.placeShapeAt('circle', 'c1', 100, 200)` |
+| `placeShapeAtSafePos(type, id)` | Finds the nearest non-overlapping spot in viewport to place a shape. | `engine.placeShapeAtSafePos('rectangle', 'r1')` |
+| `handleDrop(event)` | Native DND handler: parses drop data and places shape at mouse. | `container.ondrop = (e) => Zenode.handleDrop(e)` |
+| `startPlacement(type, id, data?)` | Enters placement mode with a ghost preview. | `engine.startPlacement('rectangle', 'task0')` |
+| `cancelPlacement()` | Aborts placement mode and removes preview. | `engine.cancelPlacement()` |
 
 ---
 

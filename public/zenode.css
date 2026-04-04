@@ -10,6 +10,13 @@ g.guides, g.elements-group {
 
 .port {
   pointer-events: all;
+  transition: r 0.2s cubic-bezier(0.4, 0, 0.2, 1), stroke-width 0.2s, opacity 0.2s;
+}
+
+.zenode-connection-mode .port:hover {
+  r: 7px !important;
+  stroke-width: 2px !important;
+  opacity: 1 !important;
 }
 
 g.placed-node {

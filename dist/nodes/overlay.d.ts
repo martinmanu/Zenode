@@ -5,3 +5,7 @@ import { ShapeRegistry } from "./registry.js";
 import { ResolvedShapeConfig } from "../types/index.js";
 export declare function buildResolvedShapeConfig(node: PlacedNode, style: Shape): ResolvedShapeConfig;
 export declare function renderSelectionRing(selection: d3.Selection<SVGGElement, PlacedNode, any, any>, node: PlacedNode, style: Shape, shapeRegistry: ShapeRegistry, stroke: string, pad?: number): void;
+/**
+ * Renders 8-point interactive resize handles around a selected node.
+ */
+export declare function renderResizeHandles(group: d3.Selection<SVGGElement, PlacedNode, any, any>, node: PlacedNode, style: Shape, api: any): void;

@@ -7,31 +7,46 @@ import { ShapeRegistry } from "../nodes/registry.js";
 import { ResolvedShapeConfig } from "../types/index.js";
 
 export function svgMouseMove(
-  event: MouseEvent,
+  event: MouseEvent | null,
   shapeType: string,
   shapeToFind: Shape,
   grid: any,
   config: Config,
   canvasObject: CanvasElements,
   data?: ShapePreviewData,
-  registry?: ShapeRegistry
-) {
+  registry?: ShapeRegistry,
+  manualPoint?: { x: number; y: number }
+): { x: number; y: number } {
   const gridSize: number = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
   const zoomTransform = d3.zoomTransform(canvasObject.svg.node() as Element);
-  const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
-  const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
-  const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
+  
+  let x, y;
+  if (manualPoint) {
+    x = manualPoint.x;
+    y = manualPoint.y;
+  } else if (event) {
+    const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
+    x = cursorX;
+    y = cursorY;
+  } else {
+    return { x: 0, y: 0 };
+  }
+
+  const adjustedX = (x - zoomTransform.x) / zoomTransform.k;
+  const adjustedY = (y - zoomTransform.y) / zoomTransform.k;
+  
   let exactPosition: { x: number; y: number };
   if (config.canvasProperties.snapToGrid) {
     exactPosition = snapToGrid(adjustedX, adjustedY, gridSize);
   } else {
     exactPosition = { x: adjustedX, y: adjustedY };
   }
+  
   if(shapeToFind.previewEnabled) {
-    let shapePreview = createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind, registry);
-  }else {
-    // draw the shape directly without preview
+    createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind, registry);
   }
+  
+  return exactPosition;
 }
 
 function createShapePreview(

@@ -18,12 +18,12 @@ export interface PlacementClickApi {
  * Handles canvas click: if a placement is pending (preview active), places the node
  * at the snapped position and clears the preview.
  */
-export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
-  if (event.defaultPrevented) return; // drag fired — ignore
+export function svgMouseClick(event: MouseEvent | null, api: PlacementClickApi, manualPoint?: { x: number; y: number }): string | null {
+  if (event && event.defaultPrevented) return null; // drag fired — ignore
   const ctx = api.getPlacementContext();
-  if (!ctx) return;
+  if (!ctx) return null;
 
-  const point = api.getCanvasPoint(event);
+  const point = manualPoint || (event ? api.getCanvasPoint(event) : { x: 0, y: 0 });
   const { shapeType, shapeConfig } = ctx;
 
   const node: PlacedNode = {
@@ -44,4 +44,6 @@ export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
   removeAllPreview(api.canvasObject);
   api.clearPlacementContext();
   api.removePlacementListeners();
+  
+  return node.id;
 }

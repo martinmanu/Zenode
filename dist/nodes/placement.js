@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import { createDragBehavior } from '../events/drag.js';
 import { renderPorts } from './ports.js';
-import { buildResolvedShapeConfig, renderSelectionRing } from './overlay.js';
+import { buildResolvedShapeConfig, renderSelectionRing, renderResizeHandles } from './overlay.js';
 import { applyEffects } from '../effects/engine.js';
 import { renderNodeContent } from './content.js';
 
@@ -52,7 +52,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             el.selectAll("path, circle, rect").filter(":not(.port):not(.selection-ring)").remove();
             renderer.draw(el, resolvedConfig, {});
             applyEffects(el, renderer.getPath(resolvedConfig), d.visualState);
-            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig));
+            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig), api.getEditingNodeId() === d.id);
         });
         return g;
     }, (update) => {
@@ -99,7 +99,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
             el.selectAll("path, circle, rect, g.node-content").filter(":not(.port):not(.selection-ring):not(.node-ghost *)").remove();
             renderer.draw(el, resolvedConfig, {});
             applyEffects(el, renderer.getPath(resolvedConfig), d.visualState);
-            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig));
+            renderNodeContent(el, d.content, renderer.getBounds(resolvedConfig), api.getEditingNodeId() === d.id);
         });
         return update;
     }, (exit) => exit.remove());
@@ -123,6 +123,7 @@ function syncSelectionRings(placedNodesGroup, api, placedNodes) {
         if (!style)
             return;
         renderSelectionRing(group, nodeDatum, style, api.shapeRegistry, selectionStroke, 4);
+        renderResizeHandles(group, nodeDatum, style, api);
     });
     // Finally render ports for ALL nodes to ensure they are always on top
     placedNodesGroup

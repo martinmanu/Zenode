@@ -5,13 +5,13 @@ import { removeAllPreview } from './mouseMove.js';
  * Handles canvas click: if a placement is pending (preview active), places the node
  * at the snapped position and clears the preview.
  */
-function svgMouseClick(event, api) {
-    if (event.defaultPrevented)
-        return; // drag fired — ignore
+function svgMouseClick(event, api, manualPoint) {
+    if (event && event.defaultPrevented)
+        return null; // drag fired — ignore
     const ctx = api.getPlacementContext();
     if (!ctx)
-        return;
-    const point = api.getCanvasPoint(event);
+        return null;
+    const point = (event ? api.getCanvasPoint(event) : { x: 0, y: 0 });
     const { shapeType, shapeConfig } = ctx;
     const node = {
         id: generatePlacedNodeId(),
@@ -30,6 +30,7 @@ function svgMouseClick(event, api) {
     removeAllPreview(api.canvasObject);
     api.clearPlacementContext();
     api.removePlacementListeners();
+    return node.id;
 }
 
 export { svgMouseClick };

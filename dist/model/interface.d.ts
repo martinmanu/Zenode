@@ -32,6 +32,7 @@ export interface PlacedNode {
     height?: number;
     radius?: number;
     rotation?: number;
+    parentId?: string;
     /** Original dimensions at placement — used to constrain resize min/max */
     baseDimensions?: {
         width?: number;

@@ -188,7 +188,7 @@ class ContextPadRenderer {
             // Convert to top-left of the bounding box.
             let canvasX = node.x - w / 2;
             let canvasY = node.y - h / 2;
-            // Apply anchor position
+            // Apply anchor position to the shape's bounding box
             switch (config.position) {
                 case "top-right":
                     canvasX += w;
@@ -209,7 +209,7 @@ class ContextPadRenderer {
                     canvasY += h;
                     break;
             }
-            // Project to screen
+            // Project to screen coordinate system
             x = canvasX * transform.k + transform.x;
             y = canvasY * transform.k + transform.y;
         }
@@ -228,11 +228,31 @@ class ContextPadRenderer {
                 y = transform.y;
             }
         }
-        // Apply offset from config
-        const offsetX = (_j = (_h = config.offset) === null || _h === void 0 ? void 0 : _h.x) !== null && _j !== void 0 ? _j : 10;
-        const offsetY = (_l = (_k = config.offset) === null || _k === void 0 ? void 0 : _k.y) !== null && _l !== void 0 ? _l : -10;
-        let finalX = x + offsetX;
-        let finalY = y + offsetY;
+        // Calculate pad dimensions for proper offset adjustment
+        const padWidth = this.padElement.offsetWidth;
+        this.padElement.offsetHeight;
+        // Configuration offsets
+        const baseOffsetX = (_j = (_h = config.offset) === null || _h === void 0 ? void 0 : _h.x) !== null && _j !== void 0 ? _j : 10;
+        const baseOffsetY = (_l = (_k = config.offset) === null || _k === void 0 ? void 0 : _k.y) !== null && _l !== void 0 ? _l : -10;
+        let finalX = x;
+        let finalY = y;
+        // Refined alignment logic to prevent overlap regardless of position type
+        const position = config.position || "top-right";
+        if (position.includes("right")) {
+            finalX += baseOffsetX;
+        }
+        else if (position.includes("left")) {
+            finalX -= (padWidth + baseOffsetX);
+        }
+        else if (position.includes("center")) {
+            finalX -= padWidth / 2;
+        }
+        if (position.includes("top")) {
+            finalY += baseOffsetY;
+        }
+        else if (position.includes("bottom")) {
+            finalY -= baseOffsetY; // If offset.y is -10 (standard), this moves it down by 10
+        }
         this.padElement.style.left = `${finalX}px`;
         this.padElement.style.top = `${finalY}px`;
         // Re-apply styles ensures that if the config was updated (e.g. testConfig.ts), 

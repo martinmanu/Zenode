@@ -9,7 +9,7 @@ import { ContextPadAction, ContextPadTarget, ShapeRenderer, BoundingBox, VisualS
 import { svgMouseMove } from "../events/mouseMove.js";
 import { svgMouseClick } from "../events/mouseClick.js";
 import { renderPlacedNodes } from "../nodes/placement.js";
-import { renderConnections, StoredConnection } from "../connections/render.js";
+import { renderConnections, renderGhostConnection as renderGhostLine, StoredConnection } from "../connections/render.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 import { RectangleRenderer } from "../nodes/shapes/rectangle.js";
 import { CircleRenderer } from "../nodes/shapes/circle.js";
@@ -31,11 +31,10 @@ import { LicenseManager } from "./license.js";
 import { SmartRouter } from "../connections/routing/smartRouter.js";
 import { buildResolvedShapeConfig } from "../nodes/overlay.js";
 import { ValidationEngine } from "./validation.js";
-import { SerializationEngine } from "./serialization.js";
 
 import { mergeConfig } from "../utils/configMerger.js";
 import * as d3 from "d3";
-import { snapToGrid } from "../utils/helpers.js";
+import { snapToGrid, generatePlacedNodeId } from "../utils/helpers.js";
 import { ContextPadRegistry } from "../contextpad/registry.js";
 import { ContextPadRenderer } from "../contextpad/renderer.js";
 import { UndoManager } from "./history/undoManager.js";
@@ -44,8 +43,10 @@ import {
   RemoveNodeCommand, 
   AddEdgeCommand, 
   RemoveEdgeCommand,
-  UpdateNodeCommand,
-  UpdateConfigCommand
+  UpdateNodeCommand, 
+  UpdateConfigCommand,
+  Command,
+  BatchCommand
 } from "./history/command.js";
 
 export class ZenodeEngine {
@@ -110,10 +111,13 @@ export class ZenodeEngine {
   private activeOperation: { type: string, nodeId: string, originalData: PlacedNode } | null = null;
   private undoManager: UndoManager;
   private selectionKeyboardListener: any;
+  private clipboard: { nodes: PlacedNode[], connections: StoredConnection[] } | null = null;
+  private editingNodeId: string | null = null;
+  private onWindowMouseUp: ((e: MouseEvent) => void) | null = null;
+  private onWindowMouseMove: ((e: MouseEvent) => void) | null = null;
   
   // Phase 3 Engines
   private validationEngine: ValidationEngine;
-  private serializationEngine: SerializationEngine;
 
   constructor(container: HTMLElement | null, config: Partial<Config>) {
     this.container = container;
@@ -124,11 +128,19 @@ export class ZenodeEngine {
     this.contextPadRegistry = new ContextPadRegistry();
     this.undoManager = new UndoManager(this.config.historyLimit || 20);
     this.validationEngine = new ValidationEngine();
-    this.serializationEngine = new SerializationEngine();
 
     this.initializeCanvas();
     this.initializeContextPad();
     this.setupKeyboardShortcuts();
+
+    // Set initial class state
+    if (this.container) {
+      if (this.connectionModeEnabled) {
+          this.container.classList.add("zenode-connection-mode");
+      } else {
+          this.container.classList.remove("zenode-connection-mode");
+      }
+    }
     this.emit("engine:ready", { version: "3.3.0" });
   }
 
@@ -171,17 +183,84 @@ export class ZenodeEngine {
 
           const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
           const modifier = isMac ? event.metaKey : event.ctrlKey;
+          const shortcuts = this.config.canvasProperties.keyboardShortcuts;
+          if (!shortcuts?.enabled) return;
 
-          if (modifier && event.key.toLowerCase() === 'z') {
-              event.preventDefault();
-              if (event.shiftKey) {
-                  this.redo();
-              } else {
-                  this.undo();
+          // 1. Core Selection Actions (Delete/Clear) via Config
+          if (shortcuts.deleteSelection.some((s) => this.matchesShortcut(event, s))) {
+              const handled = shortcuts.callbacks?.onDeleteSelection?.({
+                  event,
+                  action: "selection:delete",
+                  selectedNodeIds: this.selectedNodeIds,
+                  engine: this,
+              });
+              if (handled !== false) {
+                  event.preventDefault();
+                  this.deleteSelection();
               }
-          } else if (modifier && event.key.toLowerCase() === 'y' && !isMac) {
-              event.preventDefault();
-              this.redo();
+              return;
+          }
+
+          if (shortcuts.clearSelection.some((s) => this.matchesShortcut(event, s))) {
+              const handled = shortcuts.callbacks?.onClearSelection?.({
+                  event,
+                  action: "selection:clear",
+                  selectedNodeIds: this.selectedNodeIds,
+                  engine: this,
+              });
+              if (handled !== false) {
+                  event.preventDefault();
+                  this.clearSelection();
+              }
+              return;
+          }
+
+          // 2. Modifier Actions (Z, Y, C, V, A, G)
+          if (modifier) {
+              const key = event.key.toLowerCase();
+              if (key === 'z') {
+                  event.preventDefault();
+                  if (event.shiftKey) this.redo();
+                  else this.undo();
+              } else if (key === 'y' && !isMac) {
+                  event.preventDefault();
+                  this.redo();
+              } else if (key === 'c') {
+                  this.copySelection();
+              } else if (key === 'v') {
+                  event.preventDefault();
+                  this.pasteSelection();
+              } else if (key === 'd') {
+                  event.preventDefault();
+                  if (this.selectedNodeIds.length === 1) {
+                      this.duplicateNode(this.selectedNodeIds[0]);
+                  } else if (this.selectedNodeIds.length > 1) {
+                      this.copySelection();
+                      this.pasteSelection();
+                  }
+              } else if (key === 'a') {
+                  event.preventDefault();
+                  const allIds = this.placedNodes.map(n => n.id);
+                  this.setSelectedNodeIds(allIds);
+              } else if (key === 'g') {
+                  event.preventDefault();
+                  if (event.shiftKey) this.ungroupSelection();
+                  else this.groupSelection();
+              } else if (key === '+' || key === '=') {
+                  event.preventDefault();
+                  this.zoomIn();
+              } else if (key === '-') {
+                  event.preventDefault();
+                  this.zoomOut();
+              } else if (key === '0') {
+                  event.preventDefault();
+                  this.zoomTo(1.0);
+              }
+          } else if (event.key === 'Escape') {
+              this.cancelPlacement();
+          } else if (event.key.toLowerCase() === 'l') {
+              this.setLassoEnabled(!this.lassoEnabled);
+              this.emit("lasso:toggle", { enabled: this.lassoEnabled });
           }
       });
   }
@@ -236,16 +315,14 @@ export class ZenodeEngine {
 
   public updateConfig(newConfig: Partial<Config>, recordHistory: boolean = true): void {
     const oldConfig = JSON.parse(JSON.stringify(this.config));
-    const oldNodes = [...this.placedNodes];
-    const oldConns = [...this.connections];
-    const oldSelectedNodes = [...this.selectedNodeIds];
-    const oldSelectedEdges = [...this.selectedEdgeIds];
-
-    // Preserve viewport state (zoom and pan)
-    let currentTransform = d3.zoomIdentity;
-    if (this.svg) {
-      currentTransform = d3.zoomTransform(this.svg.node());
-    }
+    
+    // Check if we only updated contextPad settings
+    const keys = Object.keys(newConfig);
+    const isContextPadOnly = keys.length === 1 && 
+                             keys[0] === 'canvasProperties' && 
+                             newConfig.canvasProperties &&
+                             Object.keys(newConfig.canvasProperties).length === 1 &&
+                             newConfig.canvasProperties.contextPad !== undefined;
 
     this.config = mergeConfig(newConfig);
     
@@ -253,8 +330,38 @@ export class ZenodeEngine {
         this.undoManager.push(new UpdateConfigCommand(this, oldConfig, JSON.parse(JSON.stringify(this.config))));
     }
 
-    // Complete re-render of the playground/canvas
+    // Optimization: If only context pad changed, just refresh it if active
+    if (isContextPadOnly && this.svg) {
+      if (this.selectedNodeIds.length === 1) {
+          const node = this.placedNodes.find(n => n.id === this.selectedNodeIds[0]);
+          if (node) {
+              const actions = this.contextPadRegistry.getActionsFor({ kind: 'node', id: node.id, data: node }, this);
+              this.contextPadRenderer.render({ kind: 'node', id: node.id, data: node }, actions, this);
+          }
+      } else if (this.selectedEdgeIds.length === 1) {
+          const edge = this.connections.find(e => e.id === this.selectedEdgeIds[0]);
+          if (edge) {
+              const actions = this.contextPadRegistry.getActionsFor({ kind: 'edge', id: edge.id, data: edge }, this);
+              this.contextPadRenderer.render({ kind: 'edge', id: edge.id, data: edge }, actions, this);
+          }
+      }
+      this.emit("config:updated", { config: this.config, partial: true });
+      return;
+    }
+
+    // Complete re-render of the playground/canvas (for major config changes)
     if (this.container) {
+      const oldNodes = [...this.placedNodes];
+      const oldConns = [...this.connections];
+      const oldSelectedNodes = [...this.selectedNodeIds];
+      const oldSelectedEdges = [...this.selectedEdgeIds];
+
+      // Preserve viewport state
+      let currentTransform = d3.zoomIdentity;
+      if (this.svg) {
+        currentTransform = d3.zoomTransform(this.svg.node());
+      }
+
       this.container.innerHTML = "";
       this.initializeCanvas();
       this.initializeContextPad();
@@ -274,6 +381,7 @@ export class ZenodeEngine {
       if (this.zoomManager && currentTransform) {
         this.svg.call(this.zoomManager.getZoomBehaviour().transform, currentTransform);
       }
+      this.emit("config:updated", { config: this.config, partial: false });
     }
   }
 
@@ -329,6 +437,7 @@ export class ZenodeEngine {
       }
       this.activeOperation = null;
       this.refreshNodes();
+      this.reRenderConnections();
     }
   }
 
@@ -444,6 +553,7 @@ export class ZenodeEngine {
 
     this.placedNodes.push(newNode);
     this.refreshNodes();
+    this.reRenderConnections();
     
     if (recordHistory) {
       this.undoManager.push(new AddNodeCommand(this, { ...newNode }));
@@ -475,6 +585,7 @@ export class ZenodeEngine {
     this.placedNodes = this.placedNodes.filter(n => n.id !== id);
     
     this.refreshNodes();
+    this.reRenderConnections();
     this.emit("node:deleted", { id, node: deletedNode });
   }
 
@@ -497,6 +608,7 @@ export class ZenodeEngine {
     };
 
     this.refreshNodes();
+    this.reRenderConnections();
     this.emit("node:updated", { id, patch, node: this.placedNodes[idx] });
   }
 
@@ -515,6 +627,7 @@ export class ZenodeEngine {
     };
     
     this.refreshNodes();
+    this.reRenderConnections();
     this.emit("node:status:change", { id, status, node: { ...node } });
   }
 
@@ -523,7 +636,7 @@ export class ZenodeEngine {
    */
   public focusNode(id: string, options: { zoom?: number, duration?: number, offset?: { x: number, y: number } } = {}): void {
     const node = this.placedNodes.find(n => n.id === id);
-    const focusDefaults = this.config.canvasProperties.visualEffects.focus;
+    const focusDefaults = this.config.canvasProperties.visualEffects?.focus || { padding: 60, duration: 1000, defaultZoom: 1.2 };
     
     // Zoom behavior reset if no node
     if (!node && this.svg && this.zoomManager) {
@@ -558,7 +671,7 @@ export class ZenodeEngine {
     const node = this.placedNodes.find(n => n.id === id);
     if (!node) return;
 
-    const highlightDefaults = this.config.canvasProperties.visualEffects.highlight;
+    const highlightDefaults = this.config.canvasProperties.visualEffects?.highlight || { color: '#ffdd00', duration: 3000, scale: 1.2, intensity: 2.5 };
     const originalGlow = node.visualState?.effects?.glow;
 
     // Apply high-intensity glow from config or override
@@ -619,12 +732,212 @@ export class ZenodeEngine {
       y: source.y + offset
     });
   }
-
   /** Helper to trigger node layer re-render */
   private refreshNodes(): void {
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
+  }
+
+  /**
+   * Retrieves a node object by ID.
+   */
+  private getPlacedNode(id: string): PlacedNode | undefined {
+      return this.placedNodes.find(n => n.id === id);
+  }
+
+  /**
+   * Copies currently selected nodes and internal edges to the engine clipboard.
+   */
+  public copySelection(): void {
+    if (this.selectedNodeIds.length === 0) return;
+    
+    const nodesToCopy = this.placedNodes.filter(n => this.selectedNodeIds.includes(n.id));
+    const nodeIds = nodesToCopy.map(n => n.id);
+    
+    // Only copy edges that connect two nodes within the current selection
+    const edgesToCopy = this.connections.filter(c => 
+      nodeIds.includes(c.sourceNodeId) && 
+      nodeIds.includes(c.targetNodeId)
+    );
+    
+    this.clipboard = {
+      nodes: JSON.parse(JSON.stringify(nodesToCopy)),
+      connections: JSON.parse(JSON.stringify(edgesToCopy))
+    };
+
+    console.log(`[ZENODE] Copied ${nodesToCopy.length} nodes and ${edgesToCopy.length} connections.`);
+  }
+
+  /**
+   * Pastes items from the engine clipboard onto the canvas with a small offset.
+   * Maintains internal connections between pasted nodes.
+   */
+  public pasteSelection(offset: { x: number, y: number } = { x: 40, y: 40 }): void {
+    if (!this.clipboard) return;
+    
+    const idMap = new Map<string, string>();
+    const newNodesConfigs: NodeConfig[] = [];
+    const newEdgesConfigs: EdgeConfig[] = [];
+    
+    // 1. Prepare new node configs and map IDs
+    this.clipboard.nodes.forEach(n => {
+      const newId = this.generateId();
+      idMap.set(n.id, newId);
+      
+      const config: NodeConfig = {
+          ...JSON.parse(JSON.stringify(n)),
+          id: newId,
+          x: n.x + offset.x,
+          y: n.y + offset.y
+      };
+      newNodesConfigs.push(config);
+    });
+
+    // 1.5. Remap parentIds within the new set if both child and parent are being pasted
+    newNodesConfigs.forEach(config => {
+        if (config.parentId && idMap.has(config.parentId)) {
+            config.parentId = idMap.get(config.parentId);
+        }
+    });
+    
+    // 2. Prepare new edge configs using mapped IDs
+    this.clipboard.connections.forEach(e => {
+        if (idMap.has(e.sourceNodeId) && idMap.has(e.targetNodeId)) {
+           const config: EdgeConfig = {
+             ...JSON.parse(JSON.stringify(e)),
+             id: this.generateId(),
+             sourceNodeId: idMap.get(e.sourceNodeId)!,
+             targetNodeId: idMap.get(e.targetNodeId)!
+           };
+           newEdgesConfigs.push(config);
+        }
+    });
+
+    // 3. Batch apply changes via history
+    const commands: Command[] = [];
+    
+    newNodesConfigs.forEach(config => {
+       const id = this.addNode(config, false); // No individual history
+       commands.push(new AddNodeCommand(this, this.getPlacedNode(id)!));
+    });
+
+    newEdgesConfigs.forEach(config => {
+       const id = this.addEdge(config, false); // No individual history
+       commands.push(new AddEdgeCommand(this, this.getEdge(id)! as any));
+    });
+
+    if (commands.length > 0) {
+      this.undoManager.push(new BatchCommand(commands));
+    }
+
+    // 4. Select newly pasted nodes
+    this.setSelectedNodeIds(Array.from(idMap.values()));
+    this.refreshNodes();
+    this.reRenderConnections();
+    
+    console.log(`[ZENODE] Pasted ${newNodesConfigs.length} nodes and ${newEdgesConfigs.length} connections.`);
+  }
+
+  /**
+   * Groups currently selected nodes into a new container.
+   */
+  public groupSelection(): void {
+      if (this.selectedNodeIds.length === 0) return;
+
+      const nodes = this.placedNodes.filter(n => this.selectedNodeIds.includes(n.id));
+      if (nodes.length === 0) return;
+
+      // Calculate bounds
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      nodes.forEach(n => {
+          const style = this.getShapeStyle(n);
+          const w = n.width ?? style?.width ?? 60;
+          const h = n.height ?? style?.height ?? 60;
+          minX = Math.min(minX, n.x - w/2);
+          minY = Math.min(minY, n.y - h/2);
+          maxX = Math.max(maxX, n.x + w/2);
+          maxY = Math.max(maxY, n.y + h/2);
+      });
+
+      const padding = 20;
+      const groupWidth = (maxX - minX) + padding * 2;
+      const groupHeight = (maxY - minY) + padding * 2;
+      const centerX = (minX + maxX) / 2;
+      const centerY = (minY + maxY) / 2;
+
+      // 1. Create group node
+      const groupId = this.addNode({
+          type: "rectangle",
+          shapeVariantId: "group",
+          x: centerX,
+          y: centerY,
+          width: groupWidth,
+          height: groupHeight
+      }, false);
+
+      if (!groupId) return;
+
+      // 2. Set parentId for all nodes
+      const commands: Command[] = [];
+      commands.push(new AddNodeCommand(this, { ...this.getPlacedNode(groupId)! }));
+      
+      this.placedNodes.forEach(n => {
+          if (this.selectedNodeIds.includes(n.id)) {
+              const oldState = { ...n };
+              const patch = { parentId: groupId };
+              commands.push(new UpdateNodeCommand(this, n.id, oldState, patch));
+              n.parentId = groupId;
+          }
+      });
+
+      this.undoManager.push(new BatchCommand(commands));
+      this.refreshNodes();
+      this.setSelectedNodeIds([groupId]);
+      this.emit("selection:grouped", { groupId, childCount: nodes.length });
+  }
+
+  /**
+   * Removes grouping for selected nodes or breaks apart a selected group.
+   */
+  public ungroupSelection(): void {
+      if (this.selectedNodeIds.length === 0) return;
+
+      const commands: Command[] = [];
+      const groupsToRemove = new Set<string>();
+
+      this.selectedNodeIds.forEach(id => {
+          const node = this.getPlacedNode(id);
+          if (!node) return;
+
+          // Case A: A group container itself is selected
+          if (node.shapeVariantId === "group") {
+              groupsToRemove.add(id);
+              this.placedNodes.forEach(child => {
+                  if (child.parentId === id) {
+                      commands.push(new UpdateNodeCommand(this, child.id, { ...child }, { parentId: undefined }));
+                      child.parentId = undefined;
+                  }
+              });
+          } 
+          
+          // Case B: A child node is selected
+          if (node.parentId) {
+              commands.push(new UpdateNodeCommand(this, node.id, { ...node }, { parentId: undefined }));
+              node.parentId = undefined;
+          }
+      });
+
+      groupsToRemove.forEach(gid => {
+          commands.push(new RemoveNodeCommand(this, gid));
+          this.removeNode(gid, false);
+      });
+
+      if (commands.length > 0) {
+          this.undoManager.push(new BatchCommand(commands));
+          this.refreshNodes();
+          this.emit("selection:ungrouped", { });
+      }
   }
 
   // --- PHASE 3.2: PUBLIC EDGE/CONNECTION API ---
@@ -710,23 +1023,47 @@ export class ZenodeEngine {
       return this.validationEngine?.validate(this.getAllNodes(), this.getAllEdges()) || { valid: true, errors: [], warnings: [] };
   }
 
-  public toXML(): string { return this.serializationEngine?.toXML(this.getAllNodes(), this.getAllEdges()) || ""; }
-  public toMermaid(): string { return this.serializationEngine?.toMermaid(this.getAllNodes(), this.getAllEdges()) || ""; }
-  public toDOT(): string { return this.serializationEngine?.toDOT(this.getAllNodes(), this.getAllEdges()) || ""; }
+  public toJSON(): string {
+      return JSON.stringify(this.getDiagramState(), null, 2);
+  }
 
   /**
-   * Clears the current canvas and loads state from a Zenode XML string.
+   * Sets the ID of the node currently being edited in-place.
+   * This is used to suppress SVG rendering while the UI editor is active.
    */
-  public fromXML(xml: string): void {
-      if (!this.serializationEngine) return;
-      const { nodes, edges } = this.serializationEngine.fromXML(xml);
-      
-      this.placedNodes = nodes as any; // Cast since types align mostly
-      this.connections = edges as any;
-      
-      this.refreshNodes();
-      this.reRenderConnections();
-      this.emit("workflow:load", { nodes, edges });
+  public setEditingNode(id: string | null): void {
+    this.editingNodeId = id;
+    this.refreshNodes();
+  }
+
+  /** Gets the current editing node ID. */
+  public getEditingNodeId(): string | null {
+    return this.editingNodeId;
+  }
+
+  /**
+   * Clears the current canvas and loads state from a Zenode JSON string.
+   */
+  public fromJSON(json: string): void {
+      try {
+          const state = JSON.parse(json);
+          const { nodes, edges, viewport } = state;
+          
+          this.placedNodes = nodes || [];
+          this.connections = edges || [];
+          
+          if (viewport && this.zoomManager && this.svg) {
+              const transform = d3.zoomIdentity.translate(viewport.x, viewport.y).scale(viewport.zoom);
+              this.svg.transition().duration(500)
+                .call(this.zoomManager.getZoomBehaviour().transform, transform);
+          }
+
+          this.refreshNodes();
+          this.reRenderConnections();
+          this.emit("workflow:load", { nodes: this.placedNodes, edges: this.connections });
+      } catch (e) {
+          console.error("[ZENODE] Failed to load JSON state", e);
+      }
   }
 
   /**
@@ -775,8 +1112,65 @@ export class ZenodeEngine {
          else n.y = first.y + i * step;
      });
 
-     this.refreshNodes();
-     this.reRenderConnections();
+      this.refreshNodes();
+      this.reRenderConnections();
+  }
+
+  /**
+   * Reorders the internal placedNodes array based on a list of IDs.
+   * Higher index = rendered on top.
+   */
+  public setNodeOrder(newIds: string[], recordHistory: boolean = true): void {
+      const oldIds = this.placedNodes.map(n => n.id);
+      
+      const nodeMap = new Map<string, PlacedNode>();
+      this.placedNodes.forEach(n => nodeMap.set(n.id, n));
+      
+      const newOrder: PlacedNode[] = [];
+      newIds.forEach(id => {
+          const node = nodeMap.get(id);
+          if (node) newOrder.push(node);
+      });
+
+      // Add any nodes that were missing from the newIds list (safety)
+      if (newOrder.length < this.placedNodes.length) {
+          this.placedNodes.forEach(n => {
+              if (!newIds.includes(n.id)) newOrder.push(n);
+          });
+      }
+
+      this.placedNodes = newOrder;
+
+      if (recordHistory) {
+          import("./history/command.js").then(({ ReorderNodesCommand }) => {
+              this.undoManager.push(new ReorderNodesCommand(this, oldIds, newIds));
+          });
+      }
+
+      this.refreshNodes();
+      this.reRenderConnections();
+  }
+
+  /**
+   * Moves specific nodes to the end of the drawing array so they appear on top.
+   */
+  public bringToFront(ids: string[]): void {
+      const currentIds = this.placedNodes.map(n => n.id);
+      const toMove = new Set(ids);
+      const remaining = currentIds.filter(id => !toMove.has(id));
+      const newOrder = [...remaining, ...ids.filter(id => currentIds.includes(id))];
+      this.setNodeOrder(newOrder);
+  }
+
+  /**
+   * Moves specific nodes to the beginning of the drawing array so they appear behind others.
+   */
+  public sendToBack(ids: string[]): void {
+      const currentIds = this.placedNodes.map(n => n.id);
+      const toMove = new Set(ids);
+      const remaining = currentIds.filter(id => !toMove.has(id));
+      const newOrder = [...ids.filter(id => currentIds.includes(id)), ...remaining];
+      this.setNodeOrder(newOrder);
   }
 
   /**
@@ -808,6 +1202,23 @@ export class ZenodeEngine {
   removePlacementListeners(): void {
     this.svg.on("mousemove", null);
     this.svg.on("click", null);
+  }
+
+  /**
+   * Cancels any active placement operation.
+   */
+  public cancelPlacement(): void {
+    this.connectionModeEnabled = false;
+    this.connectionDragContext = null;
+    this.cleanupGhostConnection();
+    this.refreshNodes();
+    this.eventManager.trigger("connection:mode:changed", { enabled: false });
+    this.clearPlacementContext();
+    this.removePlacementListeners();
+    if (this.canvasObject.elements) {
+        this.canvasObject.elements.selectAll(".shape-preview").remove();
+    }
+    this.emit("placement:cancelled", {});
   }
 
   /** Returns selected node ids. */
@@ -845,6 +1256,16 @@ export class ZenodeEngine {
         this.resizeModeEnabled = false;
     }
     this.connectionModeEnabled = enabled;
+
+    // Toggle container class for conditional CSS (e.g. port animations)
+    if (this.container) {
+      if (enabled) {
+        this.container.classList.add("zenode-connection-mode");
+      } else {
+        this.container.classList.remove("zenode-connection-mode");
+      }
+    }
+
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
@@ -980,6 +1401,7 @@ export class ZenodeEngine {
 
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
+      this.reRenderConnections();
     }
     this.eventManager.trigger("node:placed", { node });
   }
@@ -989,10 +1411,6 @@ export class ZenodeEngine {
     return [...this.placedNodes];
   }
 
-  /** Returns a single placed node by id. */
-  getPlacedNode(id: string): PlacedNode | undefined {
-    return this.placedNodes.find((n) => n.id === id);
-  }
 
   /**
    * Updates a placed node's position and triggers sub-renders.
@@ -1088,21 +1506,17 @@ export class ZenodeEngine {
     this.zoomManager.zoomBy(this.svg, 0.8);
   }
 
+  public zoomTo(scale: number): void {
+    this.zoomManager.zoomTo(this.svg, scale);
+  }
+
   public focusOnNode(id: string): void {
-    const node = this.placedNodes.find(n => n.id === id);
-    if (node) {
-      const style = this.getShapeStyle(node);
-      const width = node.width ?? style?.width ?? 100;
-      const height = node.height ?? style?.height ?? 100;
-      const centerX = node.x + width / 2;
-      const centerY = node.y + height / 2;
-      this.zoomManager.centerOn(this.svg, { x: centerX, y: centerY });
-    }
+      this.focusNode(id);
   }
 
   public focusOnSelectedNode(): void {
     if (this.selectedNodeIds.length > 0) {
-      this.focusOnNode(this.selectedNodeIds[0]);
+      this.focusNode(this.selectedNodeIds[0]);
     } else if (this.placedNodes.length > 0) {
       // Focus on the center of all nodes AND zoom to fit if needed
       let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
@@ -1226,9 +1640,9 @@ export class ZenodeEngine {
    * Creates a shape on the canvas (preview on move, place on click).
    * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
    * @param id - Shape variant id from config (e.g. 'task0').
-   * @param data - Optional inner content for preview
+   * @param data - Optional initial data
    */
-  createShape(shapeType: string, id: string, data?: ShapePreviewData): void {
+  createShape(shapeType: string, id: string, data?: any): void {
     const shapeList =
       this.config.shapes.default?.[shapeType as keyof typeof this.config.shapes.default] ?? [];
     if (!shapeList.length) {
@@ -1246,6 +1660,120 @@ export class ZenodeEngine {
       svgMouseMove(event, shapeType, shapeToFind, this.grid, this.config, this.canvasObject, data, this.shapeRegistry)
     );
     this.svg.on("click", (event: MouseEvent) => svgMouseClick(event, this));
+  }
+
+  /**
+   * Places a shape immediately at the given canvas coordinates.
+   * Internal common logic for Drop and DblClick placement.
+   */
+  public placeShapeAt(shapeType: string, variantId: string, x: number, y: number, data?: any): void {
+    const shapeList = this.config.shapes.default?.[shapeType as keyof typeof this.config.shapes.default] ?? [];
+    const shapeToFind = shapeList.find((shape: Shape) => shape.id === variantId);
+    if (!shapeToFind) return;
+
+    const newNode: PlacedNode = {
+      id: generatePlacedNodeId(),
+      type: shapeType,
+      shapeVariantId: variantId,
+      x,
+      y,
+      rotation: 0,
+      width: shapeToFind.width,
+      height: shapeToFind.height,
+      radius: shapeToFind.radius,
+      content: data?.content ?? { layout: "text-only", items: [] },
+      meta: {},
+      visualState: { status: "idle" }
+    };
+
+    this.placeNode(newNode);
+  }
+
+  /**
+   * Places a shape at a safe, non-overlapping position within the current viewport.
+   * Useful for double-click placement.
+   */
+  public placeShapeAtSafePos(shapeType: string, variantId: string, data?: any): void {
+    const shapeList = this.config.shapes.default?.[shapeType as keyof typeof this.config.shapes.default] ?? [];
+    const style = shapeList.find((shape: Shape) => shape.id === variantId);
+    if (!style) return;
+
+    // Determine dimensions to check for collision
+    const renderer = this.shapeRegistry.get(shapeType);
+    const mockNode: PlacedNode = { id: 'temp', type: shapeType, shapeVariantId: variantId, x: 0, y: 0, meta: {} };
+    const resolved = buildResolvedShapeConfig(mockNode, style);
+    const bounds = renderer.getBounds(resolved);
+
+    // Get current viewport center in canvas coordinates
+    const transform = d3.zoomTransform(this.svg.node() as Element);
+    const width = this.container?.clientWidth || 800;
+    const height = this.container?.clientHeight || 600;
+    
+    const centerX = (width / 2 - transform.x) / transform.k;
+    const centerY = (height / 2 - transform.y) / transform.k;
+
+    // Search for a safe position in a spiral/grid pattern from center
+    const step = 20; 
+    let found = false;
+    let finalX = centerX;
+    let finalY = centerY;
+
+    // Spiral search pattern
+    let x = 0, y = 0, dx = 0, dy = -1;
+    const maxIters = 400; // Search up to 20x20 grid cells
+    for(let i = 0; i < maxIters; i++){
+        const candidateX = centerX + x * step;
+        const candidateY = centerY + y * step;
+        
+        const overlaps = this.placedNodes.some(n => {
+            const nStyle = this.getShapeStyle(n);
+            if (!nStyle) return false;
+            const nResolved = buildResolvedShapeConfig(n, nStyle);
+            const nBounds = this.shapeRegistry.get(n.type).getBounds(nResolved);
+            
+            const nL = n.x + nBounds.x, nR = nL + nBounds.width;
+            const nT = n.y + nBounds.y, nB = nT + nBounds.height;
+            
+            const cL = candidateX + bounds.x, cR = cL + bounds.width;
+            const cT = candidateY + bounds.y, cB = cT + bounds.height;
+
+            return !(cR < nL || cL > nR || cB < nT || cT > nB);
+        });
+
+        if (!overlaps) {
+            finalX = candidateX;
+            finalY = candidateY;
+            found = true;
+            break;
+        }
+
+        if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
+            const tmp = dx;
+            dx = -dy;
+            dy = tmp;
+        }
+        x += dx;
+        y += dy;
+    }
+
+    this.placeShapeAt(shapeType, variantId, finalX, finalY, data);
+  }
+
+  /**
+   * Handles native drag-and-drop events to place shapes on the canvas.
+   */
+  public handleDrop(event: DragEvent): void {
+    event.preventDefault();
+    const dataStr = event.dataTransfer?.getData("application/zenode-shape");
+    if (!dataStr) return;
+
+    try {
+        const { type, id } = JSON.parse(dataStr);
+        const pt = this.getCanvasPoint(event as unknown as MouseEvent);
+        this.placeShapeAt(type, id, pt.x, pt.y);
+    } catch (e) {
+        console.error("Invalid Zenode drop data", e);
+    }
   }
 
   /**
@@ -1351,7 +1879,6 @@ export class ZenodeEngine {
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
-    this.eventManager.trigger("node:content:changed", { id, content });
   }
 
   /**
@@ -1365,6 +1892,27 @@ export class ZenodeEngine {
       sourcePortId,
       currentPoint: startPoint,
     };
+
+    // Attach robust window-level cleanup listener
+    if (this.onWindowMouseUp) {
+      window.removeEventListener("mouseup", this.onWindowMouseUp);
+    }
+    this.onWindowMouseUp = () => {
+      const snapped = this.connectionDragContext?.snapped;
+      this.endConnectionDrag(snapped?.nodeId, snapped?.portId);
+    };
+    
+    if (this.onWindowMouseMove) {
+      window.removeEventListener("mousemove", this.onWindowMouseMove);
+    }
+    this.onWindowMouseMove = (e: MouseEvent) => {
+      const currentPoint = this.getCanvasPoint(e);
+      this.updateConnectionDrag(currentPoint);
+    };
+
+    window.addEventListener("mouseup", this.onWindowMouseUp);
+    window.addEventListener("mousemove", this.onWindowMouseMove);
+
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
@@ -1447,13 +1995,26 @@ export class ZenodeEngine {
     }
 
     this.connectionDragContext = null;
+    if (this.onWindowMouseUp) {
+      window.removeEventListener("mouseup", this.onWindowMouseUp);
+      this.onWindowMouseUp = null;
+    }
+    if (this.onWindowMouseMove) {
+      window.removeEventListener("mousemove", this.onWindowMouseMove);
+      this.onWindowMouseMove = null;
+    }
+
     if (this.canvasObject.placedNodes) {
       renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
     }
+    this.cleanupGhostConnection();
+    this.eventManager.trigger("connection:dragend", {});
+  }
+
+  private cleanupGhostConnection(): void {
     if (this.canvasObject.ghostConnection) {
       this.canvasObject.ghostConnection.selectAll("*").remove();
     }
-    this.eventManager.trigger("connection:dragend", {});
   }
 
   public createConnectionFromPorts(
@@ -1521,17 +2082,15 @@ export class ZenodeEngine {
       ? this.connectionDragContext.snapped.point
       : this.connectionDragContext.currentPoint;
 
-    import("../connections/render.js").then(({ renderGhostConnection }) => {
-      renderGhostConnection(
-        this.canvasObject.ghostConnection!,
-        from,
-        to,
-        this.config.canvasProperties.ghostConnection,
-        this.activeConnectionType,
-        this.connectionDragContext?.sourcePortId,
-        this.connectionDragContext?.snapped?.portId
-      );
-    });
+    renderGhostLine(
+      this.canvasObject.ghostConnection!,
+      from,
+      to,
+      this.config.canvasProperties.ghostConnection,
+      this.activeConnectionType,
+      this.connectionDragContext?.sourcePortId,
+      this.connectionDragContext?.snapped?.portId
+    );
   }
 
   lockedTheCanvas(locked: boolean) {
@@ -1563,74 +2122,6 @@ export class ZenodeEngine {
           renderPlacedNodes(this.canvasObject.placedNodes, this.placedNodes, this as any);
       }
     });
-
-    // Keyboard selection actions.
-    if (this.selectionKeyboardListener) {
-        window.removeEventListener("keydown", this.selectionKeyboardListener);
-    }
-    
-    this.selectionKeyboardListener = (event: KeyboardEvent) => {
-      if (this.isTypingTarget(event.target)) return;
-
-      const shortcuts = this.config.canvasProperties.keyboardShortcuts;
-      if (!shortcuts?.enabled) return;
-
-      const selectedNodeIds = this.getSelectedNodeIds();
-      const keyDownHandled = shortcuts.callbacks?.onKeyDown?.({
-        event,
-        action: "key:down",
-        selectedNodeIds,
-        engine: this,
-      });
-      if (keyDownHandled === false) return;
-
-      if (shortcuts.deleteSelection.some((s) => this.matchesShortcut(event, s))) {
-        const handled = shortcuts.callbacks?.onDeleteSelection?.({
-          event,
-          action: "selection:delete",
-          selectedNodeIds,
-          engine: this,
-        });
-        if (handled !== false) {
-          event.preventDefault();
-          this.deleteSelection();
-        }
-        return;
-      }
-
-      if (shortcuts.clearSelection.some((s) => this.matchesShortcut(event, s))) {
-        const handled = shortcuts.callbacks?.onClearSelection?.({
-          event,
-          action: "selection:clear",
-          selectedNodeIds,
-          engine: this,
-        });
-        if (handled !== false) {
-          event.preventDefault();
-          this.clearSelection();
-        }
-        return;
-      }
-
-      const customBindings = shortcuts.customBindings ?? {};
-      const customAction = Object.keys(customBindings).find((action) =>
-        (customBindings[action] ?? []).some((s) => this.matchesShortcut(event, s))
-      );
-      if (!customAction) return;
-
-      const customHandler = shortcuts.callbacks?.custom?.[customAction];
-      if (!customHandler) return;
-      const customHandled = customHandler({
-        event,
-        action: customAction,
-        selectedNodeIds,
-        engine: this,
-      });
-      if (customHandled !== false) {
-        event.preventDefault();
-      }
-    };
-    window.addEventListener("keydown", this.selectionKeyboardListener);
 
     // Lasso multi-select.
     this.svg.on("mousedown.lasso", (event: MouseEvent) => {
@@ -1790,7 +2281,7 @@ export function createShape(
   type: string,
   id: string,
   event: MouseEvent,
-  data?: ShapePreviewData
+  data?: any
 ) {
   if (!engineInstance) {
     throw new Error("Engine is not initialized. Call initializeCanvas first.");

@@ -20,4 +20,7 @@ export interface PlacementClickApi {
  * Handles canvas click: if a placement is pending (preview active), places the node
  * at the snapped position and clears the preview.
  */
-export declare function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void;
+export declare function svgMouseClick(event: MouseEvent | null, api: PlacementClickApi, manualPoint?: {
+    x: number;
+    y: number;
+}): string | null;

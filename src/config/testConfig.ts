@@ -82,6 +82,15 @@ export const testConfig: Config = {
       opacity: 0.7,
       filter: 'blur(0.5px)'
     },
+    connectionGhostPreview: {
+      enabled: true,
+      strokeColor: '#000000ff',
+      strokeWidth: 1.5,
+      strokeDashArray: [4, 4],
+      fillColor: 'transparent',
+      opacity: 0.7,
+      filter: 'blur(0.5px)'
+    },
     keyboardShortcuts: {
       enabled: true,
       deleteSelection: ["Delete", "Backspace"],
@@ -129,7 +138,7 @@ export const testConfig: Config = {
       offset: { x: 10, y: -10 },
       showDefaults: true,
       layout: "grid", // Options: "horizontal", "vertical", "grid"
-      gridColumns: 2,
+      gridColumns: 3,
       style: {
         backgroundColor: "rgba(255, 255, 255, 0)", // White background a la BPMN
         borderColor: "rgba(200, 200, 200, 0)",
@@ -145,19 +154,6 @@ export const testConfig: Config = {
         iconColor: "#202020ff",
         buttonHoverColor: "rgba(198, 255, 196, 1)",
         buttonActiveColor: "rgba(124, 172, 255, 1)"
-      }
-    },
-    visualEffects: {
-      highlight: {
-        color: '#ffdd00',
-        duration: 3000,
-        scale: 1.2,
-        intensity: 2.5
-      },
-      focus: {
-        padding: 60,
-        duration: 1000,
-        defaultZoom: 1.2
       }
     }
     // dragType: "smooth"
@@ -184,7 +180,7 @@ export const testConfig: Config = {
           "width": 60,
           "height": 60,
           "color": "#6366F1",
-          "borderRadius": { "leftTop": 50, "leftBottom": 50, "rightTop": 5, "rightBottom": 5 },
+          "borderRadius": { "leftTop": 5, "leftBottom": 5, "rightTop": 5, "rightBottom": 5 },
           "stroke": { "width": 1.5, "color": "#4338CA", "strokeDasharray": [6, 3] },
           "textColor": "#000000",
           "boxShadow": "0px 4px 6px rgba(0, 0, 0, 0.08)",

@@ -113,7 +113,29 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
         opacity: userConfig.canvasProperties?.ghostPreview?.opacity ?? defaultConfig.canvasProperties.ghostPreview?.opacity ?? 0.4,
         filter: userConfig.canvasProperties?.ghostPreview?.filter ?? defaultConfig.canvasProperties.ghostPreview?.filter ?? 'blur(1px)',
       },
+      connectionGhostPreview: {
+        enabled: userConfig.canvasProperties?.connectionGhostPreview?.enabled ?? defaultConfig.canvasProperties.connectionGhostPreview?.enabled ?? true,
+        strokeColor: userConfig.canvasProperties?.connectionGhostPreview?.strokeColor ?? defaultConfig.canvasProperties.connectionGhostPreview?.strokeColor ?? 'var(--zenode-accent, #3b82f6)',
+        strokeWidth: userConfig.canvasProperties?.connectionGhostPreview?.strokeWidth ?? defaultConfig.canvasProperties.connectionGhostPreview?.strokeWidth ?? 1.5,
+        strokeDashArray: userConfig.canvasProperties?.connectionGhostPreview?.strokeDashArray ?? defaultConfig.canvasProperties.connectionGhostPreview?.strokeDashArray ?? [4, 4],
+        fillColor: userConfig.canvasProperties?.connectionGhostPreview?.fillColor ?? defaultConfig.canvasProperties.connectionGhostPreview?.fillColor ?? 'transparent',
+        opacity: userConfig.canvasProperties?.connectionGhostPreview?.opacity ?? defaultConfig.canvasProperties.connectionGhostPreview?.opacity ?? 0.4,
+        filter: userConfig.canvasProperties?.connectionGhostPreview?.filter ?? defaultConfig.canvasProperties.connectionGhostPreview?.filter ?? 'blur(1px)',
+      },
       allowMultipleConnections: userConfig.canvasProperties?.allowMultipleConnections ?? defaultConfig.canvasProperties.allowMultipleConnections,
+      visualEffects: {
+        highlight: {
+          color: userConfig.canvasProperties?.visualEffects?.highlight?.color ?? defaultConfig.canvasProperties.visualEffects?.highlight?.color ?? '#ffdd00',
+          duration: userConfig.canvasProperties?.visualEffects?.highlight?.duration ?? defaultConfig.canvasProperties.visualEffects?.highlight?.duration ?? 3000,
+          scale: userConfig.canvasProperties?.visualEffects?.highlight?.scale ?? defaultConfig.canvasProperties.visualEffects?.highlight?.scale ?? 1.2,
+          intensity: userConfig.canvasProperties?.visualEffects?.highlight?.intensity ?? defaultConfig.canvasProperties.visualEffects?.highlight?.intensity ?? 2.5
+        },
+        focus: {
+          padding: userConfig.canvasProperties?.visualEffects?.focus?.padding ?? defaultConfig.canvasProperties.visualEffects?.focus?.padding ?? 60,
+          duration: userConfig.canvasProperties?.visualEffects?.focus?.duration ?? defaultConfig.canvasProperties.visualEffects?.focus?.duration ?? 1000,
+          defaultZoom: userConfig.canvasProperties?.visualEffects?.focus?.defaultZoom ?? defaultConfig.canvasProperties.visualEffects?.focus?.defaultZoom ?? 1.2
+        }
+      },
       contextPad: {
         enabled: userConfig.canvasProperties?.contextPad?.enabled ?? defaultConfig.canvasProperties.contextPad?.enabled ?? true,
         trigger: userConfig.canvasProperties?.contextPad?.trigger ?? defaultConfig.canvasProperties.contextPad?.trigger ?? "select",
@@ -141,14 +163,14 @@ export function mergeConfig(userConfig: Partial<Config>): Config {
           buttonMargin: userConfig.canvasProperties?.contextPad?.style?.buttonMargin ?? defaultConfig.canvasProperties.contextPad?.style?.buttonMargin,
           iconColor: userConfig.canvasProperties?.contextPad?.style?.iconColor ?? defaultConfig.canvasProperties.contextPad?.style?.iconColor,
           buttonHoverColor: userConfig.canvasProperties?.contextPad?.style?.buttonHoverColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonHoverColor,
-          buttonActiveColor: userConfig.canvasProperties?.contextPad?.style?.buttonActiveColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonActiveColor
+          buttonActiveColor: userConfig.canvasProperties?.contextPad?.style?.buttonActiveColor ?? defaultConfig.canvasProperties.contextPad?.style?.buttonActiveColor,
+        }
       }
     },
-    visualEffects: userConfig.canvasProperties?.visualEffects ?? defaultConfig.canvasProperties.visualEffects
-  },
     shapes: userConfig.shapes ?? defaultConfig.shapes,
     connections: userConfig.connections ?? defaultConfig.connections,
     globalProperties: userConfig.globalProperties ?? defaultConfig.globalProperties,
-    dragOptions: userConfig.dragOptions ?? defaultConfig.dragOptions
+    dragOptions: userConfig.dragOptions ?? defaultConfig.dragOptions,
+    historyLimit: userConfig.historyLimit ?? defaultConfig.historyLimit ?? 20
   };
 }

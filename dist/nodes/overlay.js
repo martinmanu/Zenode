@@ -1,3 +1,5 @@
+import { createResizeBehavior } from '../events/resize.js';
+
 function buildResolvedShapeConfig(node, style) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const width = (_b = (_a = node.width) !== null && _a !== void 0 ? _a : style.width) !== null && _b !== void 0 ? _b : 120;
@@ -58,6 +60,44 @@ function renderSelectionRing(selection, node, style, shapeRegistry, stroke, pad 
         .attr("stroke-dasharray", "4 2")
         .style("pointer-events", "none");
 }
+/**
+ * Renders 8-point interactive resize handles around a selected node.
+ */
+function renderResizeHandles(group, node, style, api) {
+    if (!node.width || !node.height)
+        return; // Only rectangular-ish for now
+    const w = node.width;
+    const h = node.height;
+    const halfW = w / 2;
+    const halfH = h / 2;
+    const handles = [
+        { x: -halfW, y: -halfH, cursor: 'nw-resize', type: 'nw' },
+        { x: 0, y: -halfH, cursor: 'n-resize', type: 'n' },
+        { x: halfW, y: -halfH, cursor: 'ne-resize', type: 'ne' },
+        { x: halfW, y: 0, cursor: 'e-resize', type: 'e' },
+        { x: halfW, y: halfH, cursor: 'se-resize', type: 'se' },
+        { x: 0, y: halfH, cursor: 's-resize', type: 's' },
+        { x: -halfW, y: halfH, cursor: 'sw-resize', type: 'sw' },
+        { x: -halfW, y: 0, cursor: 'w-resize', type: 'w' }
+    ];
+    const handleGroup = group.append("g").attr("class", "resize-handles");
+    const resizeBehavior = createResizeBehavior(api);
+    handleGroup.selectAll("rect.resize-handle")
+        .data(handles)
+        .enter()
+        .append("rect")
+        .attr("class", d => `resize-handle handle-${d.type}`)
+        .attr("x", d => d.x - 4)
+        .attr("y", d => d.y - 4)
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("fill", "white")
+        .attr("stroke", "var(--zenode-selection-color)")
+        .attr("stroke-width", 1.5)
+        .style("cursor", d => d.cursor)
+        .style("pointer-events", "all")
+        .call(resizeBehavior);
+}
 
-export { buildResolvedShapeConfig, renderSelectionRing };
+export { buildResolvedShapeConfig, renderResizeHandles, renderSelectionRing };
 //# sourceMappingURL=overlay.js.map
