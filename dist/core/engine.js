@@ -1297,6 +1297,11 @@ class ZenodeEngine {
             if (property === 'animated')
                 conn.animated = !conn.animated;
             this.reRenderConnections();
+            // Refresh context pad instantly so the Animation button visibility updates
+            if (this.selectedEdgeIds.includes(id)) {
+                const actions = this.contextPadRegistry.getActionsFor({ kind: "edge", id: conn.id, data: conn }, this);
+                this.contextPadRenderer.render({ kind: "edge", id: conn.id, data: conn }, actions, this);
+            }
         }
     }
     getConnections() {
@@ -1486,6 +1491,7 @@ class ZenodeEngine {
             getSelectedNodeIds: () => this.selectedNodeIds,
             beginOperation: (nodeId, type) => this.beginOperation(nodeId, type),
             endOperation: () => this.endOperation(),
+            getActiveOperation: () => this.getActiveOperation(),
         };
         return createDragBehavior(api);
     }

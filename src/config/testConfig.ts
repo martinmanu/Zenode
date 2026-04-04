@@ -453,7 +453,7 @@ export const testConfig: Config = {
         animated: false,
         lineStyle: {
           dashArray: [8, 4],
-          animation: { type: "flow", speed: 5 },
+          animation: { type: "flow", speed: 10 },
           markerEnd: "arrow",
           innerTextEnabled: false,
           innerText: "",
