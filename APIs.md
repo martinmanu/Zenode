@@ -22,8 +22,11 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `addEdge(config)` | Creates a connection. Supports `type` override. | `Zenode.addEdge({ sourceNodeId: 'n1', targetNodeId: 'n2', type: 's-shaped' })` |
 | `duplicateNode(id)` | Clones a node and its content. | `Zenode.duplicateNode('n1')` |
 | `focusNode(id, opts?)` | Animates the viewport to focus on a node. | `Zenode.focusNode('n1', { zoom: 1.5, duration: 500 })` |
-| `groupSelection()` | Encapsulates selection within a 'group' node. | `Zenode.groupSelection()` |
-| `ungroupSelection()` | Breaks apart selected groups. | `Zenode.ungroupSelection()` |
+| `groupSelection()` | Encapsulates the current selection within a visual group boundary. | `Zenode.groupSelection()` |
+| `ungroupSelection()` | Break apart active selection or selected group. | `Zenode.ungroupSelection()` |
+| `toggleGroupingSelection()` | Smart toggle: groups selected nodes, or ungroups if exactly matching an existing group. | `Zenode.toggleGroupingSelection()` |
+| `getVisualGroups()` | Returns array of all active visual groups. | `const groups = Zenode.getVisualGroups()` |
+| `removeVisualGroup(id)` | Deletes a group boundary (without deleting the member nodes). | `engine.removeVisualGroup('g1')` |
 | `bringToFront(ids)` | Moves nodes to top layer. | `Zenode.bringToFront(['n1'])` |
 | `sendToBack(ids)` | Moves nodes to bottom layer. | `Zenode.sendToBack(['n1'])` |
 

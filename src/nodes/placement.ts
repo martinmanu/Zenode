@@ -326,9 +326,10 @@ function renderVisualGroups(
   // Only groups containing nodes in the active selectionStates should show ghosts
   const movingGroups = (ghostCfg?.enabled && activeOp && activeOp.type === 'drag')
     ? groups.filter(g => {
+        const selectionStates = activeOp.selectionStates;
         // Show ghost if this group is being dragged, or ANY of its members are dragging
         return (g.id === activeOp.nodeId) || 
-               g.nodeIds.some(id => activeOp.selectionStates?.has(id));
+               (selectionStates && g.nodeIds.some(id => selectionStates.has(id)));
     })
     : [];
 

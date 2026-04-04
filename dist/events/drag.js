@@ -64,10 +64,12 @@ function createDragBehavior(api) {
                 api.beginOperation(groupId, 'drag');
             }
         }
-        else if (!selection.includes(d.id)) {
-            // If dragging a single node that isn't selected, select it.
-            api.setSelectedNodeIds([d.id], d.id);
-            selection = [d.id];
+        else {
+            if (!selection.includes(d.id)) {
+                // If dragging a single node that isn't selected, select it FIRST.
+                api.setSelectedNodeIds([d.id], d.id);
+                selection = [d.id];
+            }
             api.beginOperation(d.id, 'drag');
         }
         const svgGroupNode = api.canvasObject.elements.node();

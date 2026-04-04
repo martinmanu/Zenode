@@ -56,6 +56,7 @@ export declare class ZenodeEngine {
     private onWindowMouseMove;
     /** Transient visual groups (for interaction only, no structural parentId). */
     private visualGroups;
+    private demoEnabled;
     private validationEngine;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
@@ -111,6 +112,10 @@ export declare class ZenodeEngine {
     } | null;
     /** Clears placement context (e.g. after placing or cancel). */
     clearPlacementContext(): void;
+    /**
+     * Loads a small, pre-built sample workflow to guide new users.
+     */
+    loadSampleWorkflow(): void;
     /**
      * Programmatically adds a node to the canvas.
      * @param config Partial configuration for the new node.
@@ -341,11 +346,11 @@ export declare class ZenodeEngine {
         y: number;
     };
     /**
-     * Creates a shape on the canvas (preview on move, place on click).
-     * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
-     * @param id - Shape variant id from config (e.g. 'task0').
-     * @param data - Optional initial data
-     */
+    * Creates a shape on the canvas by starting the placement operation.
+    * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
+    * @param id - Shape variant id from config (e.g. 'task0').
+    * @param data - Optional initial data
+    */
     createShape(shapeType: string, id: string, data?: any): void;
     /**
      * Places a shape immediately at the given canvas coordinates.
