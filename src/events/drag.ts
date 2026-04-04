@@ -105,10 +105,12 @@ export function createDragBehavior(api: DragApi) {
               // Start operation on the GROUP id specifically, not a member node
               api.beginOperation(groupId, 'drag');
           }
-      } else if (!selection.includes(d.id)) {
-          // If dragging a single node that isn't selected, select it.
-          api.setSelectedNodeIds([d.id], d.id);
-          selection = [d.id];
+      } else {
+          if (!selection.includes(d.id)) {
+              // If dragging a single node that isn't selected, select it FIRST.
+              api.setSelectedNodeIds([d.id], d.id);
+              selection = [d.id];
+          }
           api.beginOperation(d.id, 'drag');
       }
 

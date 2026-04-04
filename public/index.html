@@ -1705,8 +1705,10 @@
                 if (sub) sub.innerText = 'PUBLIC API REFERENCE';
             }
 
-            // Show loader if not cached
-            const fileName = tab === 'overview' ? '../README.md' : '../APIs.md';
+            const isDev = window.location.pathname.includes('/playground/');
+            const fileName = tab === 'overview' 
+                ? (isDev ? '../README.md' : './README.md') 
+                : (isDev ? '../APIs.md' : './APIs.md');
             if (docsCache[tab]) {
                 content.innerHTML = docsCache[tab];
                 lucide.createIcons();

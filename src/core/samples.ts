@@ -60,6 +60,11 @@ export function loadOnboardingSample(engine: ZenodeEngine): void {
   engine.addEdge({ sourceNodeId: processId, sourcePortId: 'right', targetNodeId: decisionId, targetPortId: 'left' }, false);
   engine.addEdge({ sourceNodeId: decisionId, sourcePortId: 'right', targetNodeId: endId, targetPortId: 'left' }, false);
 
+  // Group all nodes together for onboarding
+  engine.setSelectedNodeIds([startId, processId, decisionId, endId]);
+  engine.groupSelection(false); // No history for initial sample
+  engine.setSelectedNodeIds([]); // Clear selection
+
   // Refresh view
   engine.refreshNodes();
   engine.reRenderConnections();

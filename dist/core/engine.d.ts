@@ -346,11 +346,11 @@ export declare class ZenodeEngine {
         y: number;
     };
     /**
-     * Creates a shape on the canvas (preview on move, place on click).
-     * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
-     * @param id - Shape variant id from config (e.g. 'task0').
-     * @param data - Optional initial data
-     */
+    * Creates a shape on the canvas by starting the placement operation.
+    * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
+    * @param id - Shape variant id from config (e.g. 'task0').
+    * @param data - Optional initial data
+    */
     createShape(shapeType: string, id: string, data?: any): void;
     /**
      * Places a shape immediately at the given canvas coordinates.

@@ -2,8 +2,6 @@ import { drawCanvas, lockedCanvas } from '../components/canvas/canvas.js';
 import { updateGridTransform, drawGrid, toggleGrid } from '../components/canvas/grid.js';
 import { EventManager } from './eventManager.js';
 import { ZoomManager } from './zoom_PanManager.js';
-import { svgMouseMove } from '../events/mouseMove.js';
-import { svgMouseClick } from '../events/mouseClick.js';
 import { renderPlacedNodes } from '../nodes/placement.js';
 import { createDragBehavior } from '../events/drag.js';
 import { renderConnections, renderGhostConnection } from '../connections/render.js';
@@ -374,8 +372,17 @@ class ZenodeEngine {
                 if (node && !selectionStates.has(nodeId)) {
                     selectionStates.set(nodeId, JSON.parse(JSON.stringify(node)));
                 }
-                // 3. CRITICAL: If any of these are part of a visual group, capture ALL group members
-                // This ensures getGroupBounds can always calculate the original ghost boundary.
+                // 3. Capture group members if dragging a group boundary specifically
+                if (group) {
+                    group.nodeIds.forEach(nid => {
+                        if (!selectionStates.has(nid)) {
+                            const member = this.placedNodes.find(n => n.id === nid);
+                            if (member)
+                                selectionStates.set(nid, JSON.parse(JSON.stringify(member)));
+                        }
+                    });
+                }
+                // 4. If any already captured are part of a visual group, capture ALL group members too
                 const idsToCapture = new Set([...selectionStates.keys()]);
                 this.visualGroups.forEach(g => {
                     if (g.nodeIds.some(id => idsToCapture.has(id))) {
@@ -389,13 +396,12 @@ class ZenodeEngine {
                     }
                 });
             }
-            // If it's a group drag but nodeId was a group, use first node for originalData placeholder
             const repNode = node || (group ? this.placedNodes.find(n => group.nodeIds.includes(n.id)) : null);
             this.activeOperation = {
                 type,
                 nodeId,
                 originalData: repNode ? JSON.parse(JSON.stringify(repNode)) : {},
-                selectionStates: selectionStates.size > 0 ? selectionStates : undefined
+                selectionStates: selectionStates // Always pass the map, even if empty, for robust rendering
             };
             this.refreshNodes();
         }
@@ -1000,8 +1006,10 @@ class ZenodeEngine {
     }
     /** Removes mousemove and click handlers used for placement; stops preview. */
     removePlacementListeners() {
-        this.svg.on("mousemove", null);
-        this.svg.on("click", null);
+        if (this.svg) {
+            this.svg.on("mousemove.placement", null);
+            this.svg.on("click.placement", null);
+        }
     }
     /**
      * Cancels any active placement operation.
@@ -1034,14 +1042,21 @@ class ZenodeEngine {
         if (initialPoint) {
             this.updatePlacementPreview(initialPoint.x, initialPoint.y);
         }
-        this.svg.on("mousemove", (event) => {
-            const point = d3.pointer(event, this.svg.node());
-            const canvasPoint = this.getCanvasPointFromEvent(point[0], point[1]);
-            this.updatePlacementPreview(canvasPoint.x, canvasPoint.y);
-        });
-        this.svg.on("click", () => {
-            this.completePlacement();
-        });
+        // Use setTimeout to avoid the current bubbling click event from triggering completePlacement immediately
+        setTimeout(() => {
+            if (!this.svg)
+                return;
+            this.svg.on("mousemove.placement", (event) => {
+                const point = d3.pointer(event, this.svg.node());
+                const canvasPoint = this.getCanvasPointFromEvent(point[0], point[1]);
+                this.updatePlacementPreview(canvasPoint.x, canvasPoint.y);
+            });
+            this.svg.on("click.placement", (event) => {
+                // Prevent bubbling up to the global SVG click listener
+                event.stopPropagation();
+                this.completePlacement();
+            });
+        }, 0);
         return ghostId;
     }
     updatePlacementPreview(x, y) {
@@ -1625,11 +1640,11 @@ class ZenodeEngine {
         return { x: adjustedX, y: adjustedY };
     }
     /**
-     * Creates a shape on the canvas (preview on move, place on click).
-     * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
-     * @param id - Shape variant id from config (e.g. 'task0').
-     * @param data - Optional initial data
-     */
+    * Creates a shape on the canvas by starting the placement operation.
+    * @param shapeType - Type of shape ('rectangle', 'circle', 'rhombus').
+    * @param id - Shape variant id from config (e.g. 'task0').
+    * @param data - Optional initial data
+    */
     createShape(shapeType, id, data) {
         var _a, _b;
         const shapeList = (_b = (_a = this.config.shapes.default) === null || _a === void 0 ? void 0 : _a[shapeType]) !== null && _b !== void 0 ? _b : [];
@@ -1642,10 +1657,8 @@ class ZenodeEngine {
             console.error(`Shape ID "${id}" not found in type "${shapeType}".`);
             return;
         }
-        this.removePlacementListeners();
-        this.setPlacementContext(shapeType, shapeToFind.id);
-        this.svg.on("mousemove", (event) => svgMouseMove(event, shapeType, shapeToFind, this.grid, this.config, this.canvasObject, data, this.shapeRegistry));
-        this.svg.on("click", (event) => svgMouseClick(event, this));
+        // Delegate to the new, namespaced startPlacement
+        this.startPlacement(shapeType, shapeToFind.id);
     }
     /**
      * Places a shape immediately at the given canvas coordinates.
@@ -1938,16 +1951,12 @@ class ZenodeEngine {
         const finalTargetNodeId = targetNodeId || ((_a = this.connectionDragContext.snapped) === null || _a === void 0 ? void 0 : _a.nodeId);
         const finalTargetPortId = targetPortId || ((_b = this.connectionDragContext.snapped) === null || _b === void 0 ? void 0 : _b.portId);
         if (finalTargetNodeId && finalTargetPortId) {
-            // Prevent self-connection
             if (finalTargetNodeId === this.connectionDragContext.sourceNodeId) {
-                this.connectionDragContext = null;
-                if (this.canvasObject.ghostConnection) {
-                    this.canvasObject.ghostConnection.selectAll("*").remove();
-                }
-                return;
+                console.warn("[ZENODE] Blocked self-connection");
             }
-            this.createConnectionFromPorts(this.connectionDragContext.sourceNodeId, this.connectionDragContext.sourcePortId, finalTargetNodeId, finalTargetPortId, true // Record history for interactive drop
-            );
+            else {
+                this.createConnectionFromPorts(this.connectionDragContext.sourceNodeId, this.connectionDragContext.sourcePortId, finalTargetNodeId, finalTargetPortId, true);
+            }
         }
         this.connectionDragContext = null;
         if (this.onWindowMouseUp) {
