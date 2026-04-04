@@ -98,6 +98,33 @@ function renderResizeHandles(group, node, style, api) {
         .style("pointer-events", "all")
         .call(resizeBehavior);
 }
+function getNodeRect(node, api) {
+    const style = getShapeStyle(node, api.config);
+    if (!style)
+        return null;
+    const renderer = api.shapeRegistry.get(node.type);
+    const resolved = buildResolvedShapeConfig(node, style);
+    const local = renderer.getBounds(resolved);
+    const left = node.x + local.x;
+    const top = node.y + local.y;
+    const right = left + local.width;
+    const bottom = top + local.height;
+    return {
+        left,
+        right,
+        top,
+        bottom,
+        cx: left + local.width / 2,
+        cy: top + local.height / 2,
+    };
+}
+function getShapeStyle(node, config) {
+    var _a;
+    const list = (_a = config.shapes.default) === null || _a === void 0 ? void 0 : _a[node.type];
+    if (!Array.isArray(list))
+        return undefined;
+    return list.find((s) => s.id === node.shapeVariantId);
+}
 
-export { buildResolvedShapeConfig, renderResizeHandles, renderSelectionRing };
+export { buildResolvedShapeConfig, getNodeRect, getShapeStyle, renderResizeHandles, renderSelectionRing };
 //# sourceMappingURL=overlay.js.map

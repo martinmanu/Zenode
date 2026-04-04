@@ -7,6 +7,7 @@ export declare function drawCanvas(containerSelector: string, canvasConfig: Canv
     connections: any;
     ghostConnection: any;
     placedNodes: any;
+    visualGroups: any;
     guides: any;
     lasso: any;
 };

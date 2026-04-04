@@ -13,6 +13,7 @@ export interface BorderRadius {
 
 export interface ContextPadConfig {
   enabled: boolean;
+  targets?: Array<"node" | "edge" | "group">;
   trigger: "hover" | "select";
   position:
   | "top-right"
@@ -129,6 +130,7 @@ export interface CanvasProperties {
   lassoStyle: LassoStyle;
   ghostConnection: GhostConnectionStyle;
   ghostPreview?: GhostPreviewStyle;
+  groupGhostPreview?: GhostPreviewStyle;
   connectionGhostPreview?: GhostPreviewStyle;
   allowMultipleConnections: boolean;
   keyboardShortcuts: KeyboardShortcuts;

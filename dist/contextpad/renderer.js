@@ -209,7 +209,50 @@ class ContextPadRenderer {
                     canvasY += h;
                     break;
             }
-            // Project to screen coordinate system
+            x = canvasX * transform.k + transform.x;
+            y = canvasY * transform.k + transform.y;
+        }
+        else if (this.currentTarget.kind === 'group') {
+            // For groups, position at top-right of collective boundary
+            const nodeIds = this.currentTarget.data;
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            nodeIds.forEach(id => {
+                var _a, _b, _c, _d;
+                const node = engine.getPlacedNode(id);
+                if (!node)
+                    return;
+                const style = engine.getShapeStyle(node);
+                const w = (_b = (_a = node.width) !== null && _a !== void 0 ? _a : style === null || style === void 0 ? void 0 : style.width) !== null && _b !== void 0 ? _b : 100;
+                const h = (_d = (_c = node.height) !== null && _c !== void 0 ? _c : style === null || style === void 0 ? void 0 : style.height) !== null && _d !== void 0 ? _d : 100;
+                minX = Math.min(minX, node.x - w / 2);
+                minY = Math.min(minY, node.y - h / 2);
+                maxX = Math.max(maxX, node.x + w / 2);
+                maxY = Math.max(maxY, node.y + h / 2);
+            });
+            const w = maxX - minX;
+            const h = maxY - minY;
+            let canvasX = minX;
+            let canvasY = minY;
+            switch (config.position) {
+                case "top-right":
+                    canvasX += w;
+                    break;
+                case "top-left": break;
+                case "bottom-right":
+                    canvasX += w;
+                    canvasY += h;
+                    break;
+                case "bottom-left":
+                    canvasY += h;
+                    break;
+                case "top-center":
+                    canvasX += w / 2;
+                    break;
+                case "bottom-center":
+                    canvasX += w / 2;
+                    canvasY += h;
+                    break;
+            }
             x = canvasX * transform.k + transform.x;
             y = canvasY * transform.k + transform.y;
         }

@@ -127,6 +127,32 @@ export class UpdateConfigCommand implements Command {
 }
 
 /**
+ * Concrete command for adding a visual group.
+ */
+export class AddVisualGroupCommand implements Command {
+    constructor(private engine: any, private group: any) {}
+    execute() {
+        this.engine.restoreVisualGroup?.(this.group);
+    }
+    undo() {
+        this.engine.removeVisualGroup?.(this.group.id);
+    }
+}
+
+/**
+ * Concrete command for removing a visual group.
+ */
+export class RemoveVisualGroupCommand implements Command {
+    constructor(private engine: any, private group: any) {}
+    execute() {
+        this.engine.removeVisualGroup?.(this.group.id);
+    }
+    undo() {
+        this.engine.restoreVisualGroup?.(this.group);
+    }
+}
+
+/**
  * Concrete command for batching multiple operations into one undo step.
  */
 export class BatchCommand implements Command {

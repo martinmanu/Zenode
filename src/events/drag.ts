@@ -3,7 +3,7 @@ import { PlacedNode, CanvasElements } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { snapToGrid } from "../utils/helpers.js";
 import { ShapeRegistry } from "../nodes/registry.js";
-import { buildResolvedShapeConfig } from "../nodes/overlay.js";
+import { buildResolvedShapeConfig, getNodeRect, NodeRect } from "../nodes/overlay.js";
 
 export interface DragApi {
   updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
@@ -13,21 +13,13 @@ export interface DragApi {
   canvasObject: CanvasElements;
   /** SVG root node — needed for correct pointer coordinate transform */
   svgNode: SVGSVGElement;
-  setSelectedNodeIds(ids: string[]): void;
+  setSelectedNodeIds(ids: string[], primaryId?: string): void;
   panBy?: (dx: number, dy: number) => void;
   beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
   endOperation(): void;
   getSelectedNodeIds(): string[];
 }
 
-interface NodeRect {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-  cx: number;
-  cy: number;
-}
 
 interface GuideStyleConfig {
   enabled: boolean;
@@ -35,34 +27,6 @@ interface GuideStyleConfig {
   width: number;
   dashed: boolean;
   dashArray: number[];
-}
-
-function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
-  const list = config.shapes.default?.[node.type as keyof typeof config.shapes.default];
-  if (!Array.isArray(list)) return undefined;
-  return list.find((s: Shape) => s.id === node.shapeVariantId);
-}
-
-function getNodeRect(node: PlacedNode, api: DragApi): NodeRect | null {
-  const style = getShapeStyle(node, api.config);
-  if (!style) return null;
-  const renderer = api.shapeRegistry.get(node.type);
-  const resolved = buildResolvedShapeConfig(node, style);
-  const local = renderer.getBounds(resolved);
-
-  const left = node.x + local.x;
-  const top = node.y + local.y;
-  const right = left + local.width;
-  const bottom = top + local.height;
-
-  return {
-    left,
-    right,
-    top,
-    bottom,
-    cx: left + local.width / 2,
-    cy: top + local.height / 2,
-  };
 }
 
 function upsertGuide(
@@ -119,32 +83,45 @@ export function createDragBehavior(api: DragApi) {
 
   return d3.drag<SVGGElement, PlacedNode>()
     .on("start", function (event, d) {
-      event.sourceEvent?.stopPropagation();
+      if (!event.sourceEvent) return;
+      event.sourceEvent.stopPropagation();
       d3.select(this).raise().classed("dragging", true);
-      api.setSelectedNodeIds([d.id]);
 
-      if (event.sourceEvent) {
-        const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
-        const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
-        
-        const selection = api.getSelectedNodeIds();
-        // If the dragged node isn't in selection, select only it
-        if (!selection.includes(d.id)) {
-            api.setSelectedNodeIds([d.id]);
-        }
-        
-        const nodesToMove = api.getSelectedNodeIds();
-        
-        nodesToMove.forEach(id => {
-            initialPointers.set(id, { x: px, y: py });
-            const freshNode = api.getPlacedNodes().find(n => n.id === id);
-            if (freshNode) {
-                initialPos.set(id, { x: freshNode.x, y: freshNode.y });
-            }
-        });
+      const isGroupBoundary = d3.select(this).classed("visual-group-boundary");
+      let selection = api.getSelectedNodeIds();
 
-        api.beginOperation(d.id, 'drag');
+      // If dragging a group boundary, ensure the whole group is selected and operation is started on group ID
+      if (isGroupBoundary) {
+          const groupNodesStr = d3.select(this).attr("data-group-nodes");
+          // Extract group ID from class: visual-group-boundary vgroup-XXXX
+          const classes = d3.select(this).attr("class").split(' ');
+          const groupId = classes.find(c => c.startsWith('vgroup-'));
+          
+          if (groupNodesStr && groupId) {
+              const groupIds = groupNodesStr.split(',');
+              api.setSelectedNodeIds(groupIds, 'collective-group-trigger');
+              selection = groupIds;
+              
+              // Start operation on the GROUP id specifically, not a member node
+              api.beginOperation(groupId, 'drag');
+          }
+      } else if (!selection.includes(d.id)) {
+          // If dragging a single node that isn't selected, select it.
+          api.setSelectedNodeIds([d.id], d.id);
+          selection = [d.id];
+          api.beginOperation(d.id, 'drag');
       }
+
+      const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
+      const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+      
+      selection.forEach(id => {
+          initialPointers.set(id, { x: px, y: py });
+          const freshNode = api.getPlacedNodes().find(n => n.id === id);
+          if (freshNode) {
+              initialPos.set(id, { x: freshNode.x, y: freshNode.y });
+          }
+      });
     })
     .on("drag", function (event, d) {
       if (!event.sourceEvent) return;

@@ -98,8 +98,9 @@ export interface ShapeRenderer {
 // --- Context Pad Types ---
 
 export type ContextPadTarget =
-  | { kind: "node"; id: string; data: any }
-  | { kind: "edge"; id: string; data: any };
+  | { kind: "node"; id: string; data: any; box?: BoundingBox }
+  | { kind: "edge"; id: string; data: any; box?: BoundingBox }
+  | { kind: "group"; id: string; data: string[]; box?: BoundingBox };
 
 // --- Public API Integration ---
 
@@ -154,7 +155,7 @@ export interface ContextPadAction {
   icon: string; // SVG string or emoji
   tooltip: string;
   group?: "primary" | "secondary" | "danger" | string;
-  targets?: Array<"node" | "edge">;
+  targets?: Array<"node" | "edge" | "group">;
   appliesTo?: string[]; // node/edge types
   order?: number;
   handler: (target: ContextPadTarget, engine: any, event: MouseEvent) => void;

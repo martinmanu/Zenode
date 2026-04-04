@@ -89,14 +89,23 @@ export const defaultConfig: Config = {
       opacity: 0.4,
       filter: 'blur(1px)'
     },
+    groupGhostPreview: {
+      enabled: true,
+      strokeColor: '#005bc4',
+      strokeWidth: 1.5,
+      strokeDashArray: [4, 4],
+      fillColor: 'transparent',
+      opacity: 0.4,
+      filter: 'blur(1px)'
+    },
     connectionGhostPreview: {
-        enabled: true,
-        strokeColor: 'var(--zenode-accent, #3b82f6)',
-        strokeWidth: 1.5,
-        strokeDashArray: [4, 4],
-        fillColor: 'transparent',
-        opacity: 0.4,
-        filter: 'blur(1px)'
+      enabled: true,
+      strokeColor: 'var(--zenode-accent, #3b82f6)',
+      strokeWidth: 1.5,
+      strokeDashArray: [4, 4],
+      fillColor: 'transparent',
+      opacity: 0.4,
+      filter: 'blur(1px)'
     },
     allowMultipleConnections: true,
     keyboardShortcuts: {

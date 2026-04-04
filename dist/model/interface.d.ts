@@ -45,6 +45,14 @@ export interface PlacedNode {
     /** Content items (text, icon, image) + layout mode rendered inside the shape */
     content?: NodeContent;
 }
+/**
+ * A visual cluster of nodes in a boundary box.
+ * Managed as a transient decorator rather than structural parent.
+ */
+export interface VisualGroup {
+    id: string;
+    nodeIds: string[];
+}
 export interface ShapeConfig {
     type: string;
     width?: number;
@@ -72,8 +80,12 @@ export interface CanvasElements {
     canvasContainer: any;
     /** Layer for connection lines (below placed nodes) */
     connections: any;
+    /** Layer for visual groups background/boundary */
+    visualGroups: any;
     /** Layer for ghost connection (highest layer, but below guides) */
     ghostConnection: any;
+    /** Layer for ghosts (above nodes, below guides) */
+    ghosts: any;
     /** Layer for placed nodes (above grid/connections, below preview) */
     placedNodes: any;
     /** Layer for alignment guides (highest layer) */

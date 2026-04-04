@@ -4,7 +4,7 @@ const defaultActions = [
         icon: `<i data-lucide="trash-2" style="width:16px; height:16px;"></i>`,
         tooltip: "Delete Node",
         group: "danger",
-        targets: ["node", "edge"],
+        targets: ["node", "edge", "group"],
         style: {
             color: "#ff453a",
             hoverColor: "rgba(255, 69, 58, 0.2)"
@@ -13,8 +13,12 @@ const defaultActions = [
             if (target.kind === "node") {
                 engine.setSelectedNodeIds([target.id]);
             }
-            else {
+            else if (target.kind === "edge") {
                 engine.setSelectedEdgeIds([target.id]);
+            }
+            else {
+                // Group: data is array of nodeIds
+                engine.setSelectedNodeIds(target.data);
             }
             engine.deleteSelection();
         },
@@ -46,12 +50,10 @@ const defaultActions = [
         icon: `<i data-lucide="link-2" style="width:16px; height:16px;"></i>`,
         tooltip: "Connect",
         group: "primary",
-        targets: ["node"],
+        targets: ["node", "group"],
         handler: (target, engine, event) => {
-            if (target.kind === "node") {
-                const isEnabled = engine.isConnectionModeEnabled();
-                engine.setConnectionModeEnabled(!isEnabled);
-            }
+            const isEnabled = engine.isConnectionModeEnabled();
+            engine.setConnectionModeEnabled(!isEnabled);
         },
         isActive: (target, engine) => {
             return engine.isConnectionModeEnabled();
@@ -94,7 +96,7 @@ const defaultActions = [
         icon: `<i data-lucide="palette" style="width:16px; height:16px;"></i>`,
         tooltip: "Change Style",
         group: "secondary",
-        targets: ["node", "edge"],
+        targets: ["node"],
         handler: (target, engine, event) => {
             engine.emit("contextpad:style", { target });
         },
@@ -121,6 +123,54 @@ const defaultActions = [
             if (target.kind === "node") {
                 engine.sendToBack([target.id]);
             }
+        }
+    },
+    {
+        id: "toggle-dashed",
+        icon: `<i data-lucide="square-dashed" style="width:16px; height:16px;"></i>`,
+        tooltip: "Toggle Dashed",
+        group: "primary",
+        targets: ["edge"],
+        handler: (target, engine, event) => {
+            if (target.kind === "edge") {
+                engine.toggleConnectionStyle(target.id, 'dashed');
+            }
+        },
+        isActive: (target, engine) => {
+            const conn = engine.getConnections().find((c) => c.id === target.id);
+            return (conn === null || conn === void 0 ? void 0 : conn.dashed) === true;
+        }
+    },
+    {
+        id: "toggle-animated",
+        icon: `<i data-lucide="activity" style="width:16px; height:16px;"></i>`,
+        tooltip: "Toggle Animation",
+        group: "primary",
+        targets: ["edge"],
+        handler: (target, engine, event) => {
+            if (target.kind === "edge") {
+                engine.toggleConnectionStyle(target.id, 'animated');
+            }
+        },
+        isActive: (target, engine) => {
+            const conn = engine.getConnections().find((c) => c.id === target.id);
+            return (conn === null || conn === void 0 ? void 0 : conn.animated) === true;
+        },
+        isVisible: (target, engine) => {
+            if (target.kind !== "edge")
+                return false;
+            const conn = engine.getConnections().find((c) => c.id === target.id);
+            return (conn === null || conn === void 0 ? void 0 : conn.dashed) === true;
+        }
+    },
+    {
+        id: "ungroup",
+        icon: `<i data-lucide="ungroup" style="width:16px; height:16px;"></i>`,
+        tooltip: "Ungroup",
+        group: "primary",
+        targets: ["group"],
+        handler: (target, engine, event) => {
+            engine.ungroupSelection();
         }
     }
 ];

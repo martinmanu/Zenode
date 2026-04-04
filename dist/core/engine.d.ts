@@ -1,7 +1,8 @@
-import { Config, Shape } from "../model/configurationModel.js";
+import { Config } from "../model/configurationModel.js";
 import { ZoomManager } from "./zoom&PanManager.js";
-import { CanvasElements, PlacedNode } from "../model/interface.js";
-import { ContextPadAction, ContextPadTarget, ShapeRenderer, VisualState, NodeConfig, NodeData, EdgeConfig, EdgeData } from "../types/index.js";
+import { CanvasElements, PlacedNode, VisualGroup } from "../model/interface.js";
+import { ContextPadAction, ContextPadTarget, ShapeRenderer, BoundingBox, VisualState, NodeConfig, NodeData, EdgeConfig, EdgeData } from "../types/index.js";
+import { StoredConnection } from "../connections/render.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 export declare class ZenodeEngine {
     container: HTMLElement | null;
@@ -26,7 +27,11 @@ export declare class ZenodeEngine {
     /** Prevents background click handler from clearing selection right after lasso mouseup. */
     private suppressNextCanvasClick;
     /** When set, next click will place a node of this type/config (preview → placed). */
-    private placementContext;
+    placementContext: {
+        type: string;
+        variantId?: string;
+        ghostId: string;
+    } | null;
     /** When set, a connection is being dragged from this port. */
     private connectionDragContext;
     connectionModeEnabled: boolean;
@@ -49,6 +54,8 @@ export declare class ZenodeEngine {
     private editingNodeId;
     private onWindowMouseUp;
     private onWindowMouseMove;
+    /** Transient visual groups (for interaction only, no structural parentId). */
+    private visualGroups;
     private validationEngine;
     constructor(container: HTMLElement | null, config: Partial<Config>);
     private initializeContextPad;
@@ -66,6 +73,7 @@ export declare class ZenodeEngine {
      * Listens to engine events (including context pad events).
      */
     on(eventType: string, callback: (event: any) => void): void;
+    off(eventType: string, callback: (event: any) => void): void;
     /**
      * Manually shows the context pad for a specific target.
      */
@@ -85,6 +93,7 @@ export declare class ZenodeEngine {
         type: string;
         nodeId: string;
         originalData: PlacedNode;
+        selectionStates?: Map<string, PlacedNode>;
     } | null;
     emit(eventType: string, event: any): void;
     private initDrag;
@@ -96,11 +105,10 @@ export declare class ZenodeEngine {
     get svgNode(): SVGSVGElement;
     /** Returns current placement context (shape type + config for next click). */
     getPlacementContext(): {
-        shapeType: string;
-        shapeConfig: Shape;
+        type: string;
+        variantId?: string;
+        ghostId: string;
     } | null;
-    /** Sets placement context so the next canvas click places a node of this type/config. */
-    setPlacementContext(shapeType: string, shapeConfig: Shape): void;
     /** Clears placement context (e.g. after placing or cancel). */
     clearPlacementContext(): void;
     /**
@@ -154,8 +162,8 @@ export declare class ZenodeEngine {
      * Clones a node with a slight offset.
      */
     duplicateNode(id: string): string;
-    /** Helper to trigger node layer re-render */
-    private refreshNodes;
+    /** Helper to trigger diagram layer re-renders */
+    refreshNodes(): void;
     /**
      * Retrieves a node object by ID.
      */
@@ -172,14 +180,6 @@ export declare class ZenodeEngine {
         x: number;
         y: number;
     }): void;
-    /**
-     * Groups currently selected nodes into a new container.
-     */
-    groupSelection(): void;
-    /**
-     * Removes grouping for selected nodes or breaks apart a selected group.
-     */
-    ungroupSelection(): void;
     /**
      * Programmatically creates a connection between two nodes.
      * @returns The ID of the created connection.
@@ -258,6 +258,15 @@ export declare class ZenodeEngine {
     cancelPlacement(): void;
     /** Returns selected node ids. */
     getSelectedNodeIds(): string[];
+    /** Placement and Preview APIs */
+    setPlacementContext(type: string, variantId?: string, ghostId?: string): void;
+    startPlacement(type: string, variantId: string, initialPoint?: {
+        x: number;
+        y: number;
+    }): string;
+    updatePlacementPreview(x: number, y: number): void;
+    completePlacement(): string;
+    private getCanvasPointFromEvent;
     /** Returns whether a connection is currently being drawn. */
     isDrawingConnection(): boolean;
     /** Sets whether connection drawing mode is enabled. */
@@ -273,11 +282,19 @@ export declare class ZenodeEngine {
     /** Sets the active connection type for newly created connections. */
     setActiveConnectionType(type: string): void;
     /** Sets selected node ids and re-renders selection rings. */
-    setSelectedNodeIds(ids: string[]): void;
-    /** Returns selected edge ids. */
+    setSelectedNodeIds(ids: string[], primaryId?: string): void;
+    groupSelection(recordHistory?: boolean): void;
+    ungroupSelection(recordHistory?: boolean): void;
+    /** Internal helpers for undo/redo */
+    restoreVisualGroup(group: VisualGroup): void;
+    removeVisualGroup(groupId: string): void;
+    toggleGroupingSelection(): void;
+    getVisualGroups(): VisualGroup[];
     getSelectedEdgeIds(): string[];
-    /** Sets selected edge ids and re-renders selection state. */
     setSelectedEdgeIds(ids: string[]): void;
+    toggleConnectionStyle(id: string, property: 'dashed' | 'animated'): void;
+    getConnections(): StoredConnection[];
+    getGroupBounds(groupId: string, overrideNodes?: Map<string, PlacedNode>): BoundingBox | null;
     /** Clears all selections. */
     clearSelection(): void;
     /** Enable/disable lasso selection interaction. */
@@ -308,6 +325,7 @@ export declare class ZenodeEngine {
     }, recordHistory?: boolean): void;
     zoomIn(): void;
     zoomOut(): void;
+    createDragBehavior(): any;
     zoomTo(scale: number): void;
     focusOnNode(id: string): void;
     focusOnSelectedNode(): void;
@@ -333,7 +351,7 @@ export declare class ZenodeEngine {
      * Places a shape immediately at the given canvas coordinates.
      * Internal common logic for Drop and DblClick placement.
      */
-    placeShapeAt(shapeType: string, variantId: string, x: number, y: number, data?: any): void;
+    placeShapeAt(shapeType: string, variantId: string, x: number, y: number, data?: any): PlacedNode | undefined;
     /**
      * Places a shape at a safe, non-overlapping position within the current viewport.
      * Useful for double-click placement.
@@ -395,6 +413,10 @@ export declare class ZenodeEngine {
     private cleanupGhostConnection;
     createConnectionFromPorts(sourceNodeId: string, sourcePortId: string, targetNodeId: string, targetPortId: string, recordHistory?: boolean): void;
     private renderGhostConnection;
+    getGroupPorts(groupId: string, overrideNodes?: Map<string, PlacedNode>): Record<string, {
+        x: number;
+        y: number;
+    }> | null;
     lockedTheCanvas(locked: boolean): void;
     gridToggles(toggle: boolean): void;
     private bindSelectionInteractions;

@@ -1,5 +1,4 @@
 import { CanvasElements, PlacedNode } from "../model/interface.js";
-import { Shape } from "../model/configurationModel.js";
 /** Minimal placement API to avoid circular dependency with engine. */
 export interface PlacementClickApi {
     getCanvasPoint(event: MouseEvent): {
@@ -7,8 +6,9 @@ export interface PlacementClickApi {
         y: number;
     };
     getPlacementContext(): {
-        shapeType: string;
-        shapeConfig: Shape;
+        type: string;
+        variantId?: string;
+        ghostId: string;
     } | null;
     placeNode(node: PlacedNode): void;
     clearPlacementContext(): void;

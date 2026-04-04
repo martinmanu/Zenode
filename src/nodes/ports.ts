@@ -60,6 +60,7 @@ export function renderPorts(
         if (!engine.connectionModeEnabled) return 0;
         return portConfig.showOnHoverOnly ? 0 : portConfig.opacity;
     })
+    .style("pointer-events", () => engine.connectionModeEnabled ? "all" : "none")
     .style("cursor", () => engine.connectionModeEnabled ? portConfig.cursor : "default")
     .on("mousedown", function(event: MouseEvent, d) {
         if (!engine.connectionModeEnabled) return;

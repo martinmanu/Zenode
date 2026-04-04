@@ -120,6 +120,16 @@
             visibility: hidden;
         }
 
+        /* Animated Connection Flow */
+        @keyframes zenode-flow {
+            from { stroke-dashoffset: 20; }
+            to { stroke-dashoffset: 0; }
+        }
+        .connection-line.animated-flow {
+            stroke-dasharray: 10, 5;
+            animation: zenode-flow 0.8s linear infinite;
+        }
+
         .visually-hidden {
             position: absolute;
             width: 1px;
@@ -264,13 +274,20 @@
             letter-spacing: 1px;
             pointer-events: none;
             z-index: 1000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             animation: bounceIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
         }
 
         @keyframes bounceIn {
-            0% { transform: translateX(-50%) translateY(-20px) scale(0.8); opacity: 0; }
-            100% { transform: translateX(-50%) translateY(0) scale(1); opacity: 1; }
+            0% {
+                transform: translateX(-50%) translateY(-20px) scale(0.8);
+                opacity: 0;
+            }
+
+            100% {
+                transform: translateX(-50%) translateY(0) scale(1);
+                opacity: 1;
+            }
         }
 
         /* Sidebars */
@@ -1300,8 +1317,11 @@
                 <i data-lucide="keyboard"></i>
             </button>
             <hr style="border: none; border-top: 1px solid var(--border); margin: 4px 8px; opacity: 0.5;">
-            <button id="lassoBtn" class="tool-btn icon-only" onclick="toggleLasso()" title="Lasso Selection">
+            <button id="lassoBtn" class="tool-btn icon-only" onclick="toggleLasso()" title="Lasso Selection (L)">
                 <i data-lucide="lasso"></i>
+            </button>
+            <button class="tool-btn icon-only" onclick="Zenode.toggleGroupingSelection()" title="Toggle Visual Grouping (Ctrl+G)">
+                <i data-lucide="layers"></i>
             </button>
             <hr style="border: none; border-top: 1px solid var(--border); margin: 4px 8px; opacity: 0.5;">
             <button class="tool-btn icon-only" onclick="Zenode.zoomIn()" title="Zoom In"><i
@@ -1363,8 +1383,8 @@
                     placeholder='<svg viewBox="0 0 24 24">...</svg>' oninput="applyContentUpdate()"></textarea>
             </div>
 
-            </div>
         </div>
+    </div>
     </div>
 
     <!-- Right Panels -->
@@ -1381,7 +1401,7 @@
                         data-lucide="x"></i></button>
             </div>
         </div>
-        
+
         <div id="formContainer" class="form-container"></div>
         <div style="padding: 20px; border-top: 1px solid var(--border); background: #0f172a;">
             <button class="tool-btn" style="width: 100%; border-radius: 14px; padding: 12px;"
@@ -1472,11 +1492,11 @@
         window.updateGlobalCPConfig = () => {
             const pos = document.getElementById('cpPositionSelect').value;
             const layout = document.getElementById('cpLayoutSelect').value;
-            
+
             currentConfig.canvasProperties.contextPad.position = pos;
             currentConfig.canvasProperties.contextPad.layout = layout === 'grid' ? 'grid' : layout;
             currentConfig.canvasProperties.contextPad.gridColumns = layout === 'grid' ? 3 : undefined;
-            
+
             Zenode.updateConfig(currentConfig);
             updatePreview();
         };
@@ -1563,7 +1583,7 @@
             }
 
             const fontSize = (textItem?.fontSize || 13) * k;
-            
+
             // Signal engine to hide text
             Zenode.setEditingNode(id);
 
@@ -1602,11 +1622,13 @@
             const sel = window.getSelection();
             sel.removeAllRanges();
             sel.addRange(range);
-            
-            const commit = () => {
-                if (!document.body.contains(editor)) return;
 
+            const commit = () => {
+                if (!editor.parentNode) return;
                 const newVal = editor.innerText.trim();
+                const node = Zenode.getPlacedNodes().find(n => n.id === id);
+                if (!node) return;
+
                 const currentContent = node.content || { layout: 'text-only', items: [] };
                 const textItem = (currentContent.items || []).find(i => i.kind === 'text') || { kind: 'text', value: "" };
 
@@ -1630,6 +1652,7 @@
             editor.onkeydown = (e) => {
                 if (e.key === 'Escape') {
                     e.preventDefault();
+                    if (!editor.parentNode) return;
                     Zenode.setEditingNode(null);
                     document.body.removeChild(editor);
                 }
@@ -1691,23 +1714,23 @@
                 const text = await response.text();
 
                 let html = marked.parse(text);
-                
+
                 // 1. Global Path Correction (Environment-Aware)
                 const isDev = window.location.pathname.includes('/playground/');
                 const assetPrefix = isDev ? '../assets/' : './assets/';
-                
+
                 // Fixes all instances of assets/ in any attribute (src, href, etc.)
                 html = html.replace(/(src|href)="(\.\/)?assets\//g, `$1="${assetPrefix}`);
-                
+
                 // 2. Transform Markdown Image links into Styled <video>
                 if (tab === 'overview') {
                     html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
                         return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
                     });
-                    
+
                     // 3. Ensure any existing <video> tags are also styled properly
                     if (!html.includes('style="width:100%')) {
-                         html = html.replace(/<video /g, '<video style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);" ');
+                        html = html.replace(/<video /g, '<video style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);" ');
                     }
                 }
 
@@ -1810,7 +1833,7 @@
                     closeAll();
                     cp.classList.add('active');
                     document.body.classList.add('panel-open');
-                    
+
                     // Sync editor fields
                     const textItem = (node.content?.items || []).find(it => it.kind === 'text');
                     const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
@@ -2051,28 +2074,28 @@
                 const group = document.createElement('div');
                 group.className = "config-group";
                 group.innerHTML = `<div class="item-label">${key} (List)</div>`;
-                
+
                 value.forEach((item, index) => {
                     const itemPath = `${path}.${index}`;
                     const itemCard = document.createElement('div');
                     itemCard.className = "config-card sub-card";
-                    
+
                     const header = document.createElement('div');
                     header.className = "config-card-header";
                     header.innerHTML = `<span>Item ${index} (${item.id || 'No ID'})</span> <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="transition: transform 0.2s;"><path d="M6 9l6 6 6-6"/></svg>`;
-                    
+
                     const body = document.createElement('div');
                     body.className = "config-card-body";
                     body.style.display = 'none'; // Default collapsed
                     renderForm(item, body, itemPath);
-                    
+
                     header.onclick = (e) => {
                         e.stopPropagation();
                         const isHidden = body.style.display === 'none';
                         body.style.display = isHidden ? 'flex' : 'none';
                         header.querySelector('svg').style.transform = isHidden ? '' : 'rotate(-90deg)';
                     };
-                    
+
                     itemCard.appendChild(header);
                     itemCard.appendChild(body);
                     group.appendChild(itemCard);
@@ -2161,7 +2184,7 @@
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Toggle Lasso Tool</span>
-                <div class="shortcut-keys"><span class="key-tag">L</span> or <span class="key-tag">Click + Drag</span></div>
+                <div class="shortcut-keys"><span class="key-tag">L</span></div>
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Pan Canvas</span>
@@ -2170,7 +2193,8 @@
             <div class="shortcut-item">
                 <span class="shortcut-label">Zoom In/Out</span>
                 <div class="shortcut-keys">
-                    <span class="key-tag">Ctrl</span><span class="key-tag">+ / -</span> or <span class="key-tag">Wheel</span>
+                    <span class="key-tag">Ctrl</span><span class="key-tag">+ / -</span> or <span
+                        class="key-tag">Wheel</span>
                 </div>
             </div>
             <div class="shortcut-item">
@@ -2195,7 +2219,8 @@
             </div>
             <div class="shortcut-item">
                 <span class="shortcut-label">Ungroup Selection</span>
-                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">Shift</span><span class="key-tag">G</span></div>
+                <div class="shortcut-keys"><span class="key-tag">Ctrl</span><span class="key-tag">Shift</span><span
+                        class="key-tag">G</span></div>
             </div>
         </div>
     </div>

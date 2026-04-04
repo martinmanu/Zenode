@@ -1,34 +1,7 @@
 import * as d3 from 'd3';
 import { snapToGrid } from '../utils/helpers.js';
-import { buildResolvedShapeConfig } from '../nodes/overlay.js';
+import { getNodeRect } from '../nodes/overlay.js';
 
-function getShapeStyle(node, config) {
-    var _a;
-    const list = (_a = config.shapes.default) === null || _a === void 0 ? void 0 : _a[node.type];
-    if (!Array.isArray(list))
-        return undefined;
-    return list.find((s) => s.id === node.shapeVariantId);
-}
-function getNodeRect(node, api) {
-    const style = getShapeStyle(node, api.config);
-    if (!style)
-        return null;
-    const renderer = api.shapeRegistry.get(node.type);
-    const resolved = buildResolvedShapeConfig(node, style);
-    const local = renderer.getBounds(resolved);
-    const left = node.x + local.x;
-    const top = node.y + local.y;
-    const right = left + local.width;
-    const bottom = top + local.height;
-    return {
-        left,
-        right,
-        top,
-        bottom,
-        cx: left + local.width / 2,
-        cy: top + local.height / 2,
-    };
-}
 function upsertGuide(map, key, min, max) {
     const roundedKey = Number(key.toFixed(2));
     const existing = map.get(roundedKey);
@@ -71,28 +44,41 @@ function createDragBehavior(api) {
     const initialPointers = new Map();
     return d3.drag()
         .on("start", function (event, d) {
-        var _a;
-        (_a = event.sourceEvent) === null || _a === void 0 ? void 0 : _a.stopPropagation();
+        if (!event.sourceEvent)
+            return;
+        event.sourceEvent.stopPropagation();
         d3.select(this).raise().classed("dragging", true);
-        api.setSelectedNodeIds([d.id]);
-        if (event.sourceEvent) {
-            const svgGroupNode = api.canvasObject.elements.node();
-            const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
-            const selection = api.getSelectedNodeIds();
-            // If the dragged node isn't in selection, select only it
-            if (!selection.includes(d.id)) {
-                api.setSelectedNodeIds([d.id]);
+        const isGroupBoundary = d3.select(this).classed("visual-group-boundary");
+        let selection = api.getSelectedNodeIds();
+        // If dragging a group boundary, ensure the whole group is selected and operation is started on group ID
+        if (isGroupBoundary) {
+            const groupNodesStr = d3.select(this).attr("data-group-nodes");
+            // Extract group ID from class: visual-group-boundary vgroup-XXXX
+            const classes = d3.select(this).attr("class").split(' ');
+            const groupId = classes.find(c => c.startsWith('vgroup-'));
+            if (groupNodesStr && groupId) {
+                const groupIds = groupNodesStr.split(',');
+                api.setSelectedNodeIds(groupIds, 'collective-group-trigger');
+                selection = groupIds;
+                // Start operation on the GROUP id specifically, not a member node
+                api.beginOperation(groupId, 'drag');
             }
-            const nodesToMove = api.getSelectedNodeIds();
-            nodesToMove.forEach(id => {
-                initialPointers.set(id, { x: px, y: py });
-                const freshNode = api.getPlacedNodes().find(n => n.id === id);
-                if (freshNode) {
-                    initialPos.set(id, { x: freshNode.x, y: freshNode.y });
-                }
-            });
+        }
+        else if (!selection.includes(d.id)) {
+            // If dragging a single node that isn't selected, select it.
+            api.setSelectedNodeIds([d.id], d.id);
+            selection = [d.id];
             api.beginOperation(d.id, 'drag');
         }
+        const svgGroupNode = api.canvasObject.elements.node();
+        const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+        selection.forEach(id => {
+            initialPointers.set(id, { x: px, y: py });
+            const freshNode = api.getPlacedNodes().find(n => n.id === id);
+            if (freshNode) {
+                initialPos.set(id, { x: freshNode.x, y: freshNode.y });
+            }
+        });
     })
         .on("drag", function (event, d) {
         if (!event.sourceEvent)

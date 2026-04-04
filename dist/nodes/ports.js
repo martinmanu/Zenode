@@ -42,6 +42,7 @@ function renderPorts(nodeGroup, node, config, registry, engine) {
             return 0;
         return portConfig.showOnHoverOnly ? 0 : portConfig.opacity;
     })
+        .style("pointer-events", () => engine.connectionModeEnabled ? "all" : "none")
         .style("cursor", () => engine.connectionModeEnabled ? portConfig.cursor : "default")
         .on("mousedown", function (event, d) {
         if (!engine.connectionModeEnabled)

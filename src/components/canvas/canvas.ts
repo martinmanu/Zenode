@@ -14,6 +14,7 @@ export function drawCanvas(
   connections: any;
   ghostConnection: any;
   placedNodes: any;
+  visualGroups: any;
   guides: any;
   lasso: any;
 } {
@@ -40,7 +41,9 @@ export function drawCanvas(
   const elementsGroup = canvasContainerGroup
     .append("g")
     .attr("class", "elements-group");
-  // Insert below preview so layer order: grid, connections, placed-nodes, preview
+  const visualGroupsGroup = canvasContainerGroup
+    .insert("g", ".elements-group")
+    .attr("class", "visual-groups");
   const connectionsGroup = canvasContainerGroup
     .insert("g", ".elements-group")
     .attr("class", "connections");
@@ -51,6 +54,12 @@ export function drawCanvas(
     .insert("g", ".elements-group")
     .attr("class", "ghost-connection")
     .style("pointer-events", "none");
+
+  const ghostsGroup = canvasContainerGroup
+    .insert("g", ".elements-group")
+    .attr("class", "ghosts")
+    .style("pointer-events", "none");
+
   const guidesGroup = canvasContainerGroup
     .append("g")
     .attr("class", "guides")
@@ -69,7 +78,9 @@ export function drawCanvas(
     svg: svg,
     canvasContainer: canvasContainerGroup,
     connections: connectionsGroup,
+    visualGroups: visualGroupsGroup,
     ghostConnection: ghostConnectionGroup,
+    ghosts: ghostsGroup,
     placedNodes: placedNodesGroup,
     guides: guidesGroup,
     lasso: lassoGroup,

@@ -17,6 +17,7 @@ export default {
       preserveModulesRoot: 'src',
       entryFileNames: '[name].js',
       sourcemap: true,
+      exports: 'named',
     },
     {
       dir: 'dist',
@@ -25,7 +26,7 @@ export default {
       preserveModulesRoot: 'src',
       entryFileNames: '[name].cjs',
       sourcemap: true,
-      exports: 'auto'
+      exports: 'named'
     }
   ],
   plugins: [

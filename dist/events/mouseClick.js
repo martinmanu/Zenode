@@ -12,16 +12,13 @@ function svgMouseClick(event, api, manualPoint) {
     if (!ctx)
         return null;
     const point = (event ? api.getCanvasPoint(event) : { x: 0, y: 0 });
-    const { shapeType, shapeConfig } = ctx;
+    const { type, variantId } = ctx;
     const node = {
         id: generatePlacedNodeId(),
-        type: shapeType,
-        shapeVariantId: shapeConfig.id,
+        type: type,
+        shapeVariantId: variantId || "default",
         x: point.x,
         y: point.y,
-        width: shapeConfig.width,
-        height: shapeConfig.height,
-        radius: shapeConfig.radius,
         rotation: 0,
         meta: {},
         visualState: { status: "idle" },

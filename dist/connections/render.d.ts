@@ -9,6 +9,8 @@ export interface StoredConnection {
     targetPortId: string;
     type: string;
     visualState?: VisualState;
+    dashed?: boolean;
+    animated?: boolean;
 }
 /**
  * Draws all connections using the specialized path calculators.
