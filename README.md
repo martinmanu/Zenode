@@ -21,7 +21,9 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 
 ## Demo
 
-![Zenode Designer Demo](assets/demo.mp4)
+<div align="center">
+  <video src="assets/demo.mp4" width="100%" autoplay loop muted playsinline></video>
+</div>
 
 ---
 
@@ -148,6 +150,10 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `updateConfig(config)` | Dynamically updates engine settings. | `Zenode.updateConfig({ grid: { visible: false } })` |
 | `getDiagramState()` | Returns a JSON snapshot of nodes, edges, and viewport. | `const state = Zenode.getDiagramState()` |
 | `clear()` | Wipes all nodes and edges from the workspace. | `Zenode.clear()` |
+| `reset()` | Clears everything and resets zoom/pan to defaults. | `Zenode.reset()` |
+| `zoomTo(scale, ms?)` | Sets absolute zoom level (e.g. 1.0 = 100%). | `engine.zoomTo(0.8)` |
+| `panTo(x, y, ms?)` | Centers the view on a specific coordinate. | `engine.panTo(200, 300)` |
+| `fitToScreen(ms?)` | Autcalculated zoom/pan to show all objects. | `engine.fitToScreen(800)` |
 
 ### 2. Node & Edge Management
 | API | Description | Usage Example |
@@ -174,6 +180,17 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `setNodeStatus(id, type)` | Triggers visual cues (`running`, `success`, `error`). | `engine.setNodeStatus('n1', 'error')` |
 | `updateNodeContent(id, cnt)` | Sets text, icons, and layout for a node. | `Zenode.updateNodeContent('n1', { items: [...] })` |
 | `highlight(id, opts?)` | Pulses a node with target behavior/color. | `engine.highlight('n1', { color: '#ff0000', duration: 3000 })` |
+
+### 5. Placement & Interaction
+| API | Description | Usage Example |
+|---|---|---|
+| `startPlacement(type, id, data?)` | Enters placement mode with a ghost preview FOLLOWING the mouse. | `engine.startPlacement('rectangle', 'task0')` |
+| `updatePlacementPreview(e \| p)` | Manually updates the ghost preview's position (e.g. from DND `dragover`). | `engine.updatePlacementPreview(event)` |
+| `completePlacement(e \| p?)` | Adds the node and exits placement mode. | `engine.completePlacement(event)` |
+| `cancelPlacement()` | Aborts placement mode and removes preview (also mapped to `Escape`). | `engine.cancelPlacement()` |
+| `placeShapeAt(type, id, x, y)` | Immediately places a shape at exact canvas coordinates. | `engine.placeShapeAt('circle', 'c1', 100, 200)` |
+| `placeShapeAtSafePos(type, id)` | Finds the nearest non-overlapping spot in viewport to place a shape. | `engine.placeShapeAtSafePos('rectangle', 'r1')` |
+| `handleDrop(event)` | Native DND handler: parses drop data and places shape at mouse. | `container.ondrop = (e) => Zenode.handleDrop(e)` |
 
 > [!TIP]
 > **Deterministic IDs**: If you provide an `id` in `addNode(config)`, the engine will use it strictly. If not, it will return a UUID which you should captured for future calls.

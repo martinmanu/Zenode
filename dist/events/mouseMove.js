@@ -2,12 +2,20 @@ import * as d3 from 'd3';
 import { defaultConfig } from '../config/defaultConfig.js';
 import { snapToGrid } from '../utils/helpers.js';
 
-function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data, registry) {
+function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject, data, registry, manualPoint) {
     const gridSize = config.canvas.grid.gridSize || defaultConfig.canvas.grid.gridSize;
     const zoomTransform = d3.zoomTransform(canvasObject.svg.node());
-    const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
-    const adjustedX = (cursorX - zoomTransform.x) / zoomTransform.k;
-    const adjustedY = (cursorY - zoomTransform.y) / zoomTransform.k;
+    let x, y;
+    if (event) {
+        const [cursorX, cursorY] = d3.pointer(event, canvasObject.svg.node());
+        x = cursorX;
+        y = cursorY;
+    }
+    else {
+        return { x: 0, y: 0 };
+    }
+    const adjustedX = (x - zoomTransform.x) / zoomTransform.k;
+    const adjustedY = (y - zoomTransform.y) / zoomTransform.k;
     let exactPosition;
     if (config.canvasProperties.snapToGrid) {
         exactPosition = snapToGrid(adjustedX, adjustedY, gridSize);
@@ -18,6 +26,7 @@ function svgMouseMove(event, shapeType, shapeToFind, grid, config, canvasObject,
     if (shapeToFind.previewEnabled) {
         createShapePreview(shapeType, exactPosition.x, exactPosition.y, canvasObject, shapeToFind, registry);
     }
+    return exactPosition;
 }
 function createShapePreview(shapeType, x, y, canvasObject, shapeToFind, registry) {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;

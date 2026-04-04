@@ -3,7 +3,7 @@ import { PlacedNode, CanvasElements } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { snapToGrid } from "../utils/helpers.js";
 import { ShapeRegistry } from "../nodes/registry.js";
-import { buildResolvedShapeConfig } from "../nodes/overlay.js";
+import { buildResolvedShapeConfig, getNodeRect, NodeRect } from "../nodes/overlay.js";
 
 export interface DragApi {
   updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
@@ -13,20 +13,13 @@ export interface DragApi {
   canvasObject: CanvasElements;
   /** SVG root node — needed for correct pointer coordinate transform */
   svgNode: SVGSVGElement;
-  setSelectedNodeIds(ids: string[]): void;
+  setSelectedNodeIds(ids: string[], primaryId?: string): void;
   panBy?: (dx: number, dy: number) => void;
   beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
   endOperation(): void;
+  getSelectedNodeIds(): string[];
 }
 
-interface NodeRect {
-  left: number;
-  right: number;
-  top: number;
-  bottom: number;
-  cx: number;
-  cy: number;
-}
 
 interface GuideStyleConfig {
   enabled: boolean;
@@ -34,34 +27,6 @@ interface GuideStyleConfig {
   width: number;
   dashed: boolean;
   dashArray: number[];
-}
-
-function getShapeStyle(node: PlacedNode, config: Config): Shape | undefined {
-  const list = config.shapes.default?.[node.type as keyof typeof config.shapes.default];
-  if (!Array.isArray(list)) return undefined;
-  return list.find((s: Shape) => s.id === node.shapeVariantId);
-}
-
-function getNodeRect(node: PlacedNode, api: DragApi): NodeRect | null {
-  const style = getShapeStyle(node, api.config);
-  if (!style) return null;
-  const renderer = api.shapeRegistry.get(node.type);
-  const resolved = buildResolvedShapeConfig(node, style);
-  const local = renderer.getBounds(resolved);
-
-  const left = node.x + local.x;
-  const top = node.y + local.y;
-  const right = left + local.width;
-  const bottom = top + local.height;
-
-  return {
-    left,
-    right,
-    top,
-    bottom,
-    cx: left + local.width / 2,
-    cy: top + local.height / 2,
-  };
 }
 
 function upsertGuide(
@@ -118,74 +83,92 @@ export function createDragBehavior(api: DragApi) {
 
   return d3.drag<SVGGElement, PlacedNode>()
     .on("start", function (event, d) {
-      event.sourceEvent?.stopPropagation();
-      d3.select(this).raise().classed("dragging", true);
-      api.setSelectedNodeIds([d.id]);
-
-      if (event.sourceEvent) {
-        const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
-        const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
-        initialPointers.set(d.id, { x: px, y: py });
-        
-        // Critically: Fetch the fresh state node instead of parsing the stale DOM datum `d` 
-        // to prevent shapes snapping back to origin during rapid chained interactions.
-        const freshNode = api.getPlacedNodes().find(n => n.id === d.id) || d;
-        initialPos.set(d.id, { x: freshNode.x, y: freshNode.y }); 
-        api.beginOperation(d.id, 'drag');
-      }
-    })
-    .on("drag", function (event, d) {
       if (!event.sourceEvent) return;
-      const initialP = initialPointers.get(d.id);
-      const initialD = initialPos.get(d.id);
-      if (!initialP || !initialD) return;
+      event.sourceEvent.stopPropagation();
+      d3.select(this).raise().classed("dragging", true);
+
+      const isGroupBoundary = d3.select(this).classed("visual-group-boundary");
+      let selection = api.getSelectedNodeIds();
+
+      // If dragging a group boundary, ensure the whole group is selected and operation is started on group ID
+      if (isGroupBoundary) {
+          const groupNodesStr = d3.select(this).attr("data-group-nodes");
+          // Extract group ID from class: visual-group-boundary vgroup-XXXX
+          const classes = d3.select(this).attr("class").split(' ');
+          const groupId = classes.find(c => c.startsWith('vgroup-'));
+          
+          if (groupNodesStr && groupId) {
+              const groupIds = groupNodesStr.split(',');
+              api.setSelectedNodeIds(groupIds, 'collective-group-trigger');
+              selection = groupIds;
+              
+              // Start operation on the GROUP id specifically, not a member node
+              api.beginOperation(groupId, 'drag');
+          }
+      } else if (!selection.includes(d.id)) {
+          // If dragging a single node that isn't selected, select it.
+          api.setSelectedNodeIds([d.id], d.id);
+          selection = [d.id];
+          api.beginOperation(d.id, 'drag');
+      }
 
       const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
       const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
       
-      const dx = px - initialP.x;
-      const dy = py - initialP.y;
-
-      let newX = initialD.x + dx;
-      let newY = initialD.y + dy;
-
-      const gridSize = api.config.canvas.grid?.gridSize ?? 20;
-      if (api.config.canvasProperties.snapToGrid) {
-        const snapped = snapToGrid(newX, newY, gridSize);
-        newX = snapped.x;
-        newY = snapped.y;
-      }
+      selection.forEach(id => {
+          initialPointers.set(id, { x: px, y: py });
+          const freshNode = api.getPlacedNodes().find(n => n.id === id);
+          if (freshNode) {
+              initialPos.set(id, { x: freshNode.x, y: freshNode.y });
+          }
+      });
+    })
+    .on("drag", function (event, d) {
+      if (!event.sourceEvent) return;
+      const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
+      const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
+      const selection = api.getSelectedNodeIds();
       
-      // Auto-pan if reaching boundary
-      if (api.panBy) {
-        const rect = api.svgNode.getBoundingClientRect();
-        const margin = 40;
-        const moveX = event.sourceEvent.clientX; // screen relative
-        const moveY = event.sourceEvent.clientY;
-        
-        let panX = 0; let panY = 0;
-        const speed = 1.5; // Virtual logical step mapped strictly 1:1
-        
-        if (moveX < rect.left + margin) panX = speed;
-        else if (moveX > rect.right - margin) panX = -speed;
-        if (moveY < rect.top + margin) panY = speed;
-        else if (moveY > rect.bottom - margin) panY = -speed;
+      selection.forEach(nodeId => {
+          const startP = initialPointers.get(nodeId);
+          const startD = initialPos.get(nodeId);
+          if (!startP || !startD) return;
 
-        if (panX !== 0 || panY !== 0) {
-           api.panBy(panX, panY);
-        }
-      }
+          const dx = px - startP.x;
+          const dy = py - startP.y;
 
-      d3.select(this).attr("transform", `translate(${newX},${newY}) rotate(${d.rotation || 0})`);
-      
-      // Real-time update for connections
-      api.updateNodePosition(d.id, newX, newY, false);
+          let newX = startD.x + dx;
+          let newY = startD.y + dy;
+
+          const gridSize = api.config.canvas.grid?.gridSize ?? 20;
+          if (api.config.canvasProperties.snapToGrid) {
+            const snapped = snapToGrid(newX, newY, gridSize);
+            newX = snapped.x;
+            newY = snapped.y;
+          }
+
+          api.updateNodePosition(nodeId, newX, newY, false);
+
+          // Update visual transform for immediate feedback (only for the dragged selection elements in the DOM)
+          const nodeG = d3.select(`g.placed-node[data-node-id="${nodeId}"]`);
+          if (!nodeG.empty()) {
+              const nodeData = api.getPlacedNodes().find(n => n.id === nodeId);
+              nodeG.attr("transform", `translate(${newX},${newY}) rotate(${nodeData?.rotation || 0})`);
+          }
+      });
 
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
       }
       guideRaf = requestAnimationFrame(() => {
-        renderAlignmentGuides(newX, newY, d, api);
+        // Alignment guides only for the PRIMARY dragged node to keep it clean
+        const currentP = initialPointers.get(d.id);
+        const currentD = initialPos.get(d.id);
+        if (currentP && currentD) {
+            const dx = px - currentP.x;
+            const dy = py - currentP.y;
+            renderAlignmentGuides(currentD.x + dx, currentD.y + dy, d, api);
+        }
         guideRaf = null;
       });
     })
@@ -199,30 +182,31 @@ export function createDragBehavior(api: DragApi) {
           return;
       }
 
-      const initialP = initialPointers.get(d.id);
-      const initialD = initialPos.get(d.id);
-      
-      if (initialP && initialD) {
-        const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
-        const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
-        
-        const dx = px - initialP.x;
-        const dy = py - initialP.y;
+      const nodesToUpdate = api.getSelectedNodeIds();
+      const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
+      const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
 
-        let finalX = initialD.x + dx;
-        let finalY = initialD.y + dy;
-        
-        if (api.config.canvasProperties.snapToGrid) {
-          const snapped = snapToGrid(finalX, finalY, gridSize);
-          finalX = snapped.x;
-          finalY = snapped.y;
-        }
-        
-        api.updateNodePosition(d.id, finalX, finalY, false);
-      }
-      
-      initialPointers.delete(d.id);
-      initialPos.delete(d.id);
+      nodesToUpdate.forEach(nodeId => {
+          const startP = initialPointers.get(nodeId);
+          const startD = initialPos.get(nodeId);
+          if (startP && startD) {
+            const dx = px - startP.x;
+            const dy = py - startP.y;
+
+            let finalX = startD.x + dx;
+            let finalY = startD.y + dy;
+            
+            if (api.config.canvasProperties.snapToGrid) {
+              const snapped = snapToGrid(finalX, finalY, gridSize);
+              finalX = snapped.x;
+              finalY = snapped.y;
+            }
+            
+            api.updateNodePosition(nodeId, finalX, finalY, false);
+          }
+          initialPointers.delete(nodeId);
+          initialPos.delete(nodeId);
+      });
       api.endOperation();
       
       if (guideRaf !== null) {

@@ -328,7 +328,6 @@ engine.validate() // Returns { valid, errors, warnings }
 **3.5 — Export / Import API** ✅
 ```typescript
 engine.toJSON()      engine.fromJSON(state)
-engine.toXML()       engine.toMermaid()      engine.toDOT()
 ```
 
 **3.6 — Canvas / Viewport API** ✅
@@ -393,7 +392,7 @@ engine.toDSL()
 
 **6.2** — `engine.toImage('png' | 'svg')` *(Pro)* via `canvg`.
 
-**6.3** — Undo/Redo — command pattern. Free: 10 steps. Pro: up to 200.
+<!-- **6.3** — Undo/Redo — command pattern. Free: 10 steps. Pro: up to 200. -->
 
 ---
 

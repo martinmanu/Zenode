@@ -109,10 +109,17 @@ export type ContextPadTarget = {
     kind: "node";
     id: string;
     data: any;
+    box?: BoundingBox;
 } | {
     kind: "edge";
     id: string;
     data: any;
+    box?: BoundingBox;
+} | {
+    kind: "group";
+    id: string;
+    data: string[];
+    box?: BoundingBox;
 };
 /**
  * Public configuration for adding or updating a node.
@@ -127,6 +134,7 @@ export interface NodeConfig {
     height?: number;
     radius?: number;
     rotation?: number;
+    parentId?: string;
     visualState?: VisualState;
     content?: NodeContent;
     meta?: Record<string, any>;
@@ -160,7 +168,7 @@ export interface ContextPadAction {
     icon: string;
     tooltip: string;
     group?: "primary" | "secondary" | "danger" | string;
-    targets?: Array<"node" | "edge">;
+    targets?: Array<"node" | "edge" | "group">;
     appliesTo?: string[];
     order?: number;
     handler: (target: ContextPadTarget, engine: any, event: MouseEvent) => void;

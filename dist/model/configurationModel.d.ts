@@ -10,6 +10,7 @@ export interface BorderRadius {
 }
 export interface ContextPadConfig {
     enabled: boolean;
+    targets?: Array<"node" | "edge" | "group">;
     trigger: "hover" | "select";
     position: "top-right" | "top-left" | "bottom-right" | "bottom-left" | "top-center" | "bottom-center";
     offset: {
@@ -92,26 +93,6 @@ export interface GhostPreviewStyle {
     opacity: number;
     filter: string;
 }
-export interface CanvasProperties {
-    zoomEnabled: boolean;
-    zoomExtent: number[];
-    zoomOnDoubleClick: boolean;
-    zoomScale: number;
-    zoomOnScroll: boolean;
-    zoomOnHoverScroll?: boolean;
-    zoomDuration: number;
-    panEnabled: boolean;
-    snapToGrid: boolean;
-    alignmentLines: AlignmentLines;
-    ports?: PortStyle;
-    lassoStyle: LassoStyle;
-    ghostConnection: GhostConnectionStyle;
-    ghostPreview?: GhostPreviewStyle;
-    allowMultipleConnections: boolean;
-    keyboardShortcuts: KeyboardShortcuts;
-    contextPad?: ContextPadConfig;
-    visualEffects: VisualEffects;
-}
 export interface VisualEffects {
     highlight: {
         color: string;
@@ -124,6 +105,27 @@ export interface VisualEffects {
         duration: number;
         defaultZoom: number;
     };
+}
+export interface CanvasProperties {
+    zoomEnabled: boolean;
+    zoomExtent: number[];
+    zoomOnDoubleClick: boolean;
+    zoomScale: number;
+    zoomOnScroll: boolean;
+    zoomDuration: number;
+    panEnabled: boolean;
+    snapToGrid: boolean;
+    alignmentLines: AlignmentLines;
+    ports?: PortStyle;
+    lassoStyle: LassoStyle;
+    ghostConnection: GhostConnectionStyle;
+    ghostPreview?: GhostPreviewStyle;
+    groupGhostPreview?: GhostPreviewStyle;
+    connectionGhostPreview?: GhostPreviewStyle;
+    allowMultipleConnections: boolean;
+    keyboardShortcuts: KeyboardShortcuts;
+    contextPad?: ContextPadConfig;
+    visualEffects?: VisualEffects;
 }
 export interface PortStyle {
     enabled: boolean;

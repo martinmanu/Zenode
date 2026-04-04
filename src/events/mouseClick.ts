@@ -6,7 +6,7 @@ import { removeAllPreview } from "./mouseMove.js";
 /** Minimal placement API to avoid circular dependency with engine. */
 export interface PlacementClickApi {
   getCanvasPoint(event: MouseEvent): { x: number; y: number };
-  getPlacementContext(): { shapeType: string; shapeConfig: Shape } | null;
+  getPlacementContext(): { type: string; variantId?: string; ghostId: string } | null;
   placeNode(node: PlacedNode): void;
   clearPlacementContext(): void;
   /** Stops preview and removes mousemove/click placement handlers. */
@@ -18,23 +18,20 @@ export interface PlacementClickApi {
  * Handles canvas click: if a placement is pending (preview active), places the node
  * at the snapped position and clears the preview.
  */
-export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
-  if (event.defaultPrevented) return; // drag fired — ignore
+export function svgMouseClick(event: MouseEvent | null, api: PlacementClickApi, manualPoint?: { x: number; y: number }): string | null {
+  if (event && event.defaultPrevented) return null; // drag fired — ignore
   const ctx = api.getPlacementContext();
-  if (!ctx) return;
+  if (!ctx) return null;
 
-  const point = api.getCanvasPoint(event);
-  const { shapeType, shapeConfig } = ctx;
+  const point = manualPoint || (event ? api.getCanvasPoint(event) : { x: 0, y: 0 });
+  const { type, variantId } = ctx;
 
   const node: PlacedNode = {
     id: generatePlacedNodeId(),
-    type: shapeType,
-    shapeVariantId: shapeConfig.id,
+    type: type,
+    shapeVariantId: variantId || "default",
     x: point.x,
     y: point.y,
-    width: shapeConfig.width,
-    height: shapeConfig.height,
-    radius: shapeConfig.radius,
     rotation: 0,
     meta: {},
     visualState: { status: "idle" },
@@ -44,4 +41,6 @@ export function svgMouseClick(event: MouseEvent, api: PlacementClickApi): void {
   removeAllPreview(api.canvasObject);
   api.clearPlacementContext();
   api.removePlacementListeners();
+  
+  return node.id;
 }

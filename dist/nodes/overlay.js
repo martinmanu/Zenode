@@ -1,3 +1,5 @@
+import { createResizeBehavior } from '../events/resize.js';
+
 function buildResolvedShapeConfig(node, style) {
     var _a, _b, _c, _d, _e, _f, _g, _h;
     const width = (_b = (_a = node.width) !== null && _a !== void 0 ? _a : style.width) !== null && _b !== void 0 ? _b : 120;
@@ -58,6 +60,71 @@ function renderSelectionRing(selection, node, style, shapeRegistry, stroke, pad 
         .attr("stroke-dasharray", "4 2")
         .style("pointer-events", "none");
 }
+/**
+ * Renders 8-point interactive resize handles around a selected node.
+ */
+function renderResizeHandles(group, node, style, api) {
+    if (!node.width || !node.height)
+        return; // Only rectangular-ish for now
+    const w = node.width;
+    const h = node.height;
+    const halfW = w / 2;
+    const halfH = h / 2;
+    const handles = [
+        { x: -halfW, y: -halfH, cursor: 'nw-resize', type: 'nw' },
+        { x: 0, y: -halfH, cursor: 'n-resize', type: 'n' },
+        { x: halfW, y: -halfH, cursor: 'ne-resize', type: 'ne' },
+        { x: halfW, y: 0, cursor: 'e-resize', type: 'e' },
+        { x: halfW, y: halfH, cursor: 'se-resize', type: 'se' },
+        { x: 0, y: halfH, cursor: 's-resize', type: 's' },
+        { x: -halfW, y: halfH, cursor: 'sw-resize', type: 'sw' },
+        { x: -halfW, y: 0, cursor: 'w-resize', type: 'w' }
+    ];
+    const handleGroup = group.append("g").attr("class", "resize-handles");
+    const resizeBehavior = createResizeBehavior(api);
+    handleGroup.selectAll("rect.resize-handle")
+        .data(handles)
+        .enter()
+        .append("rect")
+        .attr("class", d => `resize-handle handle-${d.type}`)
+        .attr("x", d => d.x - 4)
+        .attr("y", d => d.y - 4)
+        .attr("width", 8)
+        .attr("height", 8)
+        .attr("fill", "white")
+        .attr("stroke", "var(--zenode-selection-color)")
+        .attr("stroke-width", 1.5)
+        .style("cursor", d => d.cursor)
+        .style("pointer-events", "all")
+        .call(resizeBehavior);
+}
+function getNodeRect(node, api) {
+    const style = getShapeStyle(node, api.config);
+    if (!style)
+        return null;
+    const renderer = api.shapeRegistry.get(node.type);
+    const resolved = buildResolvedShapeConfig(node, style);
+    const local = renderer.getBounds(resolved);
+    const left = node.x + local.x;
+    const top = node.y + local.y;
+    const right = left + local.width;
+    const bottom = top + local.height;
+    return {
+        left,
+        right,
+        top,
+        bottom,
+        cx: left + local.width / 2,
+        cy: top + local.height / 2,
+    };
+}
+function getShapeStyle(node, config) {
+    var _a;
+    const list = (_a = config.shapes.default) === null || _a === void 0 ? void 0 : _a[node.type];
+    if (!Array.isArray(list))
+        return undefined;
+    return list.find((s) => s.id === node.shapeVariantId);
+}
 
-export { buildResolvedShapeConfig, renderSelectionRing };
+export { buildResolvedShapeConfig, getNodeRect, getShapeStyle, renderResizeHandles, renderSelectionRing };
 //# sourceMappingURL=overlay.js.map

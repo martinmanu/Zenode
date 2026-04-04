@@ -87,6 +87,24 @@ const defaultConfig = {
             opacity: 0.4,
             filter: 'blur(1px)'
         },
+        groupGhostPreview: {
+            enabled: true,
+            strokeColor: '#005bc4',
+            strokeWidth: 1.5,
+            strokeDashArray: [4, 4],
+            fillColor: 'transparent',
+            opacity: 0.4,
+            filter: 'blur(1px)'
+        },
+        connectionGhostPreview: {
+            enabled: true,
+            strokeColor: 'var(--zenode-accent, #3b82f6)',
+            strokeWidth: 1.5,
+            strokeDashArray: [4, 4],
+            fillColor: 'transparent',
+            opacity: 0.4,
+            filter: 'blur(1px)'
+        },
         allowMultipleConnections: true,
         keyboardShortcuts: {
             enabled: true,
@@ -117,20 +135,20 @@ const defaultConfig = {
                 buttonMargin: "2px",
                 iconColor: "#333333",
                 buttonHoverColor: "rgba(230, 230, 230, 1)",
-                buttonActiveColor: "rgba(230, 255, 234, 1)"
+                buttonActiveColor: "rgba(124, 172, 255, 1)"
             }
         },
         visualEffects: {
             highlight: {
-                color: 'var(--zenode-accent, #3b82f6)',
-                duration: 2000,
-                scale: 1.1,
-                intensity: 2
+                color: '#ffdd00',
+                duration: 3000,
+                scale: 1.2,
+                intensity: 2.5
             },
             focus: {
-                padding: 40,
-                duration: 750,
-                defaultZoom: 1
+                padding: 60,
+                duration: 1000,
+                defaultZoom: 1.2
             }
         }
         // defaultNodeSpacing: 50,
@@ -192,6 +210,20 @@ const defaultConfig = {
                     "boxShadow": "0px 10px 15px -3px rgba(0, 0, 0, 0.08)",
                     "transparency": 0.9,
                     "overlay": { "enabled": true, "color": "#3b82f6", "strokeWidth": 2, "opacity": 1, "type": "line" },
+                    'previewEnabled': true,
+                    'previewTransparency': 0.4
+                },
+                {
+                    "id": "group",
+                    "width": 200,
+                    "height": 150,
+                    "color": "transparent",
+                    "borderRadius": { "leftTop": 0, "leftBottom": 0, "rightTop": 0, "rightBottom": 0 },
+                    "stroke": { "width": 1.5, "color": "#94a3b8", "strokeDasharray": [8, 4] },
+                    "textColor": "#64748b",
+                    "boxShadow": "none",
+                    "transparency": 1,
+                    "overlay": { "enabled": false, "color": "#3b82f6", "strokeWidth": 2, "opacity": 1, "type": "line" },
                     'previewEnabled': true,
                     'previewTransparency': 0.4
                 }

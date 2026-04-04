@@ -200,47 +200,101 @@ export class ContextPadRenderer {
         }
 
         // node.x and node.y are the center of the node.
-        // Convert to top-left of the bounding box.
-        let canvasX = node.x - w / 2;
-        let canvasY = node.y - h / 2;
+    // Convert to top-left of the bounding box.
+    let canvasX = node.x - w / 2;
+    let canvasY = node.y - h / 2;
 
-        // Apply anchor position
-        switch (config.position) {
-          case "top-right": canvasX += w; break;
-          case "top-left": break;
-          case "bottom-right": canvasX += w; canvasY += h; break;
-          case "bottom-left": canvasY += h; break;
-          case "top-center": canvasX += w / 2; break;
-          case "bottom-center": canvasX += w / 2; canvasY += h; break;
-        }
-
-        // Project to screen
-        x = canvasX * transform.k + transform.x;
-        y = canvasY * transform.k + transform.y;
-    } else {
-        // For edges, position at midpoint
-        const edgeId = this.currentTarget.id;
-        const svgPath = engine.container?.querySelector(`.connection[data-connection-id="${edgeId}"] path.connection-line`);
-        if (svgPath && typeof svgPath.getTotalLength === 'function') {
-            const totalLen = svgPath.getTotalLength();
-            const midpoint = svgPath.getPointAtLength(totalLen / 2);
-            x = midpoint.x * transform.k + transform.x;
-            y = midpoint.y * transform.k + transform.y;
-        } else {
-            x = transform.x;
-            y = transform.y;
-        }
+    // Apply anchor position to the shape's bounding box
+    switch (config.position) {
+      case "top-right": canvasX += w; break;
+      case "top-left": break;
+      case "bottom-right": canvasX += w; canvasY += h; break;
+      case "bottom-left": canvasY += h; break;
+      case "top-center": canvasX += w / 2; break;
+      case "bottom-center": canvasX += w / 2; canvasY += h; break;
     }
 
-    // Apply offset from config
-    const offsetX = config.offset?.x ?? 10;
-    const offsetY = config.offset?.y ?? -10;
+    x = canvasX * transform.k + transform.x;
+    y = canvasY * transform.k + transform.y;
+  } else if (this.currentTarget.kind === 'group') {
+    // For groups, position at top-right of collective boundary
+    const nodeIds = this.currentTarget.data as string[];
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    
+    nodeIds.forEach(id => {
+        const node = engine.getPlacedNode(id);
+        if (!node) return;
+        const style = engine.getShapeStyle(node);
+        const w = node.width ?? style?.width ?? 100;
+        const h = node.height ?? style?.height ?? 100;
+        minX = Math.min(minX, node.x - w/2);
+        minY = Math.min(minY, node.y - h/2);
+        maxX = Math.max(maxX, node.x + w/2);
+        maxY = Math.max(maxY, node.y + h/2);
+    });
 
-    let finalX = x + offsetX;
-    let finalY = y + offsetY;
+    const w = maxX - minX;
+    const h = maxY - minY;
+    
+    let canvasX = minX;
+    let canvasY = minY;
 
-    this.padElement.style.left = `${finalX}px`;
-    this.padElement.style.top = `${finalY}px`;
+    switch (config.position) {
+      case "top-right": canvasX += w; break;
+      case "top-left": break;
+      case "bottom-right": canvasX += w; canvasY += h; break;
+      case "bottom-left": canvasY += h; break;
+      case "top-center": canvasX += w / 2; break;
+      case "bottom-center": canvasX += w / 2; canvasY += h; break;
+    }
+
+    x = canvasX * transform.k + transform.x;
+    y = canvasY * transform.k + transform.y;
+  } else {
+    // For edges, position at midpoint
+    const edgeId = this.currentTarget.id;
+    const svgPath = engine.container?.querySelector(`.connection[data-connection-id="${edgeId}"] path.connection-line`);
+    if (svgPath && typeof svgPath.getTotalLength === 'function') {
+      const totalLen = svgPath.getTotalLength();
+      const midpoint = svgPath.getPointAtLength(totalLen / 2);
+      x = midpoint.x * transform.k + transform.x;
+      y = midpoint.y * transform.k + transform.y;
+    } else {
+      x = transform.x;
+      y = transform.y;
+    }
+  }
+
+  // Calculate pad dimensions for proper offset adjustment
+  const padWidth = this.padElement.offsetWidth;
+  const padHeight = this.padElement.offsetHeight;
+
+  // Configuration offsets
+  const baseOffsetX = config.offset?.x ?? 10;
+  const baseOffsetY = config.offset?.y ?? -10;
+
+  let finalX = x;
+  let finalY = y;
+
+  // Refined alignment logic to prevent overlap regardless of position type
+  const position = config.position || "top-right";
+  
+  if (position.includes("right")) {
+    finalX += baseOffsetX;
+  } else if (position.includes("left")) {
+    finalX -= (padWidth + baseOffsetX);
+  } else if (position.includes("center")) {
+    finalX -= padWidth / 2;
+  }
+
+  if (position.includes("top")) {
+    finalY += baseOffsetY;
+  } else if (position.includes("bottom")) {
+    finalY -= baseOffsetY; // If offset.y is -10 (standard), this moves it down by 10
+  }
+
+  this.padElement.style.left = `${finalX}px`;
+  this.padElement.style.top = `${finalY}px`;
 
     // Re-apply styles ensures that if the config was updated (e.g. testConfig.ts), 
     // the visuals update immediately during the next drag/zoom frame.

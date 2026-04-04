@@ -10,9 +10,10 @@ export interface DragApi {
     canvasObject: CanvasElements;
     /** SVG root node — needed for correct pointer coordinate transform */
     svgNode: SVGSVGElement;
-    setSelectedNodeIds(ids: string[]): void;
+    setSelectedNodeIds(ids: string[], primaryId?: string): void;
     panBy?: (dx: number, dy: number) => void;
     beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
     endOperation(): void;
+    getSelectedNodeIds(): string[];
 }
 export declare function createDragBehavior(api: DragApi): d3.DragBehavior<SVGGElement, PlacedNode, PlacedNode | d3.SubjectPosition>;

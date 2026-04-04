@@ -63,8 +63,12 @@ function ensureStyles() {
  */
 function renderConnections(connectionsGroup, connections, placedNodes, engine // Pass engine to get registry and config
 ) {
+    var _a;
     const nodeById = new Map(placedNodes.map((n) => [n.id, n]));
-    const valid = connections.filter((c) => nodeById.has(c.sourceNodeId) && nodeById.has(c.targetNodeId));
+    const groups = ((_a = engine === null || engine === void 0 ? void 0 : engine.getVisualGroups) === null || _a === void 0 ? void 0 : _a.call(engine)) || [];
+    const groupIds = new Set(groups.map((g) => g.id));
+    const valid = connections.filter((c) => (nodeById.has(c.sourceNodeId) || groupIds.has(c.sourceNodeId)) &&
+        (nodeById.has(c.targetNodeId) || groupIds.has(c.targetNodeId)));
     const registry = engine === null || engine === void 0 ? void 0 : engine.shapeRegistry;
     const config = engine === null || engine === void 0 ? void 0 : engine.config;
     const binding = connectionsGroup
@@ -77,25 +81,42 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
             .attr("class", "connection")
             .attr("data-connection-id", (d) => d.id);
         g.append("path").attr("class", "connection-hitbox");
+        g.append("path").attr("class", "connection-ghost-line");
         g.append("path").attr("class", "connection-line");
         return g;
     }, (update) => update, (exit) => exit.remove())
         .each(function (d) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         const group = d3.select(this);
-        const sourceNode = nodeById.get(d.sourceNodeId);
-        const targetNode = nodeById.get(d.targetNodeId);
-        let source = { x: sourceNode.x, y: sourceNode.y };
-        let target = { x: targetNode.x, y: targetNode.y };
-        if (registry && config) {
-            source = getNodePortPos(sourceNode, d.sourcePortId, registry, config);
-            target = getNodePortPos(targetNode, d.targetPortId, registry, config);
+        let source;
+        let target;
+        const resolveEndpoint = (id, portId) => {
+            var _a, _b, _c;
+            if (id.startsWith("vgroup-")) {
+                const ports = (_a = engine === null || engine === void 0 ? void 0 : engine.getGroupPorts) === null || _a === void 0 ? void 0 : _a.call(engine, id);
+                if (!ports || !ports[portId])
+                    return null;
+                return ports[portId];
+            }
+            else {
+                const node = nodeById.get(id);
+                if (!node)
+                    return null;
+                if (registry && config) {
+                    return getNodePortPos(node, portId, registry, config);
+                }
+                return { x: node.x + ((_b = node.width) !== null && _b !== void 0 ? _b : 0) / 2, y: node.y + ((_c = node.height) !== null && _c !== void 0 ? _c : 0) / 2 };
+            }
+        };
+        const sPos = resolveEndpoint(d.sourceNodeId, d.sourcePortId);
+        const tPos = resolveEndpoint(d.targetNodeId, d.targetPortId);
+        if (!sPos || !tPos) {
+            group.style("display", "none");
+            return;
         }
-        else {
-            // Fallback to center if engine not provided
-            source = { x: sourceNode.x + ((_a = sourceNode.width) !== null && _a !== void 0 ? _a : 0) / 2, y: sourceNode.y + ((_b = sourceNode.height) !== null && _b !== void 0 ? _b : 0) / 2 };
-            target = { x: targetNode.x + ((_c = targetNode.width) !== null && _c !== void 0 ? _c : 0) / 2, y: targetNode.y + ((_d = targetNode.height) !== null && _d !== void 0 ? _d : 0) / 2 };
-        }
+        group.style("display", "block");
+        source = sPos;
+        target = tPos;
         const params = {
             source,
             target,
@@ -103,7 +124,7 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
             targetPortId: d.targetPortId
         };
         let path;
-        if ((_e = engine === null || engine === void 0 ? void 0 : engine.isSmartRoutingEnabled) === null || _e === void 0 ? void 0 : _e.call(engine)) {
+        if ((_a = engine === null || engine === void 0 ? void 0 : engine.isSmartRoutingEnabled) === null || _a === void 0 ? void 0 : _a.call(engine)) {
             const obstacles = placedNodes.map(n => ({
                 id: n.id,
                 x: n.x,
@@ -117,16 +138,86 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
             const calculator = PathCalculators[d.type] || PathCalculators.straight;
             path = calculator(params);
         }
+        // --- Render Ghost (Original State) Connection ---
+        const activeOp = engine === null || engine === void 0 ? void 0 : engine.getActiveOperation();
+        const selectionStates = activeOp === null || activeOp === void 0 ? void 0 : activeOp.selectionStates;
+        const ghostCfg = (_b = config === null || config === void 0 ? void 0 : config.canvasProperties) === null || _b === void 0 ? void 0 : _b.connectionGhostPreview;
+        const ghostLine = group.select("path.connection-ghost-line");
+        const isEndpointMoving = (id) => {
+            var _a;
+            if (id === (activeOp === null || activeOp === void 0 ? void 0 : activeOp.nodeId) || (selectionStates === null || selectionStates === void 0 ? void 0 : selectionStates.has(id)))
+                return true;
+            if (id.startsWith("vgroup-")) {
+                const groups = ((_a = engine === null || engine === void 0 ? void 0 : engine.getVisualGroups) === null || _a === void 0 ? void 0 : _a.call(engine)) || [];
+                const foundGroup = groups.find((g) => g.id === id);
+                if (foundGroup) {
+                    return foundGroup.nodeIds.some((nid) => nid === (activeOp === null || activeOp === void 0 ? void 0 : activeOp.nodeId) || (selectionStates === null || selectionStates === void 0 ? void 0 : selectionStates.has(nid)));
+                }
+            }
+            return false;
+        };
+        const isMovingSource = isEndpointMoving(d.sourceNodeId);
+        const isMovingTarget = isEndpointMoving(d.targetNodeId);
+        if ((ghostCfg === null || ghostCfg === void 0 ? void 0 : ghostCfg.enabled) && activeOp && (isMovingSource || isMovingTarget)) {
+            const rawSource = nodeById.get(d.sourceNodeId);
+            const rawTarget = nodeById.get(d.targetNodeId);
+            // Resolve original endpoint positions from selection states or primary nodeId
+            const origSourceNode = (selectionStates === null || selectionStates === void 0 ? void 0 : selectionStates.get(d.sourceNodeId)) ||
+                (d.sourceNodeId === activeOp.nodeId ? activeOp.originalData : rawSource);
+            const origTargetNode = (selectionStates === null || selectionStates === void 0 ? void 0 : selectionStates.get(d.targetNodeId)) ||
+                (d.targetNodeId === activeOp.nodeId ? activeOp.originalData : rawTarget);
+            let origSource = null;
+            let origTarget = null;
+            const resolveOriginal = (id, portId, nodeFallback) => {
+                var _a, _b;
+                if (id.startsWith("vgroup-")) {
+                    const ports = engine === null || engine === void 0 ? void 0 : engine.getGroupPorts(id, selectionStates);
+                    return (ports === null || ports === void 0 ? void 0 : ports[portId]) || { x: 0, y: 0 };
+                }
+                else {
+                    const node = (selectionStates === null || selectionStates === void 0 ? void 0 : selectionStates.get(id)) || nodeFallback;
+                    if (!node)
+                        return { x: 0, y: 0 };
+                    if (registry && config) {
+                        return getNodePortPos(node, portId, registry, config);
+                    }
+                    return { x: node.x + ((_a = node.width) !== null && _a !== void 0 ? _a : 0) / 2, y: node.y + ((_b = node.height) !== null && _b !== void 0 ? _b : 0) / 2 };
+                }
+            };
+            origSource = resolveOriginal(d.sourceNodeId, d.sourcePortId, origSourceNode);
+            origTarget = resolveOriginal(d.targetNodeId, d.targetPortId, origTargetNode);
+            const origParams = {
+                source: origSource,
+                target: origTarget,
+                sourcePortId: d.sourcePortId,
+                targetPortId: d.targetPortId
+            };
+            const calculator = PathCalculators[d.type] || PathCalculators.straight;
+            const origPath = calculator(origParams);
+            ghostLine
+                .attr("d", origPath)
+                .attr("fill", "none")
+                .attr("stroke", ghostCfg.strokeColor)
+                .attr("stroke-width", ghostCfg.strokeWidth)
+                .attr("stroke-dasharray", ghostCfg.strokeDashArray.join(" "))
+                .attr("opacity", ghostCfg.opacity)
+                .attr("filter", ghostCfg.filter)
+                .style("pointer-events", "none")
+                .style("display", "block");
+        }
+        else {
+            ghostLine.style("display", "none");
+        }
         // Style from config
-        const connConfig = ((_g = (_f = config === null || config === void 0 ? void 0 : config.connections) === null || _f === void 0 ? void 0 : _f.default) === null || _g === void 0 ? void 0 : _g[d.type]) ||
-            ((_j = (_h = config === null || config === void 0 ? void 0 : config.connections) === null || _h === void 0 ? void 0 : _h.default) === null || _j === void 0 ? void 0 : _j.straight);
-        const isSelected = (_l = (_k = engine === null || engine === void 0 ? void 0 : engine.getSelectedEdgeIds) === null || _k === void 0 ? void 0 : _k.call(engine)) === null || _l === void 0 ? void 0 : _l.includes(d.id);
+        const connConfig = ((_d = (_c = config === null || config === void 0 ? void 0 : config.connections) === null || _c === void 0 ? void 0 : _c.default) === null || _d === void 0 ? void 0 : _d[d.type]) ||
+            ((_f = (_e = config === null || config === void 0 ? void 0 : config.connections) === null || _e === void 0 ? void 0 : _e.default) === null || _f === void 0 ? void 0 : _f.straight);
+        const isSelected = (_h = (_g = engine === null || engine === void 0 ? void 0 : engine.getSelectedEdgeIds) === null || _g === void 0 ? void 0 : _g.call(engine)) === null || _h === void 0 ? void 0 : _h.includes(d.id);
         const strokeColor = isSelected ? "var(--zenode-selection-color, #4A90E2)" : ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.color) || "#333");
         ensureStyles();
-        const markerType = (_m = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _m === void 0 ? void 0 : _m.markerEnd;
+        const markerType = (_j = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _j === void 0 ? void 0 : _j.markerEnd;
         let markerId = "";
         if (markerType && markerType !== "none") {
-            const svgNode = (_o = group.node()) === null || _o === void 0 ? void 0 : _o.ownerSVGElement;
+            const svgNode = (_k = group.node()) === null || _k === void 0 ? void 0 : _k.ownerSVGElement;
             if (svgNode) {
                 markerId = getMarkerId(d3.select(svgNode), markerType, strokeColor);
             }
@@ -154,22 +245,27 @@ function renderConnections(connectionsGroup, connections, placedNodes, engine //
             .attr("stroke-width", isSelected ? Math.max(((connConfig === null || connConfig === void 0 ? void 0 : connConfig.width) || 2) + 1, 3) : ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.width) || 2))
             .attr("stroke-dasharray", () => {
             var _a, _b;
-            if (connConfig === null || connConfig === void 0 ? void 0 : connConfig.dashed) {
+            if (d.dashed || (connConfig === null || connConfig === void 0 ? void 0 : connConfig.dashed)) {
                 return ((_b = (_a = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _a === void 0 ? void 0 : _a.dashArray) === null || _b === void 0 ? void 0 : _b.join(",")) || "8,8";
             }
             return null;
         })
             .attr("marker-end", markerId ? `url(#${markerId})` : null)
             .style("pointer-events", "none");
-        const anim = (_p = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _p === void 0 ? void 0 : _p.animation;
-        if ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.animated) && anim && anim.type === "flow") {
-            const speed = Math.max(0.1, (_q = anim.speed) !== null && _q !== void 0 ? _q : 1);
-            const duration = 1 / Math.max(0.01, speed);
+        const anim = (_l = connConfig === null || connConfig === void 0 ? void 0 : connConfig.lineStyle) === null || _l === void 0 ? void 0 : _l.animation;
+        const isAnimated = !!d.animated;
+        if (isAnimated || ((connConfig === null || connConfig === void 0 ? void 0 : connConfig.animated) && anim && anim.type === "flow")) {
+            const speed = Math.max(0.1, (_m = anim === null || anim === void 0 ? void 0 : anim.speed) !== null && _m !== void 0 ? _m : 2);
+            // Larger duration = slower flow. speed 2 -> 4s.
+            const duration = 8 / Math.max(0.01, speed);
             group.select("path.connection-line")
+                .classed("animated-flow", true)
                 .style("animation", `zenode-stroke-flow ${duration.toFixed(3)}s linear infinite`);
         }
         else {
-            group.select("path.connection-line").style("animation", "none");
+            group.select("path.connection-line")
+                .classed("animated-flow", false)
+                .style("animation", "none");
         }
         // Render Label
         renderConnectionLabel(group, path, d, config);

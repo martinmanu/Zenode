@@ -15,6 +15,12 @@ class EventManager {
             this.listeners[eventType].forEach(callback => callback(event));
         }
     }
+    // Remove a callback for an event type
+    off(eventType, callback) {
+        if (!this.listeners[eventType])
+            return;
+        this.listeners[eventType] = this.listeners[eventType].filter(l => l !== callback);
+    }
 }
 
 export { EventManager };

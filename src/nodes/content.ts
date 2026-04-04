@@ -21,7 +21,8 @@ const GAP = 8; // px gap between icon and text in compound layouts
 export function renderNodeContent(
   group: D3Selection,
   content: NodeContent | undefined,
-  bounds: BoundingBox
+  bounds: BoundingBox,
+  isEditing: boolean = false
 ): void {
   // Remove previous content layer
   (group as any).select("g.node-content").remove();
@@ -41,6 +42,7 @@ export function renderNodeContent(
     case "center": {
       const item = items[0];
       if (!item) return;
+      if (item.kind === "text" && isEditing) return;
       renderItem(g, item, cx, cy);
       break;
     }
@@ -59,7 +61,7 @@ export function renderNodeContent(
       const iconY = cy - totalH / 2 + iconSize / 2;
       const textY = iconY + iconSize / 2 + GAP + textSize / 2;
       if (icon) renderItem(g, icon, cx, iconY);
-      if (text) renderItem(g, text, cx, textY);
+      if (text && !isEditing) renderItem(g, text, cx, textY);
       break;
     }
     case "icon-left-text": {
@@ -70,7 +72,7 @@ export function renderNodeContent(
       const iconX = cx - totalW / 2 + iconSize / 2;
       const textX = iconX + iconSize / 2 + GAP;
       if (icon) renderItem(g, icon, iconX, cy);
-      if (text) renderItem(g, text, textX, cy);
+      if (text && !isEditing) renderItem(g, text, textX, cy);
       break;
     }
   }

@@ -35,6 +35,7 @@ export interface PlacedNode {
   height?: number;
   radius?: number;
   rotation?: number;
+  parentId?: string;
   /** Original dimensions at placement — used to constrain resize min/max */
   baseDimensions?: { width?: number; height?: number; radius?: number };
   /** User-defined data attached to the node */
@@ -42,6 +43,15 @@ export interface PlacedNode {
   visualState?: VisualState;
   /** Content items (text, icon, image) + layout mode rendered inside the shape */
   content?: NodeContent;
+}
+
+/** 
+ * A visual cluster of nodes in a boundary box. 
+ * Managed as a transient decorator rather than structural parent.
+ */
+export interface VisualGroup {
+    id: string;
+    nodeIds: string[];
 }
 
 export interface ShapeConfig {
@@ -70,8 +80,12 @@ export interface ShapeConfig {
       canvasContainer: any;
       /** Layer for connection lines (below placed nodes) */
       connections: any;
+      /** Layer for visual groups background/boundary */
+      visualGroups: any;
       /** Layer for ghost connection (highest layer, but below guides) */
       ghostConnection: any;
+      /** Layer for ghosts (above nodes, below guides) */
+      ghosts: any;
       /** Layer for placed nodes (above grid/connections, below preview) */
       placedNodes: any;
       /** Layer for alignment guides (highest layer) */

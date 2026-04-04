@@ -3,89 +3,55 @@ import { ZenodeEngine } from "./core/engine.js";
 import { Config, Connection as ConnectionConfig, ContextPadConfig as CPConfig } from "./model/configurationModel.js";
 import { Connection as ConnectionInstance, PlacedNode, Node as NodeInstance } from "./model/interface.js";
 import { VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData } from "./types/index.js";
-import { testXML } from "./config/testXML.js";
-export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3, testXML };
 /**
  * Initializes the Zenode engine.
- * @param containerSelector The selector for the container element.
- * @param userConfig Optional custom configuration.
- * @throws Error if container is not found.
  */
-declare function initializeCanvas(containerSelector: string, userConfig: Partial<Config>): void;
-/**
- * Updates the engine configuration.
- * @param userConfig New configuration object.
- */
-declare function updateConfig(userConfig: Partial<Config>): void;
-/**
- * Resizes the canvas dimensions smoothly.
- */
-declare function resizeCanvas(width: number, height: number): void;
-/**
- * Creates a shape dynamically on the canvas.
- * @param type Shape type (e.g., "rectangle", "circle").
- * @param name Optional shape name.
- * @throws Error if engine is not initialized or parameters are invalid.
- */
+export declare function initializeCanvas(containerSelector: string, userConfig: Partial<Config>): void;
+/** Updates the engine configuration. */
+export declare function updateConfig(userConfig: Partial<Config>): void;
+/** Resizes the canvas smoothly. */
+export declare function resizeCanvas(width: number, height: number): void;
+/** Creates a shape dynamically. */
 export declare function createShape(type: string, id: string): void;
-/**
- * Creates a connection between two shapes.
- * @param from The ID or name of the first shape.
- * @param to The ID or name of the second shape.
- * @throws Error if engine is not initialized or shapes are missing.
- */
+/** Creates a connection. */
 export declare function createConnection(from: string, to: string): void;
-/**
- * Returns the list of placed nodes (for use with createConnection node ids).
- */
-declare function getPlacedNodes(): PlacedNode[];
-/** Enable or disable lasso selection tool interaction. */
-declare function setLassoEnabled(enabled: boolean): void;
-/**
- * Updates visual state for a placed node (effects/status only).
- */
+/** Returns the list of placed nodes. */
+export declare function getPlacedNodes(): PlacedNode[];
+/** Enable or disable lasso selection tool. */
+export declare function setLassoEnabled(enabled: boolean): void;
+/** Updates visual state for a node. */
 export declare function updateNodeVisualState(id: string, patch: Partial<VisualState>): void;
-/**
- * Updates visual state for a connection/edge (effects/status only).
- */
+/** Updates visual state for an edge. */
 export declare function updateEdgeVisualState(id: string, patch: Partial<VisualState>): void;
-/**
- * Updates the content (text, icon, layout) of a placed node.
- */
-declare function updateNodeContent(id: string, content: NodeContent): void;
-/**
- * Listens to engine events.
- */
-declare function on(event: string, handler: (data: any) => void): void;
-/**
- * Removes an event listener.
- */
+/** Updates the content of a node. */
+export declare function updateNodeContent(id: string, content: NodeContent): void;
+/** Sets the current editing node ID. */
+export declare function setEditingNode(id: string | null): void;
+/** Gets the current editing node ID. */
+export declare function getEditingNodeId(): string | null;
+/** Listens to engine events. */
+export declare function on(event: string, handler: (data: any) => void): void;
+/** Removes an event listener. */
 export declare function off(event: string, handler: (data: any) => void): void;
-declare const addNode: (config: NodeConfig) => string;
-declare const removeNode: (id: string) => void;
-declare const updateNode: (id: string, patch: Partial<NodeConfig>) => void;
-declare const getNode: (id: string) => NodeData | null;
-declare const getAllNodes: () => NodeData[];
-declare const duplicateNode: (id: string) => string;
-/** Triggers the text editor programmatically. */
-declare const beginLabelEdit: (id: string, kind: "node" | "edge") => void;
-declare const validate: () => import("./core/validation.js").ValidationResult;
-declare const clear: () => void;
-declare const toXML: () => string;
-declare const toMermaid: () => string;
-declare const toDOT: () => string;
-declare const fromXML: (xml: string) => void;
-declare const loadTestXML: () => void;
-/** Adds a new connection programmatically. */
-declare const addEdge: (config: EdgeConfig) => string;
-/** Removes a connection by ID. */
-declare const removeEdge: (id: string) => void;
-/** Returns a connection state by ID. */
-declare const getEdge: (id: string) => EdgeData | null;
-/** Returns all connections on the canvas. */
-declare const getAllEdges: () => EdgeData[];
-declare const focusNode: (id: string, options?: any) => void;
-declare const getDiagramState: () => {
+export declare const addNode: (config: NodeConfig) => string;
+export declare const removeNode: (id: string) => void;
+export declare const updateNode: (id: string, patch: Partial<NodeConfig>) => void;
+export declare const getNode: (id: string) => NodeData | null;
+export declare const getAllNodes: () => NodeData[];
+export declare const duplicateNode: (id: string) => string;
+export declare const beginLabelEdit: (id: string, kind: "node" | "edge") => void;
+export declare const validate: () => import("./core/validation.js").ValidationResult;
+export declare const clear: () => void;
+export declare function handleDrop(event: DragEvent): void;
+export declare function placeShapeAt(type: string, id: string, x: number, y: number, data?: any): void;
+export declare function placeShapeAtSafePos(type: string, id: string, data?: any): void;
+export declare const addEdge: (config: EdgeConfig) => string;
+export declare const removeEdge: (id: string) => void;
+export declare const getEdge: (id: string) => EdgeData | null;
+export declare const getAllEdges: () => EdgeData[];
+export declare const focusNode: (id: string, options?: any) => void;
+export declare const highlight: (id: string, options?: any) => void;
+export declare const getDiagramState: () => {
     nodes: NodeData[];
     edges: EdgeData[];
     viewport: {
@@ -94,33 +60,101 @@ declare const getDiagramState: () => {
         zoom: number;
     };
 } | null;
-export { initializeCanvas, updateConfig, updateNodeContent, getPlacedNodes, setActiveConnectionType, setConnectionModeEnabled, setLassoEnabled, resizeCanvas, on, addNode, removeNode, updateNode, getNode, getAllNodes, getDiagramState, duplicateNode, beginLabelEdit, addEdge, removeEdge, getEdge, getAllEdges, setLicense, setSmartRoutingEnabled, setConnectionLabel, getEngine, getLicenseTier, zoomIn, zoomOut, focusNode, undo, redo, clear, validate, toXML, toMermaid, toDOT, fromXML, loadTestXML, registerContextPadAction, registerSmartConnect };
-/** Sets the license key for the engine. */
-declare function setLicense(key: string): void;
-/** Enables or disables smart routing for connections. */
-declare function setSmartRoutingEnabled(enabled: boolean): void;
-/** Enables or disables the connection drawing mode globally. */
-declare function setConnectionModeEnabled(enabled: boolean): void;
-/** Sets the active connection type for newly created connections. */
-declare function setActiveConnectionType(type: string): void;
-/** Sets the label text and enabled state for all default connection types. */
-declare function setConnectionLabel(text: string, enabled: boolean): void;
-/** Returns the engine instance (advanced use). */
-declare function getEngine(): ZenodeEngine | null;
-/** Returns the current license tier. */
-declare function getLicenseTier(): string;
-/** Zooms the canvas in. */
-declare function zoomIn(): void;
-/** Zooms the canvas out. */
-declare function zoomOut(): void;
-/** Undoes the last action. */
-declare function undo(): void;
-/** Redoes the last undone action. */
-declare function redo(): void;
-/** Registers a custom action for the context pad. */
-declare function registerContextPadAction(action: any): void;
-/**
- * Registers a "Smart Connect" action that finds the nearest port on another node
- * and connects using the closest matching source port.
- */
-declare function registerSmartConnect(): void;
+export declare const copySelection: () => void;
+export declare const pasteSelection: (offset?: {
+    x: number;
+    y: number;
+}) => void;
+export declare function setLicense(key: string): void;
+export declare function setSmartRoutingEnabled(enabled: boolean): void;
+export declare function setConnectionModeEnabled(enabled: boolean): void;
+export declare function setActiveConnectionType(type: string): void;
+export declare function setConnectionLabel(text: string, enabled: boolean): void;
+export declare function zoomIn(): void;
+export declare function zoomOut(): void;
+export declare function focusOnSelectedNode(): void;
+export declare function undo(): void;
+export declare function redo(): void;
+export declare function groupSelection(): void;
+export declare function ungroupSelection(): void;
+export declare function toggleGroupingSelection(): void;
+export declare function registerContextPadAction(action: any): void;
+/** Placement and Preview APIs */
+export declare function startPlacement(type: string, variantId: string, initialPoint?: {
+    x: number;
+    y: number;
+}): string;
+export declare function updatePlacementPreview(x: number, y: number): void;
+export declare function completePlacement(): string;
+export declare function cancelPlacement(): void;
+/** Returns the engine instance. */
+export declare function getEngine(): ZenodeEngine | null;
+export declare function getLicenseTier(): string;
+export declare function registerSmartConnect(): void;
+declare const Zenode: {
+    initializeCanvas: typeof initializeCanvas;
+    updateConfig: typeof updateConfig;
+    updateNodeContent: typeof updateNodeContent;
+    getPlacedNodes: typeof getPlacedNodes;
+    setActiveConnectionType: typeof setActiveConnectionType;
+    setConnectionModeEnabled: typeof setConnectionModeEnabled;
+    setLassoEnabled: typeof setLassoEnabled;
+    resizeCanvas: typeof resizeCanvas;
+    on: typeof on;
+    off: typeof off;
+    addNode: (config: NodeConfig) => string;
+    removeNode: (id: string) => void;
+    updateNode: (id: string, patch: Partial<NodeConfig>) => void;
+    getNode: (id: string) => NodeData | null;
+    getAllNodes: () => NodeData[];
+    getDiagramState: () => {
+        nodes: NodeData[];
+        edges: EdgeData[];
+        viewport: {
+            x: number;
+            y: number;
+            zoom: number;
+        };
+    } | null;
+    duplicateNode: (id: string) => string;
+    beginLabelEdit: (id: string, kind: "node" | "edge") => void;
+    addEdge: (config: EdgeConfig) => string;
+    removeEdge: (id: string) => void;
+    getEdge: (id: string) => EdgeData | null;
+    getAllEdges: () => EdgeData[];
+    setLicense: typeof setLicense;
+    setSmartRoutingEnabled: typeof setSmartRoutingEnabled;
+    setConnectionLabel: typeof setConnectionLabel;
+    getEngine: typeof getEngine;
+    getLicenseTier: typeof getLicenseTier;
+    zoomIn: typeof zoomIn;
+    zoomOut: typeof zoomOut;
+    focusNode: (id: string, options?: any) => void;
+    focusOnSelectedNode: typeof focusOnSelectedNode;
+    undo: typeof undo;
+    redo: typeof redo;
+    groupSelection: typeof groupSelection;
+    ungroupSelection: typeof ungroupSelection;
+    toggleGroupingSelection: typeof toggleGroupingSelection;
+    clear: () => void;
+    validate: () => import("./core/validation.js").ValidationResult;
+    registerContextPadAction: typeof registerContextPadAction;
+    registerSmartConnect: typeof registerSmartConnect;
+    copySelection: () => void;
+    pasteSelection: (offset?: {
+        x: number;
+        y: number;
+    }) => void;
+    setEditingNode: typeof setEditingNode;
+    getEditingNodeId: typeof getEditingNodeId;
+    handleDrop: typeof handleDrop;
+    placeShapeAt: typeof placeShapeAt;
+    placeShapeAtSafePos: typeof placeShapeAtSafePos;
+    d3: typeof d3;
+    startPlacement: typeof startPlacement;
+    updatePlacementPreview: typeof updatePlacementPreview;
+    completePlacement: typeof completePlacement;
+    cancelPlacement: typeof cancelPlacement;
+};
+export { ZenodeEngine, Config, ConnectionConfig, CPConfig, ConnectionInstance, PlacedNode, NodeInstance, VisualState, ContextPadAction, ContextPadTarget, NodeContent, NodeConfig, NodeData, EdgeConfig, EdgeData, d3 };
+export default Zenode;

@@ -60,6 +60,7 @@ export function renderPorts(
         if (!engine.connectionModeEnabled) return 0;
         return portConfig.showOnHoverOnly ? 0 : portConfig.opacity;
     })
+    .style("pointer-events", () => engine.connectionModeEnabled ? "all" : "none")
     .style("cursor", () => engine.connectionModeEnabled ? portConfig.cursor : "default")
     .on("mousedown", function(event: MouseEvent, d) {
         if (!engine.connectionModeEnabled) return;
@@ -68,34 +69,6 @@ export function renderPorts(
         
         const startPoint = engine.getCanvasPoint(event);
         engine.startConnectionDrag(node.id, d.id, startPoint);
-
-        const onMouseMove = (moveEvent: MouseEvent) => {
-            const currentPoint = engine.getCanvasPoint(moveEvent);
-            engine.updateConnectionDrag(currentPoint);
-        };
-
-        const onMouseUp = (upEvent: MouseEvent) => {
-            const upTarget = upEvent.target as Element;
-            const portGroup = upTarget.closest(".port");
-            let targetNodeId: string | undefined;
-            let targetPortId: string | undefined;
-
-            if (portGroup) {
-                const portData = d3.select(portGroup).datum() as { id: string };
-                const nodeGroup = portGroup.closest(".node");
-                if (nodeGroup) {
-                    targetNodeId = d3.select(nodeGroup).attr("data-id") || undefined;
-                    targetPortId = portData.id;
-                }
-            }
-
-            engine.endConnectionDrag(targetNodeId, targetPortId);
-            window.removeEventListener("mousemove", onMouseMove);
-            window.removeEventListener("mouseup", onMouseUp);
-        };
-
-        window.addEventListener("mousemove", onMouseMove);
-        window.addEventListener("mouseup", onMouseUp);
     });
 
   // --- Rotation Handles Logic ---
@@ -132,17 +105,26 @@ export function renderPorts(
     .on("mousedown", function(event: MouseEvent) {
         event.stopPropagation();
         event.preventDefault();
+        
+        const startPoint = engine.getCanvasPoint(event);
+        const startDx = startPoint.x - node.x;
+        const startDy = startPoint.y - node.y;
+        const startMouseAngle = Math.atan2(startDy, startDx) * (180 / Math.PI);
+        const startNodeRotation = node.rotation || 0;
+
         const onMouseMove = (moveEvent: MouseEvent) => {
             const currentPoint = engine.getCanvasPoint(moveEvent);
             const dx = currentPoint.x - node.x;
             const dy = currentPoint.y - node.y;
             
-            let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+            const currentMouseAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+            let deltaAngle = currentMouseAngle - startMouseAngle;
             
-            // Apply 15-degree snapping
-            angle = Math.round(angle / 15) * 15;
+            // Calculate new rotation and apply 15-degree snapping
+            let newRotation = startNodeRotation + deltaAngle;
+            newRotation = Math.round(newRotation / 15) * 15;
             
-            engine.rotateNode(node.id, angle, false);
+            engine.rotateNode(node.id, newRotation, false);
         };
 
         const onMouseUp = () => {
