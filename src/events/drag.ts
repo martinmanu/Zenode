@@ -1,12 +1,12 @@
 import * as d3 from "d3";
-import { PlacedNode, CanvasElements } from "../model/interface.js";
+import { PlacedNode, CanvasElements, VisualGroup } from "../model/interface.js";
 import { Config, Shape } from "../model/configurationModel.js";
 import { snapToGrid } from "../utils/helpers.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 import { buildResolvedShapeConfig, getNodeRect, NodeRect } from "../nodes/overlay.js";
 
 export interface DragApi {
-  updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
+  updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean, skipVisualRefresh?: boolean): void;
   getPlacedNodes(): PlacedNode[];
   config: Config;
   shapeRegistry: ShapeRegistry;
@@ -18,6 +18,8 @@ export interface DragApi {
   beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
   endOperation(): void;
   getSelectedNodeIds(): string[];
+  getVisualGroups(): VisualGroup[];
+  getGroupBounds(groupId: string, overrideNodes?: Map<string, PlacedNode>): any | null;
 }
 
 
@@ -92,72 +94,142 @@ export function createDragBehavior(api: DragApi) {
 
       // If dragging a group boundary, ensure the whole group is selected and operation is started on group ID
       if (isGroupBoundary) {
-          const groupNodesStr = d3.select(this).attr("data-group-nodes");
-          // Extract group ID from class: visual-group-boundary vgroup-XXXX
-          const classes = d3.select(this).attr("class").split(' ');
-          const groupId = classes.find(c => c.startsWith('vgroup-'));
-          
-          if (groupNodesStr && groupId) {
-              const groupIds = groupNodesStr.split(',');
-              api.setSelectedNodeIds(groupIds, 'collective-group-trigger');
-              selection = groupIds;
-              
-              // Start operation on the GROUP id specifically, not a member node
-              api.beginOperation(groupId, 'drag');
-          }
+        const groupNodesStr = d3.select(this).attr("data-group-nodes");
+        // Extract group ID from class: visual-group-boundary vgroup-XXXX
+        const classes = d3.select(this).attr("class").split(' ');
+        const groupId = classes.find(c => c.startsWith('vgroup-'));
+
+        if (groupNodesStr && groupId) {
+          const groupIds = groupNodesStr.split(',');
+          api.setSelectedNodeIds(groupIds, 'collective-group-trigger');
+          selection = groupIds;
+
+          // Start operation on the GROUP id specifically, not a member node
+          api.beginOperation(groupId, 'drag');
+        }
       } else {
-          if (!selection.includes(d.id)) {
-              // If dragging a single node that isn't selected, select it FIRST.
-              api.setSelectedNodeIds([d.id], d.id);
-              selection = [d.id];
-          }
-          api.beginOperation(d.id, 'drag');
+        if (!selection.includes(d.id)) {
+          // If dragging a single node that isn't selected, select it FIRST.
+          api.setSelectedNodeIds([d.id], d.id);
+          selection = [d.id];
+        }
+        api.beginOperation(d.id, 'drag');
       }
 
       const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
       const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
-      
+
       selection.forEach(id => {
-          initialPointers.set(id, { x: px, y: py });
-          const freshNode = api.getPlacedNodes().find(n => n.id === id);
-          if (freshNode) {
-              initialPos.set(id, { x: freshNode.x, y: freshNode.y });
-          }
+        initialPointers.set(id, { x: px, y: py });
+        const freshNode = api.getPlacedNodes().find(n => n.id === id);
+        if (freshNode) {
+          initialPos.set(id, { x: freshNode.x, y: freshNode.y });
+        }
       });
+      
+      // Force initial visual refresh during START to ensure engine builds the Ghost layers correctly
+      api.updateNodePosition(d.id, d.x, d.y, false, false);
     })
     .on("drag", function (event, d) {
       if (!event.sourceEvent) return;
       const svgGroupNode = api.canvasObject.elements.node() as SVGGElement;
       const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
       const selection = api.getSelectedNodeIds();
-      
+
       selection.forEach(nodeId => {
-          const startP = initialPointers.get(nodeId);
-          const startD = initialPos.get(nodeId);
-          if (!startP || !startD) return;
+        const startP = initialPointers.get(nodeId);
+        const startD = initialPos.get(nodeId);
+        if (!startP || !startD) return;
 
-          const dx = px - startP.x;
-          const dy = py - startP.y;
+        const dx = px - startP.x;
+        const dy = py - startP.y;
 
-          let newX = startD.x + dx;
-          let newY = startD.y + dy;
+        let newX = startD.x + dx;
+        let newY = startD.y + dy;
 
-          const gridSize = api.config.canvas.grid?.gridSize ?? 20;
-          if (api.config.canvasProperties.snapToGrid) {
-            const snapped = snapToGrid(newX, newY, gridSize);
-            newX = snapped.x;
-            newY = snapped.y;
+        const gridSize = api.config.canvas.grid?.gridSize ?? 20;
+        if (api.config.canvasProperties.snapToGrid) {
+          const snapped = snapToGrid(newX, newY, gridSize);
+          newX = snapped.x;
+          newY = snapped.y;
+        }
+
+        api.updateNodePosition(nodeId, newX, newY, false, true);
+
+        // Update visual transform for immediate feedback (only for the dragged selection elements in the DOM)
+        const nodeG = d3.select(`g.placed-node[data-id="${nodeId}"]`);
+        if (!nodeG.empty()) {
+          const nodeData = api.getPlacedNodes().find(n => n.id === nodeId);
+          nodeG.attr("transform", `translate(${newX},${newY}) rotate(${nodeData?.rotation || 0})`);
+          
+          // Also update Ghost preview counter-transformation for accuracy
+          const ghostG = nodeG.select(".node-ghost");
+          if (!ghostG.empty()) {
+             const startPos = initialPos.get(nodeId);
+             if (startPos) {
+                 const currentRotation = nodeData?.rotation || 0;
+                 // Assuming drag start rotation is original rotation
+                 const ghostRotation = currentRotation; 
+                 const dx = startPos.x - newX;
+                 const dy = startPos.y - newY;
+                 ghostG.attr("transform", `rotate(${-currentRotation}) translate(${dx},${dy}) rotate(${ghostRotation})`);
+             }
           }
-
-          api.updateNodePosition(nodeId, newX, newY, false);
-
-          // Update visual transform for immediate feedback (only for the dragged selection elements in the DOM)
-          const nodeG = d3.select(`g.placed-node[data-node-id="${nodeId}"]`);
-          if (!nodeG.empty()) {
-              const nodeData = api.getPlacedNodes().find(n => n.id === nodeId);
-              nodeG.attr("transform", `translate(${newX},${newY}) rotate(${nodeData?.rotation || 0})`);
-          }
+        }
       });
+
+      // Update Visual Group boundaries if selection covers full groups
+      if (api.canvasObject.visualGroups) {
+          const apiGroups = api.getVisualGroups();
+          apiGroups.forEach(group => {
+              const allMembersInSelection = group.nodeIds.every(nid => selection.includes(nid));
+              if (allMembersInSelection) {
+                  // This group should move in sync
+                  const groupBoundG = d3.select(`g.visual-group-boundary.${group.id}`);
+                  if (!groupBoundG.empty()) {
+                      // We need to find the new boundary transform. 
+                      // Since skipVisualRefresh skipped boundary re-calc, we shift it manually by delta.
+                      // Use ANY member node to find delta
+                      const memberId = group.nodeIds[0];
+                      const sP = initialPointers.get(memberId);
+                      if (sP) {
+                          const dx = px - sP.x;
+                          const dy = py - sP.y;
+                          // Origin of group boundary is original calculated bounds.
+                          const originalBounds = api.getGroupBounds(group.id, new Map(api.getPlacedNodes().map(n => {
+                              const sD = initialPos.get(n.id);
+                              return [n.id, sD ? {...n, x: sD.x, y: sD.y} : n];
+                          })));
+                          
+                          if (originalBounds) {
+                            groupBoundG.attr("transform", `translate(${originalBounds.x + dx}, ${originalBounds.y + dy})`);
+                          }
+                      }
+                  }
+              }
+          });
+      }
+
+      // Implement edge panning
+      if (event.sourceEvent && api.panBy) {
+        const cx = event.sourceEvent.clientX;
+        const cy = event.sourceEvent.clientY;
+        const rect = api.svgNode.getBoundingClientRect();
+
+        let panX = 0;
+        let panY = 0;
+        const zone = 60;
+        const speed = 8; // Use more controlled speed
+
+        if (cx < rect.left + zone) panX = speed;
+        if (cx > rect.right - zone) panX = -speed;
+        if (cy < rect.top + zone) panY = speed;
+        if (cy > rect.bottom - zone) panY = -speed;
+
+        if ((panX !== 0 || panY !== 0) && api.panBy) {
+          api.panBy(panX, panY);
+        }
+      }
 
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
@@ -167,9 +239,9 @@ export function createDragBehavior(api: DragApi) {
         const currentP = initialPointers.get(d.id);
         const currentD = initialPos.get(d.id);
         if (currentP && currentD) {
-            const dx = px - currentP.x;
-            const dy = py - currentP.y;
-            renderAlignmentGuides(currentD.x + dx, currentD.y + dy, d, api);
+          const dx = px - currentP.x;
+          const dy = py - currentP.y;
+          renderAlignmentGuides(currentD.x + dx, currentD.y + dy, d, api);
         }
         guideRaf = null;
       });
@@ -177,11 +249,11 @@ export function createDragBehavior(api: DragApi) {
     .on("end", function (event, d) {
       d3.select(this).classed("dragging", false);
       const gridSize = api.config.canvas.grid?.gridSize ?? 20;
-      
+
       if (!event.sourceEvent) {
-          initialPointers.delete(d.id);
-          initialPos.delete(d.id);
-          return;
+        initialPointers.delete(d.id);
+        initialPos.delete(d.id);
+        return;
       }
 
       const nodesToUpdate = api.getSelectedNodeIds();
@@ -189,28 +261,28 @@ export function createDragBehavior(api: DragApi) {
       const [px, py] = d3.pointer(event.sourceEvent, svgGroupNode);
 
       nodesToUpdate.forEach(nodeId => {
-          const startP = initialPointers.get(nodeId);
-          const startD = initialPos.get(nodeId);
-          if (startP && startD) {
-            const dx = px - startP.x;
-            const dy = py - startP.y;
+        const startP = initialPointers.get(nodeId);
+        const startD = initialPos.get(nodeId);
+        if (startP && startD) {
+          const dx = px - startP.x;
+          const dy = py - startP.y;
 
-            let finalX = startD.x + dx;
-            let finalY = startD.y + dy;
-            
-            if (api.config.canvasProperties.snapToGrid) {
-              const snapped = snapToGrid(finalX, finalY, gridSize);
-              finalX = snapped.x;
-              finalY = snapped.y;
-            }
-            
-            api.updateNodePosition(nodeId, finalX, finalY, false);
+          let finalX = startD.x + dx;
+          let finalY = startD.y + dy;
+
+          if (api.config.canvasProperties.snapToGrid) {
+            const snapped = snapToGrid(finalX, finalY, gridSize);
+            finalX = snapped.x;
+            finalY = snapped.y;
           }
-          initialPointers.delete(nodeId);
-          initialPos.delete(nodeId);
+
+          api.updateNodePosition(nodeId, finalX, finalY, false, false);
+        }
+        initialPointers.delete(nodeId);
+        initialPos.delete(nodeId);
       });
       api.endOperation();
-      
+
       if (guideRaf !== null) {
         cancelAnimationFrame(guideRaf);
         guideRaf = null;

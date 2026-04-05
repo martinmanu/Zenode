@@ -1390,6 +1390,31 @@
                     placeholder='<svg viewBox="0 0 24 24">...</svg>' oninput="applyContentUpdate()"></textarea>
             </div>
 
+            <hr style="border: none; border-top: 1px solid var(--border); margin: 10px 0; opacity: 0.3;">
+            
+            <div class="content-panel-section">
+                <div class="content-panel-label">Global ContextPad Defaults</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Alignment</div>
+                        <select id="cpPositionSelect" class="cp-input" style="width: 100%; height: 32px;" onchange="updateGlobalCPConfig()">
+                            <option value="top">Top</option>
+                            <option value="right">Right</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                            <option value="center">Center</option>
+                        </select>
+                    </div>
+                    <div>
+                        <div style="font-size: 10px; color: var(--text-muted); margin-bottom: 4px;">Items Layout</div>
+                        <select id="cpLayoutSelect" class="cp-input" style="width: 100%; height: 32px;" onchange="updateGlobalCPConfig()">
+                            <option value="linear">Linear</option>
+                            <option value="grid">Grid (3 Col)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
     </div>
@@ -1513,11 +1538,15 @@
 
         window.setNodeLayout = (layout) => {
             activeLayout = layout;
+            updateLayoutButtons();
+            applyContentUpdate();
+        }
+
+        function updateLayoutButtons() {
             ['text-only', 'icon-only', 'icon-top-text', 'icon-left-text', 'center'].forEach(l => {
                 const btn = document.getElementById('layout-' + l);
-                if (btn) btn.classList.toggle('active', l === layout);
+                if (btn) btn.classList.toggle('active', l === activeLayout);
             });
-            applyContentUpdate();
         }
 
         window.applyContentUpdate = () => {
@@ -1553,6 +1582,28 @@
                 items: items
             });
             updatePreview();
+        }
+
+        function syncNodeEditor(id) {
+            editingNodeId = id;
+            const node = Zenode.getPlacedNodes().find(n => n.id === id);
+            if (!node) return;
+
+            // Sync editor fields
+            const textItem = (node.content?.items || []).find(it => it.kind === 'text');
+            const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
+            document.getElementById('nodeText').value = textItem ? textItem.value : "";
+            document.getElementById('nodeIcon').value = iconItem ? iconItem.value : "";
+            document.getElementById('nodeTextColor').value = textItem?.color || "#000000";
+            document.getElementById('nodeFontSize').value = textItem?.fontSize || 12;
+            activeLayout = node.content?.layout || "text-only";
+            updateLayoutButtons();
+
+            // Sync CP globals (dropdowns)
+            const cpConf = currentConfig.canvasProperties.contextPad;
+            document.getElementById('cpPositionSelect').value = cpConf.position;
+            const layoutVal = cpConf.layout === 'grid' ? 'grid' : cpConf.layout;
+            document.getElementById('cpLayoutSelect').value = layoutVal;
         }
 
         /** Opens a contenteditable div precisely over the node for in-place editing */
@@ -1840,30 +1891,26 @@
             });
 
             Zenode.on("contextpad:style", ({ target }) => {
-                // Open content panel and focus style section instead of in-place text editor
-                editingNodeId = target.id;
-                const node = Zenode.getPlacedNodes().find(n => n.id === target.id);
-                if (node) {
-                    const cp = document.getElementById('contentPanel');
-                    closeAll();
-                    cp.classList.add('active');
-                    document.body.classList.add('panel-open');
+                const cp = document.getElementById('contentPanel');
+                closeAll();
+                cp.classList.add('active');
+                document.body.classList.add('panel-open');
+                syncNodeEditor(target.id);
+            });
 
-                    // Sync editor fields
-                    const textItem = (node.content?.items || []).find(it => it.kind === 'text');
-                    const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
-                    document.getElementById('nodeText').value = textItem ? textItem.value : "";
-                    document.getElementById('nodeIcon').value = iconItem ? iconItem.value : "";
-                    document.getElementById('nodeTextColor').value = textItem?.color || "#000000";
-                    document.getElementById('nodeFontSize').value = textItem?.fontSize || 12;
-                    activeLayout = node.content?.layout || "text-only";
-                    updateLayoutButtons();
-
-                    // Sync CP globals (dropdowns)
-                    const cpConf = currentConfig.canvasProperties.contextPad;
-                    document.getElementById('cpPositionSelect').value = cpConf.position;
-                    const layoutVal = cpConf.layout === 'grid' ? 'grid' : cpConf.layout;
-                    document.getElementById('cpLayoutSelect').value = layoutVal;
+            Zenode.on("node:selected", ({ ids }) => {
+                const cp = document.getElementById('contentPanel');
+                if (ids.length === 1) {
+                    // Update current editor if already open, allowing persistent state
+                    if (cp.classList.contains('active')) {
+                        syncNodeEditor(ids[0]);
+                    }
+                } else if (ids.length === 0) {
+                    // Auto-close on click outside (canvas click / deselect)
+                    if (cp.classList.contains('active')) {
+                        closeAll();
+                        editingNodeId = null;
+                    }
                 }
             });
 

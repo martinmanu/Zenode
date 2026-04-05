@@ -315,7 +315,7 @@ export declare class ZenodeEngine {
     /**
      * Updates a placed node's position and triggers sub-renders.
      */
-    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
+    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean, skipVisualRefresh?: boolean): void;
     /**
      * Updates a node's rotation.
      */
