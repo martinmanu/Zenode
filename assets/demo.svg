@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 500" width="100%" height="auto" style="background-color: #FAFAFA; border-radius: 8px;">
+  <defs>
+    <!-- Background Grid -->
+    <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#E5E7EB" stroke-width="0.5" />
+    </pattern>
+    <!-- Markers -->
+    <marker id="marker-arrow-000000" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000000" />
+    </marker>
+    <marker id="marker-arrow-666666" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#666666" />
+    </marker>
+    <marker id="marker-arrow-333333" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#333333" />
+    </marker>
+    <marker id="marker-arrow-444444" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#444444" />
+    </marker>
+  </defs>
+  
+  <rect width="100%" height="100%" fill="url(#grid)" />
+  <style>
+    @keyframes draw {
+      to {stroke-dashoffset: -24;}
+    }
+    .animated-flow {
+      animation: draw 1s linear infinite;
+    }
+    .node-text {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      text-anchor: middle;
+      user-select: none;
+    }
+  </style>
+
+  <g transform="translate(0,-60)">
+    <!-- Connections -->
+    <g class="connections">
+      <g>
+        <path class="animated-flow" d="M 130 200 L 240 200" fill="none" stroke="#000000" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#marker-arrow-000000)" />
+      </g>
+      <g>
+        <path class="animated-flow" d="M 340 240 C 340 304 276 400 340 400" fill="none" stroke="#666666" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#marker-arrow-666666)" />
+      </g>
+      <g>
+        <path class="animated-flow" d="M 440 360 C 490 360 490 280 540 280" fill="none" stroke="#333333" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#marker-arrow-333333)" />
+      </g>
+      <g>
+        <path class="animated-flow" d="M 580 240 L 580 220 L 580 180 L 640 180 L 660 180" fill="none" stroke="#444444" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#marker-arrow-444444)" />
+      </g>
+      <g>
+        <path class="animated-flow" d="M 780 180 C 823.7 180 874.2 289.3 874.2 289.3" fill="none" stroke="#666666" stroke-width="2" stroke-dasharray="8,4" marker-end="url(#marker-arrow-666666)" />
+      </g>
+    </g>
+
+    <!-- Nodes -->
+    <g class="placed-nodes">
+      <!-- Start Node -->
+      <g transform="translate(100,200)">
+        <circle cx="0" cy="0" r="30" fill="#3B82F6" fill-opacity="0.35" stroke="#1D4ED8" stroke-width="1.5"></circle>
+        <g transform="translate(-10, -10)" stroke="#000000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="10" cy="10" r="10"></circle>
+          <path d="M7 7 L12 10 L7 13 Z" fill="currentColor"></path>
+        </g>
+      </g>
+      
+      <!-- Process Node 1 -->
+      <g transform="translate(340,200)">
+        <path d="M -92,-40 H 92 A 8,8 0 0 1 100,-32 V 32 A 8,8 0 0 1 92,40 H -92 A 8,8 0 0 1 -100,32 V -32 A 8,8 0 0 1 -92,-40 Z" fill="#F8FAFC" fill-opacity="0.9" stroke="#CBD5E1" stroke-width="1"></path>
+        <text y="4" class="node-text" fill="rgb(40, 61, 226)">process 1</text>
+      </g>
+
+      <!-- Process Node 2 -->
+      <g transform="translate(440,400)">
+        <path d="M -92,-40 H 92 A 8,8 0 0 1 100,-32 V 32 A 8,8 0 0 1 92,40 H -92 A 8,8 0 0 1 -100,32 V -32 A 8,8 0 0 1 -92,-40 Z" fill="#F8FAFC" fill-opacity="0.9" stroke="#CBD5E1" stroke-width="1"></path>
+        <text y="4" class="node-text" fill="rgb(255, 61, 61)">process 2</text>
+      </g>
+
+      <!-- Timer/Decision Node -->
+      <g transform="translate(580,280)">
+        <path d="M 0 -40 L 40 0 L 0 40 L -40 0 Z" fill="#EC4899" fill-opacity="0.35" stroke="#BE185D" stroke-width="1.5"></path>
+        <g transform="translate(-12, -12)" stroke="#ffffff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="13" r="8"></circle>
+          <path d="M12 10v6"></path>
+          <path d="M9 13h6"></path>
+        </g>
+      </g>
+
+      <!-- Complete Node -->
+      <g transform="translate(720,180)">
+        <path d="M -55,-40 H 55 A 5,5 0 0 1 60,-35 V 35 A 5,5 0 0 1 55,40 H -55 A 5,5 0 0 1 -60,35 V -35 A 5,5 0 0 1 -55,-40 Z" fill="#8B5CF6" fill-opacity="0.35" stroke="#6D28D9" stroke-width="1.5"></path>
+        <g transform="translate(-10, -20)" stroke="#22a720" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 6 7 17l-5-5"></path>
+          <path d="m22 10-7.5 7.5L13 16"></path>
+        </g>
+        <text y="14" class="node-text" fill="rgb(34, 167, 32)">complete</text>
+      </g>
+
+      <!-- End/Stop Node -->
+      <g transform="translate(900,320)">
+        <path d="M 0 -40 L 25 -30 L 39 -7 L 34 20 L 13 37 L -13 37 L -34 20 L -39 -7 L -25 -30 Z" fill="#FB923C" fill-opacity="0.35" stroke="#C2410C" stroke-width="1.5"></path>
+        <g transform="translate(-10, -10)" stroke="#ff0000" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 7v6"></path>
+          <path d="M12 7v6"></path>
+        </g>
+      </g>
+    </g>
+  </g>
+</svg>

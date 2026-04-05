@@ -27,7 +27,7 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 ## 📽 Demo
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/martinmanu/Zenode/Version-3/assets/demo.gif" width="800" alt="Zenode Demo Preview" />
+  <img src="assets/demo.svg" width="100%" alt="Zenode Designer Preview">
 </div>
 
 <p align="center">

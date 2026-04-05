@@ -1706,8 +1706,8 @@
             }
 
             const isDev = window.location.pathname.includes('/playground/');
-            const fileName = tab === 'overview' 
-                ? (isDev ? '../README.md' : './README.md') 
+            const fileName = tab === 'overview'
+                ? (isDev ? '../README.md' : './README.md')
                 : (isDev ? '../APIs.md' : './APIs.md');
             if (docsCache[tab]) {
                 content.innerHTML = docsCache[tab];
@@ -1720,19 +1720,25 @@
             try {
                 const response = await fetch(fileName);
                 if (!response.ok) throw new Error("Not found");
-                const text = await response.text();
+                let text = await response.text();
 
-                let html = marked.parse(text);
-
-                // 1. Global Path Correction (Environment-Aware)
+                // 1. Global Path Correction (Environment-Aware) - DONE BEFORE PARSING
                 const isDev = window.location.pathname.includes('/playground/');
                 const assetPrefix = isDev ? '../assets/' : './assets/';
 
-                // Fixes all instances of assets/ in any attribute (src, href, etc.)
-                html = html.replace(/(src|href)="(\.\/)?assets\//g, `$1="${assetPrefix}`);
+                // Fixes all instances of assets/ in the raw text so marked renders with correct paths
+                text = text.replace(/(src|href)=["'](\.\/)?assets\//g, (match, attr) => `${attr}="${assetPrefix}`);
+                text = text.replace(/\(assets\//g, `(${assetPrefix}`);
 
-                // 2. Transform Markdown Image links into Styled <video>
+                let html = marked.parse(text);
+
+                // 2. Transform Markdown Image links into Styled <video> or <img>
                 if (tab === 'overview') {
+                    // Style the demo gif/svg specifically (Case insensitive extension)
+                    html = html.replace(/<img[^>]+src=["']([^"']+\.(gif|svg))["'][^>]*>/gi, (match, src) => {
+                        return `<img src="${src}" alt="Zenode Demo" style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.15); display: block;">`;
+                    });
+
                     html = html.replace(/<img src="([^"]+\.mp4)"[^>]*>/g, (match, src) => {
                         return `<video src="${src}" autoplay loop muted playsinline style="width:100%; border-radius:12px; margin: 16px 0; box-shadow: 0 10px 40px rgba(0,0,0,0.1);"></video>`;
                     });
