@@ -534,13 +534,14 @@ class ZenodeEngine {
      * @returns The ID of the created node.
      */
     addNode(config, recordHistory = true) {
+        var _a, _b;
         const id = config.id || this.generateId();
         const newNode = {
             id,
             type: config.type,
             shapeVariantId: config.shapeVariantId,
-            x: config.x,
-            y: config.y,
+            x: (_a = config.x) !== null && _a !== void 0 ? _a : 0,
+            y: (_b = config.y) !== null && _b !== void 0 ? _b : 0,
             width: config.width,
             height: config.height,
             radius: config.radius,
@@ -1054,7 +1055,7 @@ class ZenodeEngine {
             this.svg.on("click.placement", (event) => {
                 // Prevent bubbling up to the global SVG click listener
                 event.stopPropagation();
-                this.completePlacement();
+                this.completePlacement(event);
             });
         }, 0);
         return ghostId;
@@ -1069,19 +1070,30 @@ class ZenodeEngine {
             const renderer = this.shapeRegistry.get(this.placementContext.type);
             const style = (_b = (_a = this.config.shapes.default) === null || _a === void 0 ? void 0 : _a[this.placementContext.type]) === null || _b === void 0 ? void 0 : _b.find((s) => { var _a; return s.id === (((_a = this.placementContext) === null || _a === void 0 ? void 0 : _a.variantId) || "default"); });
             if (renderer && style) {
-                renderer.draw(preview, Object.assign(Object.assign({}, style), { type: this.placementContext.type, x: 0, y: 0 }), {});
+                // Create a mock node to use buildResolvedShapeConfig for consistent centering
+                const mockNode = {
+                    type: this.placementContext.type,
+                    shapeVariantId: this.placementContext.variantId || "default",
+                    width: style.width,
+                    height: style.height,
+                    radius: style.radius};
+                const resolvedConfig = buildResolvedShapeConfig(mockNode, style);
+                renderer.draw(preview, resolvedConfig, {});
                 preview.style("opacity", 0.5).style("pointer-events", "none");
             }
         }
         preview.attr("transform", `translate(${x}, ${y})`);
     }
-    completePlacement() {
+    completePlacement(event) {
         if (!this.placementContext)
             return "";
         const { type, variantId } = this.placementContext;
-        // Get last mouse position if possible, or use 0,0
-        const point = d3.pointer(d3.select("body").node());
-        const canvasPoint = this.getCanvasPointFromEvent(point[0], point[1]);
+        // Get mouse position relative to SVG
+        const point = d3.pointer(event, this.svg.node()) || [0, 0];
+        // Safety check: D3 pointer can return NaN if no active event on element
+        const safeX = isNaN(point[0]) ? 0 : point[0];
+        const safeY = isNaN(point[1]) ? 0 : point[1];
+        const canvasPoint = this.getCanvasPointFromEvent(safeX, safeY);
         const node = this.placeShapeAt(type, variantId || "default", canvasPoint.x, canvasPoint.y, { shapeVariantId: variantId });
         this.cancelPlacement();
         return node ? node.id : "";
@@ -1674,8 +1686,8 @@ class ZenodeEngine {
             id: generatePlacedNodeId(),
             type: shapeType,
             shapeVariantId: variantId,
-            x,
-            y,
+            x: isNaN(x) ? 0 : x,
+            y: isNaN(y) ? 0 : y,
             rotation: 0,
             width: shapeToFind.width,
             height: shapeToFind.height,

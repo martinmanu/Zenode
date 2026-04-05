@@ -1,4 +1,8 @@
 <div align="center">
+  <img src="https://raw.githubusercontent.com/martinmanu/Zenode/Version-3/assets/demo.gif" width="800" alt="Zenode Designer Hero" />
+</div>
+
+<div align="center">
 
 # Zenode Designer
 
@@ -9,7 +13,8 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 [![GitHub Stars](https://img.shields.io/github/stars/martinmanu/Zenode?style=flat-square&color=ffd700)](https://github.com/martinmanu/Zenode/stargazers)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?style=flat-square)](https://www.typescriptlang.org/)
-[![D3.js](https://img.shields.io/badge/Powered%20by-D3.js-orange?style=flat-square)](https://d3js.org/)
+
+[**Live Demo →**](https://zenode-designer.vercel.app) · [**API Documentation →**](https://github.com/martinmanu/Zenode/blob/Version-3/APIs.md) · [**Report Bug →**](https://github.com/martinmanu/Zenode/issues)
 
 </div>
 
@@ -19,11 +24,17 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 
 ---
 
-## Demo
+## 📽 Demo
 
 <div align="center">
-  <video src="assets/demo.mp4" width="100%" autoplay loop muted playsinline></video>
+  <img src="assets/demo.svg" width="100%" alt="Zenode Designer Preview">
 </div>
+
+<p align="center">
+  <a href="https://raw.githubusercontent.com/martinmanu/Zenode/Version-3/assets/demo.gif">
+    Watch full HD video
+  </a>
+</p>
 
 ---
 
@@ -34,6 +45,7 @@ Engineering-first · JSON-schema-driven · Framework-agnostic · Performance-tun
 *   **Generic History Engine**: Robust undo/redo system based on the Command pattern, capturing full state snapshots for perfect restoration.
 *   **Smart Selection**: Integrated single-select, lasso multi-select, and renderer-aware selection overlays.
 *   **Extensible Context Pad**: A floating HTML action bar that follows your selection, fully customizable via a simple registration API.
+*   **Visual Grouping**: Encapsulate multiple nodes within collective boundaries with synced movement and ghost previews.
 *   **Visual Effects Suite**: Built-in support for status glows, stroke-flow animations, and progress gradients.
 
 ---
@@ -119,6 +131,7 @@ Layers are strictly ordered to ensure predictable depth management and event bub
 | **Connection Engine** | ✅ | Straight, Curved, S-Shape, L-Bent routing |
 | **History System** | ✅ | Full Undo/Redo command pattern |
 | **Context Pad** | ✅ | Floating actions & Plugin API |
+| **Visual Grouping** | ✅ | Boundary containers & collective movement |
 | **BPMN Parity** | 🔨 | Resize handles & lane support in progress |
 | **Serialization** | ✅ | Mermaid, XML, DOT & JSON support |
 | **Properties** | 🔨 | Schema-driven node panels (Layer 1) |
@@ -164,6 +177,10 @@ The Zenode Engine is a high-performance, D3.js-powered diagramming library. This
 | `addEdge(config)` | Creates a connection. Supports `type` override. | `Zenode.addEdge({ ..., type: 's-shaped' })` |
 | `duplicateNode(id)` | Clones a node and its content. | `const newId = Zenode.duplicateNode('n1')` |
 | `focusNode(id, opts?)` | Animates the viewport to focus on a node. | `Zenode.focusNode('n1', { zoom: 1.5 })` |
+| `groupSelection()` | Encapsulates the current selection within a visual group. | `Zenode.groupSelection()` |
+| `ungroupSelection()` | Break apart active selection or selected group. | `Zenode.ungroupSelection()` |
+| `toggleGroupingSelection()`| Smart toggle grouping logic. | `Zenode.toggleGroupingSelection()` |
+| `getVisualGroups()` | Returns array of all active visual groups. | `Zenode.getVisualGroups()` |
 
 ### 3. Data Serialization & Export
 | API | Description | Usage Example |

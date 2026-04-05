@@ -56,7 +56,11 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
         });
         return g;
     }, (update) => {
-        update.attr("transform", (d) => `translate(${d.x},${d.y}) rotate(${d.rotation || 0})`);
+        update.attr("transform", (d) => {
+            const x = isNaN(d.x) ? 0 : d.x;
+            const y = isNaN(d.y) ? 0 : d.y;
+            return `translate(${x},${y}) rotate(${d.rotation || 0})`;
+        });
         update.each(function (d) {
             const style = getShapeStyle(d, api.config);
             if (!style)
@@ -133,7 +137,7 @@ function renderPlacedNodes(placedNodesGroup, placedNodes, api) {
  * Calculates and renders a boundary around visual groups that have at least one member selected.
  */
 function renderVisualGroups(placedNodesGroup, api, placedNodes) {
-    var _a;
+    var _a, _b;
     const parent = api.canvasObject.visualGroups;
     if (!parent || !parent.selectAll)
         return;
@@ -247,7 +251,7 @@ function renderVisualGroups(placedNodesGroup, api, placedNodes) {
     // Only groups containing nodes in the active selectionStates should show ghosts
     const activeOp = api.getActiveOperation();
     const ghostCfg = api.config.canvasProperties.groupGhostPreview;
-    const ghostParent = (api.ghostsLayer || parent);
+    const ghostParent = (api.ghostsLayer || ((_b = api.canvasObject) === null || _b === void 0 ? void 0 : _b.ghosts) || parent);
     // Only groups containing nodes in the active selectionStates should show ghosts
     const movingGroups = ((ghostCfg === null || ghostCfg === void 0 ? void 0 : ghostCfg.enabled) && activeOp && activeOp.type === 'drag')
         ? groups.filter(g => {
