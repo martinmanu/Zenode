@@ -270,7 +270,7 @@ export declare class ZenodeEngine {
         y: number;
     }): string;
     updatePlacementPreview(x: number, y: number): void;
-    completePlacement(): string;
+    completePlacement(event?: MouseEvent): string;
     private getCanvasPointFromEvent;
     /** Returns whether a connection is currently being drawn. */
     isDrawingConnection(): boolean;

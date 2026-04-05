@@ -631,8 +631,8 @@ export class ZenodeEngine {
       id,
       type: config.type,
       shapeVariantId: config.shapeVariantId,
-      x: config.x,
-      y: config.y,
+      x: config.x ?? 0,
+      y: config.y ?? 0,
       width: config.width,
       height: config.height,
       radius: config.radius,
@@ -1250,7 +1250,7 @@ export class ZenodeEngine {
         this.svg.on("click.placement", (event: MouseEvent) => {
           // Prevent bubbling up to the global SVG click listener
           event.stopPropagation();
-          this.completePlacement();
+          this.completePlacement(event);
         });
     }, 0);
 
@@ -1268,20 +1268,38 @@ export class ZenodeEngine {
         ?.find((s: any) => s.id === (this.placementContext?.variantId || "default"));
 
       if (renderer && style) {
-        renderer.draw(preview as any, { ...style, type: this.placementContext.type, x: 0, y: 0 } as any, {});
+        // Create a mock node to use buildResolvedShapeConfig for consistent centering
+        const mockNode: PlacedNode = {
+          id: "preview",
+          type: this.placementContext.type,
+          shapeVariantId: this.placementContext.variantId || "default",
+          x: 0,
+          y: 0,
+          width: style.width,
+          height: style.height,
+          radius: style.radius,
+          meta: {}
+        };
+        const resolvedConfig = buildResolvedShapeConfig(mockNode, style);
+        renderer.draw(preview as any, resolvedConfig, {});
         preview.style("opacity", 0.5).style("pointer-events", "none");
       }
     }
     preview.attr("transform", `translate(${x}, ${y})`);
   }
 
-  public completePlacement(): string {
+  public completePlacement(event?: MouseEvent): string {
     if (!this.placementContext) return "";
     const { type, variantId } = this.placementContext;
 
-    // Get last mouse position if possible, or use 0,0
-    const point = d3.pointer(d3.select("body").node() as any);
-    const canvasPoint = this.getCanvasPointFromEvent(point[0], point[1]);
+    // Get mouse position relative to SVG
+    const point = d3.pointer(event, this.svg.node() as any) || [0, 0];
+    
+    // Safety check: D3 pointer can return NaN if no active event on element
+    const safeX = isNaN(point[0]) ? 0 : point[0];
+    const safeY = isNaN(point[1]) ? 0 : point[1];
+    
+    const canvasPoint = this.getCanvasPointFromEvent(safeX, safeY);
 
     const node = this.placeShapeAt(type, variantId || "default", canvasPoint.x, canvasPoint.y, { shapeVariantId: variantId });
     this.cancelPlacement();
@@ -1972,8 +1990,8 @@ export class ZenodeEngine {
       id: generatePlacedNodeId(),
       type: shapeType,
       shapeVariantId: variantId,
-      x,
-      y,
+      x: isNaN(x) ? 0 : x,
+      y: isNaN(y) ? 0 : y,
       rotation: 0,
       width: shapeToFind.width,
       height: shapeToFind.height,
