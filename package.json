@@ -1,6 +1,6 @@
 {
   "name": "@zenode/designer",
-  "version": "3.5.7",
+  "version": "3.5.10",
   "description": "A high-performance, pro-grade diagramming engine for web-based design tools.",
   "type": "module",
   "files": [
