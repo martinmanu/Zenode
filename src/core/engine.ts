@@ -1696,7 +1696,7 @@ export class ZenodeEngine {
   /**
    * Updates a placed node's position and triggers sub-renders.
    */
-  updateNodePosition(id: string, x: number, y: number, recordHistory: boolean = true): void {
+  updateNodePosition(id: string, x: number, y: number, recordHistory: boolean = true, skipVisualRefresh: boolean = false): void {
     const node = this.placedNodes.find(n => n.id === id);
     if (!node) return;
 
@@ -1713,7 +1713,10 @@ export class ZenodeEngine {
       this.contextPadRenderer?.updatePosition(this);
     }
 
-    this.refreshNodes();
+    if (!skipVisualRefresh) {
+      this.refreshNodes();
+    }
+    
     this.eventManager.trigger("node:moved", { id, x, y });
   }
 
@@ -1802,7 +1805,11 @@ export class ZenodeEngine {
 
   public createDragBehavior(): any {
     const api = {
-      updateNodePosition: (id: string, x: number, y: number, recordHistory?: boolean) => this.updateNodePosition(id, x, y, recordHistory),
+      updateNodePosition: (id: string, x: number, y: number, recordHistory?: boolean, skipVisualRefresh?: boolean) => this.updateNodePosition(id, x, y, recordHistory, skipVisualRefresh),
+      panBy: (dx: number, dy: number) => {
+        const t = d3.zoomTransform(this.svg.node() as Element);
+        this.zoomManager.panBy(this.svg, dx / t.k, dy / t.k);
+      },
       getPlacedNodes: () => this.placedNodes,
       isConnectionModeEnabled: () => this.isConnectionModeEnabled(),
       config: this.config,
@@ -1815,6 +1822,8 @@ export class ZenodeEngine {
       beginOperation: (nodeId: string, type: 'drag' | 'rotate' | 'resize') => this.beginOperation(nodeId, type),
       endOperation: () => this.endOperation(),
       getActiveOperation: () => this.getActiveOperation(),
+      getVisualGroups: () => this.visualGroups,
+      getGroupBounds: (groupId: string, overrideNodes?: Map<string, PlacedNode>) => this.getGroupBounds(groupId, overrideNodes),
     };
     return initDragBehavior(api as any);
   }

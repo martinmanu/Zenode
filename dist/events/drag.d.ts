@@ -1,9 +1,9 @@
 import * as d3 from "d3";
-import { PlacedNode, CanvasElements } from "../model/interface.js";
+import { PlacedNode, CanvasElements, VisualGroup } from "../model/interface.js";
 import { Config } from "../model/configurationModel.js";
 import { ShapeRegistry } from "../nodes/registry.js";
 export interface DragApi {
-    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean): void;
+    updateNodePosition(id: string, x: number, y: number, recordHistory?: boolean, skipVisualRefresh?: boolean): void;
     getPlacedNodes(): PlacedNode[];
     config: Config;
     shapeRegistry: ShapeRegistry;
@@ -15,5 +15,7 @@ export interface DragApi {
     beginOperation(nodeId: string, type: 'drag' | 'rotate' | 'resize'): void;
     endOperation(): void;
     getSelectedNodeIds(): string[];
+    getVisualGroups(): VisualGroup[];
+    getGroupBounds(groupId: string, overrideNodes?: Map<string, PlacedNode>): any | null;
 }
 export declare function createDragBehavior(api: DragApi): d3.DragBehavior<SVGGElement, PlacedNode, PlacedNode | d3.SubjectPosition>;

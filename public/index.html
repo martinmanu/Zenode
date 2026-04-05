@@ -1584,6 +1584,28 @@
             updatePreview();
         }
 
+        function syncNodeEditor(id) {
+            editingNodeId = id;
+            const node = Zenode.getPlacedNodes().find(n => n.id === id);
+            if (!node) return;
+
+            // Sync editor fields
+            const textItem = (node.content?.items || []).find(it => it.kind === 'text');
+            const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
+            document.getElementById('nodeText').value = textItem ? textItem.value : "";
+            document.getElementById('nodeIcon').value = iconItem ? iconItem.value : "";
+            document.getElementById('nodeTextColor').value = textItem?.color || "#000000";
+            document.getElementById('nodeFontSize').value = textItem?.fontSize || 12;
+            activeLayout = node.content?.layout || "text-only";
+            updateLayoutButtons();
+
+            // Sync CP globals (dropdowns)
+            const cpConf = currentConfig.canvasProperties.contextPad;
+            document.getElementById('cpPositionSelect').value = cpConf.position;
+            const layoutVal = cpConf.layout === 'grid' ? 'grid' : cpConf.layout;
+            document.getElementById('cpLayoutSelect').value = layoutVal;
+        }
+
         /** Opens a contenteditable div precisely over the node for in-place editing */
         function openInPlaceEditor(id) {
             const node = Zenode.getPlacedNodes().find(n => n.id === id);
@@ -1869,30 +1891,26 @@
             });
 
             Zenode.on("contextpad:style", ({ target }) => {
-                // Open content panel and focus style section instead of in-place text editor
-                editingNodeId = target.id;
-                const node = Zenode.getPlacedNodes().find(n => n.id === target.id);
-                if (node) {
-                    const cp = document.getElementById('contentPanel');
-                    closeAll();
-                    cp.classList.add('active');
-                    document.body.classList.add('panel-open');
+                const cp = document.getElementById('contentPanel');
+                closeAll();
+                cp.classList.add('active');
+                document.body.classList.add('panel-open');
+                syncNodeEditor(target.id);
+            });
 
-                    // Sync editor fields
-                    const textItem = (node.content?.items || []).find(it => it.kind === 'text');
-                    const iconItem = (node.content?.items || []).find(it => it.kind === 'icon');
-                    document.getElementById('nodeText').value = textItem ? textItem.value : "";
-                    document.getElementById('nodeIcon').value = iconItem ? iconItem.value : "";
-                    document.getElementById('nodeTextColor').value = textItem?.color || "#000000";
-                    document.getElementById('nodeFontSize').value = textItem?.fontSize || 12;
-                    activeLayout = node.content?.layout || "text-only";
-                    updateLayoutButtons();
-
-                    // Sync CP globals (dropdowns)
-                    const cpConf = currentConfig.canvasProperties.contextPad;
-                    document.getElementById('cpPositionSelect').value = cpConf.position;
-                    const layoutVal = cpConf.layout === 'grid' ? 'grid' : cpConf.layout;
-                    document.getElementById('cpLayoutSelect').value = layoutVal;
+            Zenode.on("node:selected", ({ ids }) => {
+                const cp = document.getElementById('contentPanel');
+                if (ids.length === 1) {
+                    // Update current editor if already open, allowing persistent state
+                    if (cp.classList.contains('active')) {
+                        syncNodeEditor(ids[0]);
+                    }
+                } else if (ids.length === 0) {
+                    // Auto-close on click outside (canvas click / deselect)
+                    if (cp.classList.contains('active')) {
+                        closeAll();
+                        editingNodeId = null;
+                    }
                 }
             });
 
