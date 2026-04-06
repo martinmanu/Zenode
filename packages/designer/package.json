@@ -1,0 +1,69 @@
+{
+  "name": "@zenode/designer",
+  "version": "3.5.10",
+  "description": "A high-performance, pro-grade diagramming engine for web-based design tools.",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "APIs.md",
+    "LICENSE",
+    "zenode.css"
+  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./config": {
+      "import": "./dist/config/defaultConfig.js",
+      "types": "./dist/config/defaultConfig.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
+  "keywords": [
+    "diagram",
+    "canvas",
+    "d3",
+    "reactflow",
+    "react",
+    "vue",
+    "angular",
+    "workflow",
+    "bpmn",
+    "designer",
+    "engine"
+  ],
+  "author": "Manu Martin",
+  "license": "Zenode License, MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinmanu/Zenode.git",
+    "directory": "packages/designer"
+  },
+  "homepage": "https://zenode-designer.vercel.app",
+  "dependencies": {
+    "tslib": "^2.8.1",
+    "@zenode/core": "workspace:*"
+  },
+  "peerDependencies": {
+    "d3": "^7.0.0"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "@types/d3": "^7.4.3",
+    "d3": "^7.9.0",
+    "http-server": "^14.1.1",
+    "rollup": "^4.37.0",
+    "typescript": "^5.8.2"
+  }
+}

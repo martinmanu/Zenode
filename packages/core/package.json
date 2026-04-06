@@ -1,0 +1,23 @@
+{
+  "name": "@zenode/core",
+  "version": "3.5.10",
+  "description": "Shared contract layer for Zenode Engine",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.2",
+    "@types/d3": "^7.4.3"
+  },
+  "author": "Manu Martin",
+  "license": "Zenode License, MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinmanu/Zenode.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://zenode-designer.vercel.app"
+}
