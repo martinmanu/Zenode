@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "pnpm --filter @zenode/designer dev",
-    "build": "pnpm --recursive build",
-    "start": "pnpm build && npx http-server . -p 3000 -o playground/index.html"
+    "build": "pnpm --recursive build && node scripts/collect.js",
+    "start": "pnpm build && npx http-server public -p 3000"
   },
   "engines": {
     "pnpm": ">=8.0.0"
