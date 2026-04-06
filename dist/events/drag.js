@@ -81,6 +81,8 @@ function createDragBehavior(api) {
                 initialPos.set(id, { x: freshNode.x, y: freshNode.y });
             }
         });
+        // Force initial visual refresh during START to ensure engine builds the Ghost layers correctly
+        api.updateNodePosition(d.id, d.x, d.y, false, false);
     })
         .on("drag", function (event, d) {
         if (!event.sourceEvent)
@@ -104,14 +106,78 @@ function createDragBehavior(api) {
                 newX = snapped.x;
                 newY = snapped.y;
             }
-            api.updateNodePosition(nodeId, newX, newY, false);
+            api.updateNodePosition(nodeId, newX, newY, false, true);
             // Update visual transform for immediate feedback (only for the dragged selection elements in the DOM)
-            const nodeG = d3.select(`g.placed-node[data-node-id="${nodeId}"]`);
+            const nodeG = d3.select(`g.placed-node[data-id="${nodeId}"]`);
             if (!nodeG.empty()) {
                 const nodeData = api.getPlacedNodes().find(n => n.id === nodeId);
                 nodeG.attr("transform", `translate(${newX},${newY}) rotate(${(nodeData === null || nodeData === void 0 ? void 0 : nodeData.rotation) || 0})`);
+                // Also update Ghost preview counter-transformation for accuracy
+                const ghostG = nodeG.select(".node-ghost");
+                if (!ghostG.empty()) {
+                    const startPos = initialPos.get(nodeId);
+                    if (startPos) {
+                        const currentRotation = (nodeData === null || nodeData === void 0 ? void 0 : nodeData.rotation) || 0;
+                        // Assuming drag start rotation is original rotation
+                        const ghostRotation = currentRotation;
+                        const dx = startPos.x - newX;
+                        const dy = startPos.y - newY;
+                        ghostG.attr("transform", `rotate(${-currentRotation}) translate(${dx},${dy}) rotate(${ghostRotation})`);
+                    }
+                }
             }
         });
+        // Update Visual Group boundaries if selection covers full groups
+        if (api.canvasObject.visualGroups) {
+            const apiGroups = api.getVisualGroups();
+            apiGroups.forEach(group => {
+                const allMembersInSelection = group.nodeIds.every(nid => selection.includes(nid));
+                if (allMembersInSelection) {
+                    // This group should move in sync
+                    const groupBoundG = d3.select(`g.visual-group-boundary.${group.id}`);
+                    if (!groupBoundG.empty()) {
+                        // We need to find the new boundary transform. 
+                        // Since skipVisualRefresh skipped boundary re-calc, we shift it manually by delta.
+                        // Use ANY member node to find delta
+                        const memberId = group.nodeIds[0];
+                        const sP = initialPointers.get(memberId);
+                        if (sP) {
+                            const dx = px - sP.x;
+                            const dy = py - sP.y;
+                            // Origin of group boundary is original calculated bounds.
+                            const originalBounds = api.getGroupBounds(group.id, new Map(api.getPlacedNodes().map(n => {
+                                const sD = initialPos.get(n.id);
+                                return [n.id, sD ? Object.assign(Object.assign({}, n), { x: sD.x, y: sD.y }) : n];
+                            })));
+                            if (originalBounds) {
+                                groupBoundG.attr("transform", `translate(${originalBounds.x + dx}, ${originalBounds.y + dy})`);
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        // Implement edge panning
+        if (event.sourceEvent && api.panBy) {
+            const cx = event.sourceEvent.clientX;
+            const cy = event.sourceEvent.clientY;
+            const rect = api.svgNode.getBoundingClientRect();
+            let panX = 0;
+            let panY = 0;
+            const zone = 60;
+            const speed = 8; // Use more controlled speed
+            if (cx < rect.left + zone)
+                panX = speed;
+            if (cx > rect.right - zone)
+                panX = -8;
+            if (cy < rect.top + zone)
+                panY = speed;
+            if (cy > rect.bottom - zone)
+                panY = -8;
+            if ((panX !== 0 || panY !== 0) && api.panBy) {
+                api.panBy(panX, panY);
+            }
+        }
         if (guideRaf !== null) {
             cancelAnimationFrame(guideRaf);
         }
@@ -152,7 +218,7 @@ function createDragBehavior(api) {
                     finalX = snapped.x;
                     finalY = snapped.y;
                 }
-                api.updateNodePosition(nodeId, finalX, finalY, false);
+                api.updateNodePosition(nodeId, finalX, finalY, false, false);
             }
             initialPointers.delete(nodeId);
             initialPos.delete(nodeId);

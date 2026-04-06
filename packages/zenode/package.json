@@ -1,0 +1,38 @@
+{
+  "name": "zenode",
+  "version": "3.5.10",
+  "description": "Unified entry point for the Zenode Ecosystem (Engine + Serializer)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w"
+  },
+  "dependencies": {
+    "@zenode/core": "workspace:*",
+    "@zenode/designer": "workspace:*",
+    "@zenode/serializer": "workspace:*"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^28.0.3",
+    "@rollup/plugin-node-resolve": "^16.0.1",
+    "@rollup/plugin-typescript": "^12.1.2",
+    "rollup": "^4.37.0",
+    "typescript": "^5.8.2"
+  },
+  "author": "Manu Martin",
+  "license": "Zenode License, MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinmanu/Zenode.git",
+    "directory": "packages/zenode"
+  },
+  "homepage": "https://zenode-designer.vercel.app"
+}

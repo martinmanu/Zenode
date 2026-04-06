@@ -1432,7 +1432,7 @@ class ZenodeEngine {
     /**
      * Updates a placed node's position and triggers sub-renders.
      */
-    updateNodePosition(id, x, y, recordHistory = true) {
+    updateNodePosition(id, x, y, recordHistory = true, skipVisualRefresh = false) {
         var _a;
         const node = this.placedNodes.find(n => n.id === id);
         if (!node)
@@ -1447,7 +1447,9 @@ class ZenodeEngine {
         if (this.selectedNodeIds.includes(id)) {
             (_a = this.contextPadRenderer) === null || _a === void 0 ? void 0 : _a.updatePosition(this);
         }
-        this.refreshNodes();
+        if (!skipVisualRefresh) {
+            this.refreshNodes();
+        }
         this.eventManager.trigger("node:moved", { id, x, y });
     }
     /**
@@ -1518,7 +1520,11 @@ class ZenodeEngine {
     }
     createDragBehavior() {
         const api = {
-            updateNodePosition: (id, x, y, recordHistory) => this.updateNodePosition(id, x, y, recordHistory),
+            updateNodePosition: (id, x, y, recordHistory, skipVisualRefresh) => this.updateNodePosition(id, x, y, recordHistory, skipVisualRefresh),
+            panBy: (dx, dy) => {
+                const t = d3.zoomTransform(this.svg.node());
+                this.zoomManager.panBy(this.svg, dx / t.k, dy / t.k);
+            },
             getPlacedNodes: () => this.placedNodes,
             isConnectionModeEnabled: () => this.isConnectionModeEnabled(),
             config: this.config,
@@ -1531,6 +1537,8 @@ class ZenodeEngine {
             beginOperation: (nodeId, type) => this.beginOperation(nodeId, type),
             endOperation: () => this.endOperation(),
             getActiveOperation: () => this.getActiveOperation(),
+            getVisualGroups: () => this.visualGroups,
+            getGroupBounds: (groupId, overrideNodes) => this.getGroupBounds(groupId, overrideNodes),
         };
         return createDragBehavior(api);
     }
