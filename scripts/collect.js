@@ -1,5 +1,5 @@
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 
 const root = process.cwd();
 const publicDir = path.join(root, 'public');

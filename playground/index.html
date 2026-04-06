@@ -5,22 +5,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zenode Playground | Advanced Designer</title>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
-        rel="stylesheet">
+    <!-- Font Preconnect for FCP -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"></noscript>
+    
     <link rel="stylesheet" href="./zenode.css">
 
     <!-- SEO & Metadata Icon -->
-    <meta name="description"
-        content="Zenode Designer - A pro-grade, high-performance diagramming engine for complex workflows and cloud architecture.">
+    <meta name="description" content="Zenode Designer - A pro-grade, high-performance diagramming engine for complex workflows and cloud architecture.">
     <meta property="og:title" content="Zenode Designer | Advanced Designer Environment">
     <meta property="og:description" content="Experience the next generation of diagramming with the Zenode Engine.">
+    
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
 
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Preload Critical Dependencies for LCP -->
+    <link rel="modulepreload" href="./dist/designer/index.js" />
+    <link rel="modulepreload" href="./dist/serializer/index.js" />
+
+    <!-- Defer Heavy UI Scripts (TBT optimization) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
 
     <script type="importmap">
     {
@@ -2206,14 +2213,21 @@
             alert('System configuration state copied to clipboard!');
         };
 
+        let resizeTicking = false;
         window.addEventListener('resize', () => {
-            const container = document.getElementById('canvasContainer');
-            if (!container) return;
-            const rect = container.getBoundingClientRect();
-            currentConfig.canvas.width = rect.width;
-            currentConfig.canvas.height = rect.height;
-            // Use smooth resize instead of full re-render
-            Zenode.resizeCanvas(rect.width, rect.height);
+            if (!resizeTicking) {
+                window.requestAnimationFrame(() => {
+                    const container = document.getElementById('canvasContainer');
+                    if (container) {
+                        const rect = container.getBoundingClientRect();
+                        currentConfig.canvas.width = rect.width;
+                        currentConfig.canvas.height = rect.height;
+                        Zenode.resizeCanvas(rect.width, rect.height);
+                    }
+                    resizeTicking = false;
+                });
+                resizeTicking = true;
+            }
         });
 
         document.addEventListener("DOMContentLoaded", init);
