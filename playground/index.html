@@ -21,14 +21,6 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
 
-    <!-- Preload Critical Dependencies for LCP -->
-    <link rel="modulepreload" href="./dist/designer/index.js" />
-    <link rel="modulepreload" href="./dist/serializer/index.js" />
-
-    <!-- Defer Heavy UI Scripts (TBT optimization) -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
-    <script src="https://unpkg.com/lucide@latest" defer></script>
-
     <script type="importmap">
     {
       "imports": {
@@ -36,6 +28,14 @@
       }
     }
     </script>
+
+    <!-- Preload Critical Dependencies for LCP -->
+    <link rel="modulepreload" href="./dist/designer/index.js" />
+    <link rel="modulepreload" href="./dist/serializer/index.js" />
+
+    <!-- Defer Heavy UI Scripts (TBT optimization) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
+    <script src="https://unpkg.com/lucide@latest" defer></script>
     <style>
         :root {
             --bg-dark: #0f172a;
@@ -1309,8 +1309,16 @@
         <div id="canvasContainer"></div>
 
         <div class="toolbar">
+            <button class="tool-btn icon-only" onclick="window.open('./serializer/index.html', '_blank')"
+                title="Open Serializer Playground">
+                <i data-lucide="binary"></i>
+            </button>
+            <button class="tool-btn icon-only" onclick="toggleLiveState()"
+                title="Live Diagram State (getDiagramState)">
+                <i data-lucide="activity"></i>
+            </button>
             <button id="inspectorToggleBtn" class="tool-btn icon-only" onclick="toggleInspector()"
-                title="Live System State">
+                title="Live System Config">
                 <i data-lucide="terminal"></i>
             </button>
             <button id="settingsToggleBtn" class="tool-btn icon-only" onclick="toggleSettings()"
@@ -1460,11 +1468,35 @@
                         data-lucide="x"></i></button>
             </div>
         </div>
+
         <div class="json-container">
             <pre id="jsonPreview"></pre>
         </div>
     </div>
 
+    <!-- Live Diagram State Panel -->
+    <div id="liveStatePanel" class="sidebar" style="width: 500px;">
+        <div class="panel-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <div class="zenode-logo" style="width:20px; height:20px; border-radius:4px; margin-right:0;"></div>
+                <span style="color: #3b82f6;">Live Diagram State</span>
+                <span class="live-indicator">LIVE</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button id="btnCopyLiveState" class="tool-btn" onclick="copyLiveState()"
+                    style="font-size: 11px; padding: 4px 12px; height: 32px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="copy" style="width:14px; height:14px;"></i> COPY JSON</button>
+                <button class="tool-btn icon-only" onclick="toggleLiveState()"
+                    style="border:none; background:transparent; width:36px; height:36px; color: var(--text-muted);"><i
+                        data-lucide="x"></i></button>
+            </div>
+        </div>
+
+        <div class="json-container">
+            <pre id="liveJsonPreview" style="color: #60a5fa;"></pre>
+        </div>
+    </div>
+    
     <script type="module">
         import * as Zenode from "./dist/designer/index.js";
         import * as Serializer from "./dist/serializer/index.js";
@@ -1478,32 +1510,7 @@
         let connOn = false;
 
         // --- UI Operations ---
-        function closeAll() {
-            document.getElementById('settingsPanel').classList.remove('active');
-            document.getElementById('inspectorPanel').classList.remove('active');
-            document.getElementById('contentPanel').classList.remove('active');
-            document.body.classList.remove('panel-open');
-        }
 
-        window.toggleSettings = () => {
-            const sp = document.getElementById('settingsPanel');
-            const isActive = sp.classList.contains('active');
-            closeAll();
-            if (!isActive) {
-                sp.classList.add('active');
-                document.body.classList.add('panel-open');
-            }
-        }
-
-        window.toggleInspector = () => {
-            const ip = document.getElementById('inspectorPanel');
-            const isActive = ip.classList.contains('active');
-            closeAll();
-            if (!isActive) {
-                ip.classList.add('active');
-                document.body.classList.add('panel-open');
-            }
-        }
 
         window.toggleContentPanel = () => {
             const cp = document.getElementById('contentPanel');
@@ -1954,6 +1961,14 @@
                     overlay.classList.add('fade-out');
                 }
             }, 1500);
+
+            // Register Live Update Listeners for Diagram State Panel
+            const liveEvents = ['node:placed', 'node:deleted', 'node:updated', 'edge:created', 'connection:created', 'edge:deleted', 'zoom', 'workflow:load', 'workflow:clear', 'node:status:change'];
+            liveEvents.forEach(ev => {
+                Zenode.on(ev, () => {
+                    updateLiveState();
+                });
+            });
         }
 
         let activeConnType = 'straight';
@@ -2206,6 +2221,67 @@
             const formRoot = document.getElementById('formContainer');
             if (formRoot) renderForm(currentConfig, formRoot);
             updatePreview();
+        };
+
+        window.toggleSettings = () => {
+            const sp = document.getElementById('settingsPanel');
+            const isActive = sp.classList.contains('active');
+            closeAll();
+            if (!isActive) {
+                sp.classList.add('active');
+                document.body.classList.add('panel-open');
+            }
+        }
+
+        window.toggleInspector = () => {
+            const ip = document.getElementById('inspectorPanel');
+            const isActive = ip.classList.contains('active');
+            closeAll();
+            if (!isActive) {
+                ip.classList.add('active');
+                document.body.classList.add('panel-open');
+                updatePreview();
+            }
+        }
+
+        window.toggleLiveState = () => {
+            const lp = document.getElementById('liveStatePanel');
+            const isActive = lp.classList.contains('active');
+            closeAll();
+            if (!isActive) {
+                lp.classList.add('active');
+                document.body.classList.add('panel-open');
+                updateLiveState();
+            }
+        }
+
+        function updateLiveState() {
+            const pre = document.getElementById('liveJsonPreview');
+            if (pre && document.getElementById('liveStatePanel').classList.contains('active')) {
+                const state = Zenode.getDiagramState();
+                pre.textContent = JSON.stringify(state, null, 2);
+            }
+        }
+
+        function closeAll() {
+            document.getElementById('settingsPanel').classList.remove('active');
+            document.getElementById('inspectorPanel').classList.remove('active');
+            document.getElementById('liveStatePanel').classList.remove('active');
+            document.getElementById('contentPanel').classList.remove('active');
+            document.body.classList.remove('panel-open');
+        }
+
+        window.copyLiveState = () => {
+            const content = document.getElementById('liveJsonPreview').textContent;
+            navigator.clipboard.writeText(content);
+            const btn = document.getElementById('btnCopyLiveState');
+            const original = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check" style="width:14px; height:14px;"></i> COPIED!`;
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = original;
+                lucide.createIcons();
+            }, 2000);
         };
 
         window.copyConfig = () => {

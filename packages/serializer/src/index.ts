@@ -1,20 +1,36 @@
-import type { ZenodeDiagramState } from "@zenode/core";
-
 /**
- * Serializes the pure Zenode diagram state to a JSON string.
+ * @zenode/serializer — Public API
+ *
+ * Pure, framework-agnostic serialization layer for the Zenode ecosystem.
+ * Converts ZenodeDiagramState to/from external formats.
+ *
+ * @example
+ * import { toJSON, fromJSON, toMermaid, toBPMN } from '@zenode/serializer';
  */
-export function toJSON(state: ZenodeDiagramState): string {
-    return JSON.stringify(state, null, 2);
-}
 
-/**
- * Parses a JSON string to restore a Zenode diagram state.
- */
-export function fromJSON(json: string): ZenodeDiagramState {
-    const state = JSON.parse(json);
-    if (!state.version) {
-        // Handle migration from legacy states if needed in the future
-        state.version = "1.0";
-    }
-    return state as ZenodeDiagramState;
-}
+// --- Core ---
+export { validateState } from './core/validator.js';
+export type { ValidationResult } from './core/validator.js';
+
+// --- JSON Format ---
+export { toJSON, fromJSON } from './formats/json.js';
+
+// --- Mermaid Format ---
+export { toMermaid } from './formats/mermaid.js';
+
+// --- BPMN Format ---
+export { toBPMN } from './formats/bpmn.js';
+
+// --- Utilities ---
+export {
+  getRootNodes,
+  getLeafNodes,
+  getOrphanNodes,
+  getEdgesForNode,
+} from './utils/graph.js';
+
+export {
+  isZenodeDiagramState,
+  isValidNodeData,
+  isValidEdgeData,
+} from './utils/guards.js';

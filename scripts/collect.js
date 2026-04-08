@@ -9,7 +9,9 @@ const publicDir = path.join(root, 'public');
  */
 function copyFolderSync(from, to) {
     if (!fs.existsSync(from)) return;
-    if (!fs.existsSync(to)) fs.mkdirSync(to, { recursive: true });
+    if (!fs.existsSync(to)) {
+        fs.mkdirSync(to, { recursive: true });
+    }
     
     fs.readdirSync(from).forEach(element => {
         const fromPath = path.join(from, element);
@@ -45,5 +47,9 @@ if (fs.existsSync(path.join(root, 'playground/zenode.css'))) {
 console.log('[DEPLOY] Syncing package bundles...');
 copyFolderSync(path.join(root, 'packages/designer/dist'), path.join(publicDir, 'dist/designer'));
 copyFolderSync(path.join(root, 'packages/serializer/dist'), path.join(publicDir, 'dist/serializer'));
+
+// 3. Copy Serializer Playground
+console.log('[DEPLOY] Syncing serializer playground...');
+copyFolderSync(path.join(root, 'playground/serializer'), path.join(publicDir, 'serializer'));
 
 console.log('[DEPLOY] Done! All artifacts collected in public/');

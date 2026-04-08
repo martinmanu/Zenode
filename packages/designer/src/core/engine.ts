@@ -984,16 +984,28 @@ export class ZenodeEngine {
   /**
    * Returns a specific connection's state.
    */
-  public getEdge(id: string): EdgeData | null {
+  public getEdge(id: string): import("@zenode/core").EdgeData | null {
     const edge = this.connections.find(c => c.id === id);
-    return edge ? { ...edge } as EdgeData : null;
+    if (!edge) return null;
+    
+    return {
+      ...edge,
+      waypoints: this.calculateEdgeWaypoints(edge),
+      dashed: !!edge.dashed,
+      animated: !!edge.animated
+    } as import("@zenode/core").EdgeData;
   }
 
   /**
    * Returns all connections on the canvas.
    */
-  public getAllEdges(): EdgeData[] {
-    return this.connections.map(c => ({ ...c } as EdgeData));
+  public getAllEdges(): import("@zenode/core").EdgeData[] {
+    return this.connections.map(c => ({
+      ...c,
+      waypoints: this.calculateEdgeWaypoints(c),
+      dashed: !!c.dashed,
+      animated: !!c.animated
+    } as import("@zenode/core").EdgeData));
   }
 
   /**
@@ -2484,6 +2496,44 @@ export class ZenodeEngine {
 
   gridToggles(toggle: boolean) {
     toggleGrid(toggle);
+  }
+
+  private resolvePortCoordinate(nodeId: string, portId: string): { x: number, y: number } | null {
+    if (nodeId.startsWith("vgroup-")) {
+      const ports = this.getGroupPorts(nodeId);
+      return ports?.[portId] || null;
+    } else {
+      const node = this.placedNodes.find(n => n.id === nodeId);
+      if (!node) return null;
+      const style = this.getShapeStyle(node);
+      if (!style) return { x: node.x, y: node.y };
+
+      const renderer = this.shapeRegistry.get(node.type);
+      const resolved = buildResolvedShapeConfig(node, style);
+      const ports = renderer.getPorts(resolved);
+      const port = ports[portId] || ports.center || { x: 0, y: 0 };
+
+      // Calculate rotated port position relative to node center
+      const rotation = (node.rotation || 0) * (Math.PI / 180);
+      const cos = Math.cos(rotation);
+      const sin = Math.sin(rotation);
+
+      const rotatedX = port.x * cos - port.y * sin;
+      const rotatedY = port.x * sin + port.y * cos;
+
+      return { x: node.x + rotatedX, y: node.y + rotatedY };
+    }
+  }
+
+  private calculateEdgeWaypoints(c: import("../connections/render.js").StoredConnection): { x: number, y: number }[] {
+    const source = this.resolvePortCoordinate(c.sourceNodeId, c.sourcePortId);
+    const target = this.resolvePortCoordinate(c.targetNodeId, c.targetPortId);
+    
+    if (!source || !target) return [];
+    
+    // For now, return start and end as baseline. 
+    // High-fidelity routing capture would require hooks into SmartRouter path calculation.
+    return [source, target];
   }
 
   private bindSelectionInteractions(): void {

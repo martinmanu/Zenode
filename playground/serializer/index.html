@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenode | Serializer Playground</title>
+    <!-- Same fonts as base -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../zenode.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%233b82f6'><path d='M12 2L2 12l10 10L22 12Z' /></svg>">
+    
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --panel-bg: #1e293b;
+            --border: #334155;
+            --accent: #3b82f6;
+            --accent-glow: rgba(59, 130, 246, 0.4);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Re-use Header Style */
+        .header-bar {
+            padding: 16px 32px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+        }
+
+        .zenode-logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 20px var(--accent-glow);
+            margin-right: 12px;
+        }
+
+        .zenode-logo::after {
+            content: "Z";
+            color: white;
+            font-weight: 900;
+            font-size: 18px;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-weight: 800;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .brand-sub {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* 3-Column Layout */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 240px 1fr;
+            overflow: hidden;
+            background: #0d1117;
+        }
+
+        .column {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-right: 1px solid var(--border);
+        }
+
+        .column:last-child {
+            border-right: none;
+        }
+
+        .column-header {
+            padding: 12px 20px;
+            background: rgba(30, 41, 59, 0.5);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-title {
+            font-size: 11px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .format-selector {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            outline: none;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 10px;
+            padding-right: 24px;
+        }
+
+        .format-selector option {
+            background: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        /* Editor Styles */
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #d1d5db;
+            padding: 20px;
+            font-family: 'Fira Code', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: none;
+            outline: none;
+            tab-size: 2;
+        }
+
+        textarea::placeholder {
+            color: #4b5563;
+        }
+
+        .read-only {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Controls Column */
+        .controls-column {
+            background: var(--panel-bg);
+            padding: 24px 16px;
+            gap: 12px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .group-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn i {
+            width: 16px;
+            height: 16px;
+            color: var(--text-muted);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            border-color: #60a5fa;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .btn-primary i {
+            color: white;
+        }
+
+        .btn-roundtrip {
+            border-color: #818cf8;
+            color: #818cf8;
+        }
+
+        .btn-roundtrip:hover {
+            background: rgba(129, 140, 248, 0.1);
+        }
+
+        /* Error/Status Panel */
+        .status-panel {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 12px 20px;
+            background: rgba(15, 23, 42, 0.9);
+            backdrop-filter: blur(8px);
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .status-panel.active {
+            display: block;
+        }
+
+        .error-msg {
+            color: var(--error);
+            font-family: inherit;
+            white-space: pre-wrap;
+        }
+
+        .success-msg {
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        /* Sample Dropdown Customization */
+        select.btn option {
+            background: var(--bg-dark);
+            color: var(--text-main);
+        }
+
+        .toolbar-right {
+            display: flex;
+            gap: 12px;
+        }
+
+        .action-link {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+
+        .action-link:hover {
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body>
+    <header class="header-bar">
+        <div style="display: flex; align-items: center;">
+            <div class="zenode-logo"></div>
+            <div class="brand-text">
+                <span class="brand-name">Zenode</span>
+                <span class="brand-sub">Serializer Playground</span>
+            </div>
+        </div>
+        <div class="toolbar-right">
+            <a href="../index.html" class="action-link">
+                <i data-lucide="layout"></i>
+                Back to Designer
+            </a>
+            <button class="btn" style="padding: 6px 10px;" id="copyOutput">
+                <i data-lucide="copy"></i>
+                Copy Output
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <!-- INPUT COLUMN -->
+        <section class="column">
+            <div class="column-header">
+                <span class="column-title">Input</span>
+                <select class="format-selector" id="inputFormat">
+                    <option value="json">JSON (Zenode)</option>
+                    <option value="mermaid" disabled>Mermaid (Coming Soon)</option>
+                    <option value="bpmn" disabled>BPMN (Coming Soon)</option>
+                </select>
+            </div>
+            <div class="editor-container">
+                <textarea id="inputEditor" spellcheck="false" placeholder="Paste your data here..."></textarea>
+                <div id="inputStatus" class="status-panel"></div>
+            </div>
+        </section>
+
+        <!-- CONTROLS COLUMN -->
+        <section class="controls-column">
+            <div class="control-group">
+                <span class="group-label">Load Samples</span>
+                <select class="btn" id="sampleLoader">
+                    <option value="" disabled selected>Choose a sample...</option>
+                    <option value="simple">Simple Flow</option>
+                    <option value="branching">Branching Workflow</option>
+                    <option value="cyclic">Loop / Cyclic Graph</option>
+                    <option value="metadata">Graph with Metadata</option>
+                    <option value="invalid">Invalid Graph (Test Errors)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <span class="group-label">Convert To</span>
+                <button class="btn btn-primary" id="btnToJson">
+                    <i data-lucide="code"></i>
+                    Zenode JSON
+                </button>
+                <button class="btn" id="btnToMermaid">
+                    <i data-lucide="file-text"></i>
+                    Mermaid Syntax
+                </button>
+                <button class="btn" id="btnToBpmn">
+                    <i data-lucide="share-2"></i>
+                    BPMN 2.0 XML
+                </button>
+            </div>
+
+            <div class="control-group">
+                <span class="group-label">Round-Trip Test</span>
+                <button class="btn btn-roundtrip" id="btnRtMermaid">
+                    <i data-lucide="refresh-cw"></i>
+                    JSON → Mermaid → JSON
+                </button>
+                <button class="btn btn-roundtrip" id="btnRtBpmn">
+                    <i data-lucide="refresh-cw"></i>
+                    JSON → BPMN → JSON
+                </button>
+            </div>
+
+            <div class="control-group" style="margin-top: auto;">
+                <button class="btn" id="btnClear" style="color: var(--error); border-color: rgba(239, 68, 68, 0.2);">
+                    <i data-lucide="trash-2"></i>
+                    Clear All
+                </button>
+            </div>
+        </section>
+
+        <!-- OUTPUT COLUMN -->
+        <section class="column">
+            <div class="column-header">
+                <span class="column-title">Output</span>
+                <span id="outputFormatLabel" style="font-size: 10px; color: var(--accent); font-weight: 700; text-transform: uppercase;">None</span>
+            </div>
+            <div class="editor-container">
+                <textarea id="outputEditor" class="read-only" readonly spellcheck="false" placeholder="Output will appear here..."></textarea>
+                <div id="outputStatus" class="status-panel"></div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module">
+        import { 
+            toJSON, fromJSON, toMermaid, toBPMN, validateState 
+        } from '../dist/serializer/index.js';
+
+        // --- UI Elements ---
+        const inputEditor = document.getElementById('inputEditor');
+        const outputEditor = document.getElementById('outputEditor');
+        const inputFormat = document.getElementById('inputFormat');
+        const sampleLoader = document.getElementById('sampleLoader');
+        const inputStatus = document.getElementById('inputStatus');
+        const outputStatus = document.getElementById('outputStatus');
+        const outputLabel = document.getElementById('outputFormatLabel');
+
+        // --- State ---
+        const samples = {
+            simple: {
+                version: "1.0",
+                nodes: [
+                    { id: 'start', type: 'circle', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Start' }] } },
+                    { id: 'end', type: 'circle', x: 400, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'End' }] } }
+                ],
+                edges: [{ id: 'e1', sourceNodeId: 'start', targetNodeId: 'end' }],
+                viewport: { x: 0, y: 0, zoom: 1 }
+            },
+            branching: {
+                version: "1.0",
+                nodes: [
+                    { id: 'n1', type: 'circle', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Trigger' }] } },
+                    { id: 'n2', type: 'rhombus', x: 300, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Approved?' }] } },
+                    { id: 'n3', type: 'rectangle', x: 500, y: 50, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Process Success' }] } },
+                    { id: 'n4', type: 'rectangle', x: 500, y: 150, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Handle Rejection' }] } }
+                ],
+                edges: [
+                    { id: 'e1', sourceNodeId: 'n1', targetNodeId: 'n2' },
+                    { id: 'e2', sourceNodeId: 'n2', targetNodeId: 'n3', meta: { label: 'Yes' } },
+                    { id: 'e3', sourceNodeId: 'n2', targetNodeId: 'n4', meta: { label: 'No' } }
+                ],
+                viewport: { x: 0, y: 0, zoom: 1 }
+            },
+            cyclic: {
+                version: "1.0",
+                nodes: [
+                    { id: 'a', type: 'rectangle', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Node A' }] } },
+                    { id: 'b', type: 'rectangle', x: 300, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Node B' }] } }
+                ],
+                edges: [
+                    { id: 'e1', sourceNodeId: 'a', targetNodeId: 'b' },
+                    { id: 'e2', sourceNodeId: 'b', targetNodeId: 'a', meta: { label: 'Retry' } }
+                ],
+                viewport: { x: 0, y: 0, zoom: 1 }
+            },
+            metadata: {
+                version: "1.0",
+                nodes: [
+                    { id: 'm1', type: 'rectangle', x: 100, y: 100, meta: { customAttr: 'val' }, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Custom Data' }] } }
+                ],
+                edges: [],
+                viewport: { x: 10, y: 20, zoom: 0.8 }
+            },
+            invalid: {
+                version: "1.0",
+                nodes: [{ id: 'n1', type: 'circle', x: 100, y: 100 }],
+                edges: [{ id: 'e1', sourceNodeId: 'n1', targetNodeId: 'GHOST_NODE' }],
+                viewport: { x: 0, y: 0, zoom: 1 }
+            }
+        };
+
+        // --- Helpers ---
+        function setStatus(panel, html, isError = false) {
+            panel.innerHTML = html;
+            panel.className = `status-panel active ${isError ? 'error' : ''}`;
+            if (!html) panel.classList.remove('active');
+        }
+
+        function clearStatues() {
+            setStatus(inputStatus, '');
+            setStatus(outputStatus, '');
+        }
+
+        // --- Actions ---
+        function runConversion(target) {
+            clearStatues();
+            const raw = inputEditor.value.trim();
+            if (!raw) return;
+
+            try {
+                let state;
+                if (inputFormat.value === 'json') {
+                    state = fromJSON(raw);
+                } else {
+                    throw new Error(`Reverse parsing (from ${inputFormat.value.toUpperCase()}) is currently a 'Layer 3' roadmap item and not yet available in the pure-function core library.`);
+                }
+
+                let output = '';
+                switch(target) {
+                    case 'json': 
+                        output = toJSON(state); 
+                        outputLabel.textContent = 'JSON';
+                        break;
+                    case 'mermaid': 
+                        output = toMermaid(state); 
+                        outputLabel.textContent = 'Mermaid';
+                        break;
+                    case 'bpmn': 
+                        output = toBPMN(state); 
+                        outputLabel.textContent = 'BPMN 2.0';
+                        break;
+                }
+
+                outputEditor.value = output;
+                setStatus(outputStatus, `<span class="success-msg">Successfully converted to ${target.toUpperCase()}</span>`);
+            } catch (e) {
+                setStatus(inputStatus, `<div class="error-msg">${e.message}</div>`, true);
+            }
+        }
+
+        // --- Event Listeners ---
+        sampleLoader.addEventListener('change', () => {
+            const key = sampleLoader.value;
+            if (samples[key]) {
+                inputFormat.value = 'json';
+                inputEditor.value = JSON.stringify(samples[key], null, 2);
+                clearStatues();
+            }
+        });
+
+        document.getElementById('btnToJson').onclick = () => runConversion('json');
+        document.getElementById('btnToMermaid').onclick = () => runConversion('mermaid');
+        document.getElementById('btnToBpmn').onclick = () => runConversion('bpmn');
+
+        document.getElementById('btnClear').onclick = () => {
+            inputEditor.value = '';
+            outputEditor.value = '';
+            clearStatues();
+            outputLabel.textContent = 'None';
+        };
+
+        document.getElementById('copyOutput').onclick = () => {
+            navigator.clipboard.writeText(outputEditor.value);
+            const btn = document.getElementById('copyOutput');
+            const original = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check"></i> Copied!`;
+            lucide.createIcons();
+            setTimeout(() => {
+                btn.innerHTML = original;
+                lucide.createIcons();
+            }, 2000);
+        };
+
+        document.getElementById('btnRtMermaid').onclick = () => {
+            clearStatues();
+            try {
+                const state = fromJSON(inputEditor.value);
+                const mermaid = toMermaid(state);
+                // In a real scenario we'd call fromMermaid here
+                // For now we just show the output and mention it
+                outputEditor.value = mermaid;
+                outputLabel.textContent = 'Mermaid (RT Part 1)';
+                setStatus(outputStatus, `<div class="error-msg">Round-trip incomplete: 'fromMermaid' is not yet available in the library.</div>`, true);
+            } catch (e) {
+                setStatus(inputStatus, `<div class="error-msg">${e.message}</div>`, true);
+            }
+        };
+
+        document.getElementById('btnRtBpmn').onclick = () => {
+            clearStatues();
+            try {
+                const state = fromJSON(inputEditor.value);
+                const bpmn = toBPMN(state);
+                outputEditor.value = bpmn;
+                outputLabel.textContent = 'BPMN (RT Part 1)';
+                setStatus(outputStatus, `<div class="error-msg">Round-trip incomplete: 'fromBPMN' is not yet available in the library.</div>`, true);
+            } catch (e) {
+                setStatus(inputStatus, `<div class="error-msg">${e.message}</div>`, true);
+            }
+        };
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
