@@ -3,9 +3,9 @@
   "version": "3.5.10",
   "description": "Pure state transformations and export functions for Zenode",
   "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -13,19 +13,22 @@
       "types": "./dist/index.d.ts"
     }
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rollup -c",
-    "dev": "rollup -c -w"
+    "test": "vitest run --config vitest.config.ts",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@zenode/core": "workspace:*"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^28.0.3",
-    "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
     "rollup": "^4.37.0",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.0"
   },
   "author": "Manu Martin",
   "license": "Zenode License, MIT",

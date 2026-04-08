@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenode Serializer Playground</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --accent: #38bdf8;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.15) 0px, transparent 50%);
+        }
+
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        main {
+            display: grid;
+            grid-template-columns: 450px 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .editor-pane {
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .pane-header {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: none;
+            outline: none;
+        }
+
+        .preview-pane {
+            display: grid;
+            grid-template-rows: 1fr 1fr;
+            overflow: hidden;
+        }
+
+        .preview-box {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-content {
+            flex: 1;
+            overflow: auto;
+            padding: 2rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .xml-content {
+            justify-content: flex-start;
+            align-items: flex-start;
+            padding: 1rem;
+        }
+
+        pre {
+            margin: 0;
+            color: #818cf8;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+        }
+
+        button {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+        }
+
+        .error-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            display: none;
+        }
+
+        #mermaid-output svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo">ZENODE SERIALIZER</div>
+        <div style="display: flex; gap: 0.5rem;">
+            <button onclick="loadSample('workflow')">Full Workflow</button>
+            <button onclick="loadSample('empty')">Empty State</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="editor-pane">
+            <div class="pane-header">Input JSON (Zenode State)</div>
+            <textarea id="json-input" spellcheck="false"></textarea>
+        </div>
+
+        <div class="preview-pane">
+            <div class="preview-box">
+                <div class="pane-header">Mermaid Visualization</div>
+                <div class="preview-content" id="mermaid-output"></div>
+            </div>
+            <div class="preview-box">
+                <div class="pane-header">BPMN 2.0 XML</div>
+                <div class="preview-content xml-content">
+                    <pre id="bpmn-output"></pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="error" class="error-toast"></div>
+
+    <script>
+        const samples = {
+            workflow: {
+                version: "1.0",
+                nodes: [
+                    { id: 'start', type: 'circle', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Start' }] } },
+                    { id: 'process', type: 'rectangle', x: 300, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Process Data' }] } },
+                    { id: 'decision', type: 'rhombus', x: 500, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Approve?' }] } },
+                    { id: 'end', type: 'circle', x: 700, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'End' }] } },
+                ],
+                edges: [
+                    { id: 'e1', sourceNodeId: 'start', targetNodeId: 'process' },
+                    { id: 'e2', sourceNodeId: 'process', targetNodeId: 'decision' },
+                    { id: 'e3', sourceNodeId: 'decision', targetNodeId: 'end', meta: { label: 'Yes' } },
+                ],
+                viewport: { x: 0, y: 0, zoom: 1 },
+            },
+            empty: {
+                version: "1.0",
+                nodes: [],
+                edges: [],
+                viewport: { x: 0, y: 0, zoom: 1 }
+            }
+        };
+
+        const input = document.getElementById('json-input');
+        const mermaidDiv = document.getElementById('mermaid-output');
+        const bpmnDiv = document.getElementById('bpmn-output');
+        const errorDiv = document.getElementById('error');
+
+        // Initial setup
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
+        input.addEventListener('input', update);
+
+        function loadSample(key) {
+            input.value = JSON.stringify(samples[key], null, 2);
+            update();
+        }
+
+        function showError(msg) {
+            errorDiv.textContent = msg;
+            errorDiv.style.display = msg ? 'block' : 'none';
+        }
+
+        /** Replicated Logic from Mermaid Format */
+        function toMermaid(state) {
+            const lines = ['graph TD'];
+            state.nodes.forEach(node => {
+                let s = '[', e = ']';
+                const type = node.type.toLowerCase();
+                if (type === 'circle') [s, e] = ['((', '))'];
+                if (type === 'rhombus' || type === 'decision') [s, e] = ['{', '}'];
+                
+                let label = node.id;
+                if (node.content?.items) {
+                    const textItem = node.content.items.find(i => i.kind === 'text');
+                    if (textItem) label = textItem.value;
+                }
+                lines.push(`    ${node.id}${s}"${label}"${e}`);
+            });
+            state.edges.forEach(edge => {
+                const label = edge.meta?.label ? `|${edge.meta.label}| ` : '';
+                lines.push(`    ${edge.sourceNodeId} --> ${label}${edge.targetNodeId}`);
+            });
+            return lines.join('\n');
+        }
+
+        /** Replicated Logic from BPMN Format */
+        function toBPMN(state) {
+            const nodes = state.nodes.map(node => {
+                let type = 'bpmn:Task';
+                if (node.type === 'circle') type = 'bpmn:StartEvent';
+                if (node.type === 'rhombus') type = 'bpmn:ExclusiveGateway';
+                return `    <${type} id="${node.id}" name="${node.id}" />`;
+            }).join('\n');
+
+            const edges = state.edges.map(edge => {
+                return `    <bpmn:sequenceFlow id="${edge.id}" sourceRef="${edge.sourceNodeId}" targetRef="${edge.targetNodeId}" />`;
+            }).join('\n');
+
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <bpmn:process id="Process1">
+${nodes}
+${edges}
+  </bpmn:process>
+</bpmn:definitions>`;
+        }
+
+        async function update() {
+            try {
+                const state = JSON.parse(input.value);
+                showError('');
+                
+                // 1. Mermaid
+                const mCode = toMermaid(state);
+                mermaidDiv.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
+                await mermaid.run();
+
+                // 2. BPMN
+                bpmnDiv.textContent = toBPMN(state);
+
+            } catch (e) {
+                showError('Invalid JSON or State: ' + e.message);
+            }
+        }
+
+        loadSample('workflow');
+    </script>
+</body>
+</html>

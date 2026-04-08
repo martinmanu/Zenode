@@ -140,6 +140,9 @@ export interface EdgeConfig {
   targetNodeId: string;
   targetPortId: string;
   type?: string;             // 'straight', 'curved', 's-shaped', 'l-bent'
+  waypoints?: { x: number; y: number }[]; // absolute coordinates
+  dashed?: boolean;
+  animated?: boolean;
   meta?: Record<string, any>;
 }
 

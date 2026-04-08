@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "./",
     "module": "ESNext",
     "target": "ES6",
     "declaration": true,
@@ -38,7 +38,7 @@
     }
   },
   "include": [
-    "src",
+    "packages/**/src",
     "tests/**/*.ts",
     "src/typings"
   ]
