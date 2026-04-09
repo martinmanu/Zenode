@@ -5,6 +5,48 @@ import { ShapeRegistry } from "./registry.js";
 import { buildResolvedShapeConfig } from "./overlay.js";
 
 /**
+ * Converts a TouchEvent touch point to a synthetic MouseEvent so existing
+ * mouse-based handlers (rotate, resize, connection) work transparently on mobile.
+ */
+function simulateMouseEvent(type: string, touch: Touch, target: EventTarget) {
+    const evt = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        screenX: touch.screenX,
+        screenY: touch.screenY,
+    });
+    target.dispatchEvent(evt);
+}
+
+/**
+ * Attaches touch-to-mouse bridge listeners to an SVG element so that
+ * touchstart → mousedown, touchmove → mousemove (on window), touchend → mouseup (on window).
+ * This makes any existing mousedown/mousemove/mouseup logic work on mobile without changes.
+ */
+function bridgeTouchEvents(el: SVGElement) {
+    el.addEventListener('touchstart', (e: TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        e.stopPropagation();
+        simulateMouseEvent('mousedown', e.touches[0], el);
+    }, { passive: false });
+
+    el.addEventListener('touchmove', (e: TouchEvent) => {
+        if (e.touches.length !== 1) return;
+        e.preventDefault();
+        simulateMouseEvent('mousemove', e.touches[0], window);
+    }, { passive: false });
+
+    el.addEventListener('touchend', (e: TouchEvent) => {
+        if (e.changedTouches.length !== 1) return;
+        e.preventDefault();
+        simulateMouseEvent('mouseup', e.changedTouches[0], window);
+    }, { passive: false });
+}
+
+/**
  * Renders connection ports for a node.
  * @param nodeGroup - The D3 selection of the node's <g> element
  * @param node - The node data
@@ -69,7 +111,9 @@ export function renderPorts(
         
         const startPoint = engine.getCanvasPoint(event);
         engine.startConnectionDrag(node.id, d.id, startPoint);
-    });
+    })
+    // --- Touch bridge for connection ports ---
+    .each(function() { bridgeTouchEvents(this as SVGElement); });
 
   // --- Rotation Handles Logic ---
   const isSelected = engine.getSelectedNodeIds().includes(node.id);
@@ -137,6 +181,39 @@ export function renderPorts(
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });
+
+  // --- Touch bridge + enlarged hit-area for rotate handles ---
+  nodeGroup.selectAll<SVGCircleElement, any>("circle.rotate-handle").each(function(d) {
+    // Keep the visual size at r=5, add an invisible larger circle as touch target
+    const cx = parseFloat(d3.select(this).attr("cx"));
+    const cy = parseFloat(d3.select(this).attr("cy"));
+    const parent = this.parentNode as SVGGElement;
+    const touchTarget = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    touchTarget.setAttribute('cx', String(cx));
+    touchTarget.setAttribute('cy', String(cy));
+    touchTarget.setAttribute('r', '16');
+    touchTarget.setAttribute('fill', 'transparent');
+    touchTarget.setAttribute('stroke', 'none');
+    touchTarget.style.pointerEvents = 'all';
+    parent.appendChild(touchTarget);
+    // Bridge touches on the invisible target to mousedown on the real handle
+    touchTarget.addEventListener('touchstart', (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      simulateMouseEvent('mousedown', e.touches[0], this);
+    }, { passive: false });
+    touchTarget.addEventListener('touchmove', (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      simulateMouseEvent('mousemove', e.touches[0], window);
+    }, { passive: false });
+    touchTarget.addEventListener('touchend', (e: TouchEvent) => {
+      if (e.changedTouches.length !== 1) return;
+      e.preventDefault();
+      simulateMouseEvent('mouseup', e.changedTouches[0], window);
+    }, { passive: false });
+  });
 
   // --- Resize Handles Logic ---
   const isResizeMode = engine.isResizeModeEnabled && engine.isResizeModeEnabled();
@@ -218,6 +295,35 @@ export function renderPorts(
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
     });
+
+  // --- Touch bridge + enlarged invisible hit-area for resize handles ---
+  // We add a larger transparent rect on top of each resize handle so fingers can hit it
+  nodeGroup.selectAll<SVGRectElement, any>("rect.resize-handle").each(function(d) {
+    bridgeTouchEvents(this as SVGElement);
+    // Expand the clickable area for touch
+    const x = parseFloat(d3.select(this).attr("x"));
+    const y = parseFloat(d3.select(this).attr("y"));
+    const w = parseFloat(d3.select(this).attr("width"));
+    const h = parseFloat(d3.select(this).attr("height"));
+    const parent = this.parentNode as SVGGElement;
+    const touchTarget = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    touchTarget.setAttribute('x', String(x - 10));
+    touchTarget.setAttribute('y', String(y - 10));
+    touchTarget.setAttribute('width', String(w + 20));
+    touchTarget.setAttribute('height', String(h + 20));
+    touchTarget.setAttribute('fill', 'transparent');
+    touchTarget.setAttribute('stroke', 'none');
+    touchTarget.style.pointerEvents = 'all';
+    parent.appendChild(touchTarget);
+    bridgeTouchEvents(touchTarget);
+    // bridge the touchTarget touches to the original handle's mousedown
+    touchTarget.addEventListener('touchstart', (e: TouchEvent) => {
+      if (e.touches.length !== 1) return;
+      e.preventDefault();
+      e.stopPropagation();
+      simulateMouseEvent('mousedown', e.touches[0], this);
+    }, { passive: false });
+  });
 
   // Bring all handles to front
   nodeGroup.selectAll<SVGElement, any>("circle.port, circle.rotate-handle, rect.resize-handle").each(function() {

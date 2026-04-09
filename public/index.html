@@ -266,6 +266,47 @@
             transition: all 0.3s ease;
         }
 
+        /* Download JSON FAB */
+        #downloadJsonBtn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            border-radius: 40px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+            letter-spacing: 0.3px;
+        }
+        #downloadJsonBtn:hover {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: #3b82f6;
+            box-shadow: 0 6px 24px rgba(59,130,246,0.4);
+            transform: translateY(-2px);
+        }
+        #downloadJsonBtn svg {
+            width: 14px;
+            height: 14px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        #downloadJsonBtn.flash {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-color: #10b981;
+        }
+
         body.connection-mode-active #canvasContainer {
             border: 2px solid #3b82f6;
             box-shadow: 0 0 30px rgba(59, 130, 246, 0.4), 0 25px 50px -12px rgba(0, 0, 0, 0.6);
@@ -1308,6 +1349,12 @@
 
         <div id="canvasContainer"></div>
 
+        <!-- Download JSON Floating Action Button -->
+        <button id="downloadJsonBtn" onclick="downloadDiagramJSON()" title="Download current diagram as JSON">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export JSON
+        </button>
+
         <div class="toolbar">
             <button class="tool-btn icon-only" onclick="window.open('./serializer/index.html', '_blank')"
                 title="Open Serializer Playground">
@@ -1899,6 +1946,9 @@
             });
             // ----------------------------------------------------
 
+            // --- Mobile Touch Support ---
+            initTouchSupport(canvasContainer);
+
             Zenode.on("lasso:toggle", ({ enabled }) => {
                 const btn = document.getElementById('lassoBtn');
                 if (btn) btn.classList.toggle('active', enabled);
@@ -2305,6 +2355,136 @@
                 resizeTicking = true;
             }
         });
+
+        // ============================================================
+        // Download JSON Feature
+        // ============================================================
+        window.downloadDiagramJSON = () => {
+            const state = Zenode.getDiagramState();
+            const json = JSON.stringify(state, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+            a.href = url;
+            a.download = `zenode-diagram-${timestamp}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            // Flash the button green for visual feedback
+            const btn = document.getElementById('downloadJsonBtn');
+            if (btn) {
+                btn.classList.add('flash');
+                btn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Saved!`;
+                setTimeout(() => {
+                    btn.classList.remove('flash');
+                    btn.innerHTML = `<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export JSON`;
+                }, 1800);
+            }
+        };
+
+        // ============================================================
+        // Mobile Touch Support Foundation
+        // ============================================================
+        function initTouchSupport(container) {
+            const svg = () => container.querySelector('svg');
+
+            let lastTouchDistance = 0;   // for pinch-to-zoom
+            let lastTouchCenter = null;  // for pinch centre point
+            let touchPanStart = null;    // for single-finger pan
+            let touchStartTime = 0;      // for tap detection
+            let touchMoved = false;
+
+            // --- Pinch-to-Zoom: measure distance between two fingers ---
+            function getTouchDistance(t1, t2) {
+                const dx = t1.clientX - t2.clientX;
+                const dy = t1.clientY - t2.clientY;
+                return Math.sqrt(dx * dx + dy * dy);
+            }
+
+            function getTouchCenter(t1, t2) {
+                return {
+                    x: (t1.clientX + t2.clientX) / 2,
+                    y: (t1.clientY + t2.clientY) / 2,
+                };
+            }
+
+            container.addEventListener('touchstart', (e) => {
+                touchStartTime = Date.now();
+                touchMoved = false;
+
+                if (e.touches.length === 2) {
+                    // Pinch gesture start
+                    e.preventDefault();
+                    lastTouchDistance = getTouchDistance(e.touches[0], e.touches[1]);
+                    lastTouchCenter = getTouchCenter(e.touches[0], e.touches[1]);
+                } else if (e.touches.length === 1) {
+                    // Single-finger: record start for pan
+                    touchPanStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchmove', (e) => {
+                touchMoved = true;
+
+                if (e.touches.length === 2) {
+                    // Pinch-to-zoom
+                    e.preventDefault();
+                    const newDist = getTouchDistance(e.touches[0], e.touches[1]);
+                    const newCenter = getTouchCenter(e.touches[0], e.touches[1]);
+                    const scale = newDist / lastTouchDistance;
+
+                    if (Math.abs(scale - 1) > 0.01) {
+                        if (scale > 1) {
+                            Zenode.zoomIn();
+                        } else {
+                            Zenode.zoomOut();
+                        }
+                    }
+
+                    lastTouchDistance = newDist;
+                    lastTouchCenter = newCenter;
+
+                } else if (e.touches.length === 1 && touchPanStart) {
+                    // Single-finger pan — only if NOT dragging a node
+                    // We don't block the event; D3's zoom handler already supports touch pan natively
+                    // This is a passthrough — the native D3 touch handler will take over
+                }
+            }, { passive: false });
+
+            container.addEventListener('touchend', (e) => {
+                const elapsed = Date.now() - touchStartTime;
+
+                // Tap detection: short touch, no significant movement
+                if (e.changedTouches.length === 1 && !touchMoved && elapsed < 250) {
+                    const t = e.changedTouches[0];
+                    // Synthesise a click event at the tap position so D3 node selection works
+                    const clickEvt = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        clientX: t.clientX,
+                        clientY: t.clientY,
+                    });
+                    // Target the element under the finger, not the container
+                    const target = document.elementFromPoint(t.clientX, t.clientY);
+                    if (target) target.dispatchEvent(clickEvt);
+                }
+
+                if (e.touches.length < 2) {
+                    lastTouchDistance = 0;
+                    lastTouchCenter = null;
+                }
+                if (e.touches.length === 0) {
+                    touchPanStart = null;
+                }
+            }, { passive: true });
+
+            // Prevent the browser's default pinch-zoom from fighting our handler
+            container.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+            container.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+        }
 
         document.addEventListener("DOMContentLoaded", init);
     </script>
