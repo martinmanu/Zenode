@@ -12,13 +12,13 @@
 export { validateState } from './core/validator.js';
 export type { ValidationResult } from './core/validator.js';
 
-// --- JSON Format ---
+// --- Formats ---
 export { toJSON, fromJSON } from './formats/json.js';
-
-// --- Mermaid Format ---
+export { toYAML, fromYAML } from './formats/yaml.js';
+export { toDOT, fromDOT } from './formats/dot.js';
+export { toXML, fromXML } from './formats/xml.js';
+export { toDSL, fromDSL } from './formats/dsl.js';
 export { toMermaid } from './formats/mermaid.js';
-
-// --- BPMN Format ---
 export { toBPMN } from './formats/bpmn.js';
 
 // --- Utilities ---

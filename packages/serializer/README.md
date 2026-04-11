@@ -33,9 +33,13 @@ const jsonString = toJSON(diagramState);
 const restoredState = fromJSON(jsonString);
 ```
 
-## 🗺️ Roadmap Formats
+## 🗺️ Supported Formats
+*   **YAML**: Clean, human-readable state serialization (full fidelity).
+*   **DOT (Graphviz)**: Standard graph representation for structural analysis.
 *   **Mermaid**: Convert visual flows into Mermaid flowchart scripts.
 *   **BPMN 2.0**: Standard compliant XML exports for business-process industrial compatibility.
+*   **Generic XML**: Simple, schema-based interchange format.
+*   **Zenode DSL**: Lightweight, arrow-based custom syntax (e.g. `start -> task1 -> end`).
 *   **SVG/Image**: (In progress) Pure vector export for documentation.
 
 ---

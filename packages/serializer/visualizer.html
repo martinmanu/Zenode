@@ -87,40 +87,41 @@
             outline: none;
         }
 
-        .preview-pane {
+        .preview-grid {
             display: grid;
-            grid-template-rows: 1fr 1fr;
-            overflow: hidden;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            overflow: auto;
+            gap: 1px;
+            background: var(--border);
         }
 
         .preview-box {
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            border-bottom: 1px solid var(--border);
+            background: var(--bg);
         }
 
         .preview-content {
             flex: 1;
             overflow: auto;
-            padding: 2rem;
+            padding: 1.5rem;
             display: flex;
-            justify-content: center;
-            align-items: center;
             background: rgba(0, 0, 0, 0.2);
         }
 
-        .xml-content {
-            justify-content: flex-start;
-            align-items: flex-start;
-            padding: 1rem;
+        .centered {
+            justify-content: center;
+            align-items: center;
         }
 
         pre {
             margin: 0;
             color: #818cf8;
             font-family: 'Fira Code', monospace;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
+            white-space: pre-wrap;
         }
 
         button {
@@ -153,6 +154,7 @@
             font-weight: 500;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
             display: none;
+            z-index: 100;
         }
 
         #mermaid-output svg {
@@ -160,6 +162,7 @@
             height: auto;
         }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml/dist/js-yaml.min.js"></script>
 </head>
 <body>
     <header>
@@ -176,15 +179,39 @@
             <textarea id="json-input" spellcheck="false"></textarea>
         </div>
 
-        <div class="preview-pane">
+        <div class="preview-grid">
             <div class="preview-box">
-                <div class="pane-header">Mermaid Visualization</div>
-                <div class="preview-content" id="mermaid-output"></div>
+                <div class="pane-header">Mermaid Rendering</div>
+                <div class="preview-content centered" id="mermaid-output"></div>
+            </div>
+            <div class="preview-box">
+                <div class="pane-header">YAML Export</div>
+                <div class="preview-content">
+                    <pre id="yaml-output"></pre>
+                </div>
+            </div>
+            <div class="preview-box">
+                <div class="pane-header">Zenode DSL</div>
+                <div class="preview-content">
+                    <pre id="dsl-output"></pre>
+                </div>
+            </div>
+            <div class="preview-box">
+                <div class="pane-header">DOT (Graphviz)</div>
+                <div class="preview-content">
+                    <pre id="dot-output"></pre>
+                </div>
             </div>
             <div class="preview-box">
                 <div class="pane-header">BPMN 2.0 XML</div>
-                <div class="preview-content xml-content">
+                <div class="preview-content">
                     <pre id="bpmn-output"></pre>
+                </div>
+            </div>
+            <div class="preview-box">
+                <div class="pane-header">Generic XML</div>
+                <div class="preview-content">
+                    <pre id="xml-output"></pre>
                 </div>
             </div>
         </div>
@@ -197,10 +224,10 @@
             workflow: {
                 version: "1.0",
                 nodes: [
-                    { id: 'start', type: 'circle', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Start' }] } },
-                    { id: 'process', type: 'rectangle', x: 300, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Process Data' }] } },
-                    { id: 'decision', type: 'rhombus', x: 500, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Approve?' }] } },
-                    { id: 'end', type: 'circle', x: 700, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'End' }] } },
+                    { id: 'start', type: 'circle', shapeVariantId: 'default', x: 100, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Start' }] } },
+                    { id: 'process', type: 'rectangle', shapeVariantId: 'default', x: 300, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Process Data' }] } },
+                    { id: 'decision', type: 'rhombus', shapeVariantId: 'default', x: 500, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'Approve?' }] } },
+                    { id: 'end', type: 'circle', shapeVariantId: 'default', x: 700, y: 100, content: { layout: 'text-only', items: [{ kind: 'text', value: 'End' }] } },
                 ],
                 edges: [
                     { id: 'e1', sourceNodeId: 'start', targetNodeId: 'process' },
@@ -218,9 +245,16 @@
         };
 
         const input = document.getElementById('json-input');
-        const mermaidDiv = document.getElementById('mermaid-output');
-        const bpmnDiv = document.getElementById('bpmn-output');
         const errorDiv = document.getElementById('error');
+        
+        const outputs = {
+            mermaid: document.getElementById('mermaid-output'),
+            yaml: document.getElementById('yaml-output'),
+            dsl: document.getElementById('dsl-output'),
+            dot: document.getElementById('dot-output'),
+            bpmn: document.getElementById('bpmn-output'),
+            xml: document.getElementById('xml-output')
+        };
 
         // Initial setup
         mermaid.initialize({ startOnLoad: false, theme: 'dark' });
@@ -237,7 +271,8 @@
             errorDiv.style.display = msg ? 'block' : 'none';
         }
 
-        /** Replicated Logic from Mermaid Format */
+        // --- Translators ---
+
         function toMermaid(state) {
             const lines = ['graph TD'];
             state.nodes.forEach(node => {
@@ -260,7 +295,31 @@
             return lines.join('\n');
         }
 
-        /** Replicated Logic from BPMN Format */
+        function toYAML(state) {
+            return jsyaml.dump(state, { indent: 2, sortKeys: true });
+        }
+
+        function toDOT(state) {
+            const lines = ['digraph ZenodeWorkflow {', '  rankdir=LR;', '  node [shape=rect, style=rounded];'];
+            state.nodes.forEach(node => {
+                const label = node.content?.items?.find(i => i.kind === 'text')?.value || node.id;
+                lines.push(`  "${node.id}" [label="${label}", type="${node.type}"];`);
+            });
+            state.edges.forEach(edge => {
+                const label = edge.meta?.label ? ` [label="${edge.meta.label}"]` : '';
+                lines.push(`  "${edge.sourceNodeId}" -> "${edge.targetNodeId}"${label};`);
+            });
+            lines.push('}');
+            return lines.join('\n');
+        }
+
+        function toDSL(state) {
+            return state.edges.map(e => {
+                const label = e.meta?.label ? ` [${e.meta.label}]` : '';
+                return `${e.sourceNodeId} -> ${e.targetNodeId}${label}`;
+            }).join('\n');
+        }
+
         function toBPMN(state) {
             const nodes = state.nodes.map(node => {
                 let type = 'bpmn:Task';
@@ -268,11 +327,7 @@
                 if (node.type === 'rhombus') type = 'bpmn:ExclusiveGateway';
                 return `    <${type} id="${node.id}" name="${node.id}" />`;
             }).join('\n');
-
-            const edges = state.edges.map(edge => {
-                return `    <bpmn:sequenceFlow id="${edge.id}" sourceRef="${edge.sourceNodeId}" targetRef="${edge.targetNodeId}" />`;
-            }).join('\n');
-
+            const edges = state.edges.map(edge => `    <bpmn:sequenceFlow id="${edge.id}" sourceRef="${edge.sourceNodeId}" targetRef="${edge.targetNodeId}" />`).join('\n');
             return `<?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL">
   <bpmn:process id="Process1">
@@ -282,18 +337,36 @@ ${edges}
 </bpmn:definitions>`;
         }
 
+        function toGenericXML(state) {
+            const nodes = state.nodes.map(n => `    <node id="${n.id}" type="${n.type}" x="${n.x}" y="${n.y}" />`).join('\n');
+            const edges = state.edges.map(e => `    <edge from="${e.sourceNodeId}" to="${e.targetNodeId}" />`).join('\n');
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<workflow version="${state.version}">
+  <nodes>
+${nodes}
+  </nodes>
+  <edges>
+${edges}
+  </edges>
+</workflow>`;
+        }
+
         async function update() {
             try {
                 const state = JSON.parse(input.value);
                 showError('');
                 
-                // 1. Mermaid
-                const mCode = toMermaid(state);
-                mermaidDiv.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
-                await mermaid.run();
+                // Update all outputs
+                outputs.yaml.textContent = toYAML(state);
+                outputs.dot.textContent = toDOT(state);
+                outputs.dsl.textContent = toDSL(state);
+                outputs.bpmn.textContent = toBPMN(state);
+                outputs.xml.textContent = toGenericXML(state);
 
-                // 2. BPMN
-                bpmnDiv.textContent = toBPMN(state);
+                // Mermaid with custom rendering logic
+                const mCode = toMermaid(state);
+                outputs.mermaid.innerHTML = `<pre class="mermaid">${mCode}</pre>`;
+                await mermaid.run();
 
             } catch (e) {
                 showError('Invalid JSON or State: ' + e.message);

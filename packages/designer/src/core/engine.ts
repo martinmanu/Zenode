@@ -802,10 +802,27 @@ export class ZenodeEngine {
   }
 
   /**
-   * Returns all nodes currently on the canvas.
+   * Returns all nodes currently on the canvas, including visual groups.
    */
   public getAllNodes(): NodeData[] {
-    return this.placedNodes.map(n => ({ ...n } as NodeData));
+    const nodes = this.placedNodes.map(n => ({ ...n } as NodeData));
+    
+    // Convert visual groups to the NodeData format for serializability
+    const groupNodes = this.visualGroups.map(g => {
+        const bounds = this.getGroupBounds(g.id);
+        return {
+            id: g.id,
+            type: "vgroup",
+            shapeVariantId: "default",
+            x: bounds?.x ?? 0,
+            y: bounds?.y ?? 0,
+            width: bounds?.width ?? 200,
+            height: bounds?.height ?? 150,
+            meta: { nodeIds: g.nodeIds }
+        } as NodeData;
+    });
+    
+    return [...nodes, ...groupNodes];
   }
 
   /**

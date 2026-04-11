@@ -43,6 +43,21 @@ if (fs.existsSync(path.join(root, 'playground/zenode.css'))) {
   fs.copyFileSync(path.join(root, 'packages/designer/zenode.css'), path.join(publicDir, 'zenode.css'));
 }
 
+// New: Copy Documentation for the Guide
+console.log('[DEPLOY] Syncing documentation papers...');
+if (fs.existsSync(path.join(root, 'README.md'))) {
+  fs.copyFileSync(path.join(root, 'README.md'), path.join(publicDir, 'README.md'));
+}
+if (fs.existsSync(path.join(root, 'APIs.md'))) {
+  fs.copyFileSync(path.join(root, 'APIs.md'), path.join(publicDir, 'APIs.md'));
+}
+
+// New: Copy Assets (Gifs, Videos, SVGs for the Guide)
+if (fs.existsSync(path.join(root, 'assets'))) {
+  console.log('[DEPLOY] Syncing visual assets...');
+  copyFolderSync(path.join(root, 'assets'), path.join(publicDir, 'assets'));
+}
+
 // 2. Copy Full Package Builds
 console.log('[DEPLOY] Syncing package bundles...');
 copyFolderSync(path.join(root, 'packages/designer/dist'), path.join(publicDir, 'dist/designer'));

@@ -22,12 +22,15 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@zenode/core": "workspace:*"
+    "@zenode/core": "workspace:*",
+    "fast-xml-parser": "^5.5.11",
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.2",
+    "@types/js-yaml": "^4.0.9",
     "rollup": "^4.37.0",
     "typescript": "^5.8.2",
     "vitest": "^3.0.0"
